@@ -40,9 +40,8 @@ To finish in four days:
 
 ```text
 src/
-├── app/
-│   ├── App.tsx
-│   └── router.tsx
+├── App.tsx
+└── router.tsx
 ├── components/
 │   ├── ui/                 # Button, Input, Card, Badge, Modal, Table, skeleton
 │   ├── layout/             # StoreHeader, AdminLayout, AdminSidebar, mobile header
