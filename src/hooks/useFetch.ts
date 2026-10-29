@@ -8,6 +8,18 @@ interface UseFetchResult<T> {
   refetch: () => void
 }
 
+/**
+ * Use this hook for any API request that returns a typed result.
+ *
+ * Products:
+ * useFetch<Product[]>((signal) => productsService.getProducts(undefined, signal))
+ *
+ * Other resources:
+ * useFetch<User>((signal) => usersService.getUser(userId, signal))
+ *
+ * The request should pass the signal to Axios so requests are cancelled when
+ * the component unmounts or the request function changes.
+ */
 export function useFetch<T>(
   request: (signal: AbortSignal) => Promise<T>,
 ): UseFetchResult<T> {
