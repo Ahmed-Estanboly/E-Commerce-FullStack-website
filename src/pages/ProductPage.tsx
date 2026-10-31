@@ -23,6 +23,7 @@ import {
 import { productsService } from '../lib/api/products.service'
 import { useFetch } from '../hooks/useFetch'
 import { useStoreProducts } from '../hooks/use-products'
+import { useCart } from '../store/cart-context'
 import type { Department } from '../types/home'
 import type { Product } from '../types/product'
 import { cn, formatPrice, truncate } from '../lib/utils'
@@ -32,9 +33,9 @@ const RELATED_LIMIT = 4
 
 export interface ProductPageProps {
   /**
-   * Optional cart integration. The cart belongs to another owner; this page
-   * never creates a second cart store. The handler receives the selected
-   * quantity so the cart owner can add the correct number of units.
+   * Optional cart override. When omitted, the page uses the shared cart context
+   * mounted in `App`. The handler receives the selected quantity so an external
+   * cart can add the correct number of units.
    */
   onAddToCart?: (product: Product, quantity: number) => void
 }
@@ -143,6 +144,7 @@ function ProductGallery({
       {hasMultiple ? (
         <div
           className="order-2 flex gap-2 overflow-x-auto pb-1 sm:flex-col sm:overflow-visible sm:pb-0"
+          role="group"
           aria-label="Choose a product image"
         >
           {Array.from({ length: imageCount }).map((_, index) => {
@@ -200,7 +202,7 @@ function ProductBreadcrumb({
         Shop
       </Link>
       <span aria-hidden="true">/</span>
-      <span className="shrink-0">{department?.name ?? 'Brands'}</span>
+      <span className="shrink-0">{department?.name ?? 'The edit'}</span>
       <span aria-hidden="true">/</span>
       <span className="truncate text-ink" aria-current="page">
         {truncate(product.title, 42)}
@@ -283,8 +285,8 @@ function ProductUnavailable({
             <Button variant="accent" size="sm" onClick={onRetry}>
               Try again
             </Button>
-            <Link to="/brands" className={buttonStyles('outline', 'sm')}>
-              Browse the houses
+            <Link to="/shop" className={buttonStyles('outline', 'sm')}>
+              Browse the shop
             </Link>
           </div>
         }
@@ -312,6 +314,7 @@ function ProductDetail({
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
+  const { addItem } = useCart()
 
   const request = useCallback(
     (signal: AbortSignal) => productsService.getProduct(productId, signal),
@@ -364,17 +367,15 @@ function ProductDetail({
   }
 
   const handleAddToCart = () => {
-    if (!onAddToCart) {
-      setFeedback({
-        tone: 'info',
-        message:
-          'The bag is not connected in this demo build. This page is ready for the cart owner’s handler.',
-      })
-      return
-    }
-
     try {
-      onAddToCart(currentProduct, quantity)
+      if (onAddToCart) {
+        onAddToCart(currentProduct, quantity)
+      } else {
+        // The shared cart adds one unit per call. Repeat the public `addItem`
+        // operation so the selected quantity is honoured without creating a
+        // second cart or editing the provider.
+        for (let unit = 0; unit < quantity; unit += 1) addItem(currentProduct)
+      }
       setFeedback({
         tone: 'success',
         message: `${quantity} × ${currentProduct.title} added to your bag.`,
@@ -591,7 +592,7 @@ function ProductDetail({
             description={`More from ${currentProduct.category?.name ?? 'the wider edit'}, chosen from the same live catalogue.`}
             action={
               <Link
-                to={`/shop?category=${department?.slug ?? ''}`}
+                to={department ? `/shop?category=${department.slug}` : '/shop'}
                 className="link-underline inline-flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ink"
               >
                 All pieces <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -633,7 +634,7 @@ function ProductDetail({
             to="/shop"
             className="focus-ring inline-flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ink"
           >
-            Explore {department?.name ?? 'the houses'}
+            Explore {department?.name ?? 'the edit'}
             <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
         </div>
