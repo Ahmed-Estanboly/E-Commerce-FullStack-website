@@ -1,4 +1,4 @@
-import type { Product, GetProductsParams } from '../../types/product'
+import type { Product, ProductCategory,GetProductsParams } from '../../types/product'
 import { apiClient } from './client'
 
 export const productsService = {
@@ -19,4 +19,9 @@ export const productsService = {
     const response = await apiClient.get<Product>(`/products/${id}`, { signal })
     return response.data
   },
+  async getCategories():
+  Promise <ProductCategory[]> {
+    const response = await apiClient.get<ProductCategory[]>(`/categories`)
+    return response.data },
+  
 }
