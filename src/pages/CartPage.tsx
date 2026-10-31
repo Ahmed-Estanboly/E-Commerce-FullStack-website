@@ -14,12 +14,12 @@ export function CartPage() {
     .slice(0, 3)
 
   return (
-    <div className="cart-page page-enter bg-charcoal text-cream">
+    <div className="cart-page page-enter bg-canvas text-ink">
       <div className="container-nova py-10 sm:py-14 lg:py-16">
-        <div className="flex flex-wrap items-end justify-between gap-5 border-b border-cream/15 pb-7 sm:pb-9">
+        <div className="flex flex-wrap items-end justify-between gap-5 border-b border-line pb-7 sm:pb-9">
           <div>
-            <p className="font-mono text-[8px] uppercase tracking-[0.2em] text-cream/40">
-              Home <span className="px-1.5 text-cream/20">/</span> Your selection
+            <p className="font-mono text-[8px] uppercase tracking-[0.2em] text-muted">
+              Home <span className="px-1.5 text-muted/60">/</span> Your selection
             </p>
             <p className="mt-5 font-mono text-[8px] uppercase tracking-[0.18em] text-accent">
               {items.length > 0 ? 'Reserved for 20 minutes' : 'A considered edit'}
@@ -28,7 +28,7 @@ export function CartPage() {
               Your <em className="font-light italic text-accent">bag.</em>
             </h1>
           </div>
-          <p className="max-w-[360px] pb-1 text-[11px] leading-relaxed text-cream/50 sm:text-[12px]">
+          <p className="max-w-[360px] pb-1 text-[11px] leading-relaxed text-muted sm:text-[12px]">
             {items.length > 0
               ? 'The bag is held against your selection for a short time. Stock is reserved from the room you collect from. Change the branch at checkout if you need to.'
               : 'A good place to begin. Browse the edit and bring home something worth keeping.'}
@@ -40,11 +40,11 @@ export function CartPage() {
         ) : (
           <div className="grid gap-8 pt-7 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-6">
             <div>
-              <div className="flex items-center justify-between border-b border-cream/15 pb-3 font-mono text-[8px] uppercase tracking-[0.16em] text-cream/40">
+              <div className="flex items-center justify-between border-b border-line pb-3 font-mono text-[8px] uppercase tracking-[0.16em] text-muted">
                 <span>Your selection</span>
                 <span>{pluralise(itemCount, 'piece')}</span>
               </div>
-              <ul className="divide-y divide-cream/15">
+              <ul className="divide-y divide-line">
                 {items.map((item) => (
                   <CartItemRow
                     key={item.product.id}
@@ -54,16 +54,16 @@ export function CartPage() {
                   />
                 ))}
               </ul>
-              <div className="mt-4 flex gap-3 border border-cream/10 bg-cream/[0.04] p-3.5">
+              <div className="mt-4 flex gap-3 border border-line bg-surface p-3.5">
                 <span className="mt-0.5 font-mono text-[10px] text-accent" aria-hidden="true">✓</span>
-                <p className="text-[9px] leading-relaxed text-cream/55 sm:text-[10px]">
+                <p className="text-[9px] leading-relaxed text-muted sm:text-[10px]">
                   One item needs a little time. The key is to order at the At-Home counter. Choose
                   collection after $75, or delivery from the next working day.
                 </p>
               </div>
               <Link
                 to="/shop"
-                className="focus-ring mt-5 inline-flex items-center gap-2 font-mono text-[8px] uppercase tracking-[0.13em] text-cream/50 transition-colors hover:text-accent"
+                className="focus-ring mt-5 inline-flex items-center gap-2 font-mono text-[8px] uppercase tracking-[0.13em] text-muted transition-colors hover:text-accent"
               >
                 <ArrowRight className="h-3.5 w-3.5 rotate-180" aria-hidden="true" />
                 Continue browsing

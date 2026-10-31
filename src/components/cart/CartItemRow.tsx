@@ -17,7 +17,7 @@ export function CartItemRow({ item: { product, quantity }, onQuantityChange, onR
     <li className="grid grid-cols-[68px_minmax(0,1fr)_auto] items-center gap-x-3 py-4 sm:grid-cols-[88px_minmax(0,1fr)_auto] sm:gap-x-4 sm:py-5">
       <Link
         to={`/products/${product.id}`}
-        className="row-span-2 block aspect-square overflow-hidden bg-cream/10 focus-ring sm:row-span-1"
+        className="row-span-2 block aspect-square overflow-hidden bg-canvas-alt focus-ring sm:row-span-1"
         aria-label={`View ${product.title}`}
       >
         <SmartImage
@@ -32,7 +32,7 @@ export function CartItemRow({ item: { product, quantity }, onQuantityChange, onR
       </Link>
 
       <div className="min-w-0 self-end sm:self-center">
-        <p className="font-mono text-[7px] uppercase tracking-[0.16em] text-cream/40 sm:text-[8px]">
+        <p className="font-mono text-[7px] uppercase tracking-[0.16em] text-muted sm:text-[8px]">
           {product.category?.name ?? 'NOVA'}
         </p>
         <h2 className="mt-1 font-display text-[clamp(1.05rem,2vw,1.55rem)] leading-tight tracking-[-0.03em]">
@@ -40,12 +40,12 @@ export function CartItemRow({ item: { product, quantity }, onQuantityChange, onR
             {product.title}
           </Link>
         </h2>
-        <p className="mt-1 hidden text-[10px] text-cream/45 sm:block">
+        <p className="mt-1 hidden text-[10px] text-muted sm:block">
           Ready to dispatch · Standard delivery
         </p>
       </div>
 
-      <p className="row-start-1 self-start pt-1 text-right font-mono text-[9px] tabular text-cream/80 sm:row-start-auto sm:self-center sm:pt-0 sm:text-[10px]">
+      <p className="row-start-1 self-start pt-1 text-right font-mono text-[9px] tabular text-ink sm:row-start-auto sm:self-center sm:pt-0 sm:text-[10px]">
         {formatPrice(product.price * quantity)}
       </p>
 
@@ -54,12 +54,12 @@ export function CartItemRow({ item: { product, quantity }, onQuantityChange, onR
           value={quantity}
           onChange={(nextQuantity) => onQuantityChange(product.id, nextQuantity)}
           label={`quantity of ${product.title}`}
-          tone="inverse"
+          tone="default"
         />
         <button
           type="button"
           onClick={() => onRemove(product.id)}
-          className="focus-ring font-mono text-[7px] uppercase tracking-[0.13em] text-cream/40 transition-colors hover:text-accent"
+          className="focus-ring font-mono text-[7px] uppercase tracking-[0.13em] text-muted transition-colors hover:text-accent"
           aria-label={`Remove ${product.title} from bag`}
         >
           Remove

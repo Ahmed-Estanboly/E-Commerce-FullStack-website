@@ -23,23 +23,23 @@ export function CartRecommendations({
   shopHref = '/shop',
 }: CartRecommendationsProps) {
   return (
-    <section className="mt-14 border-t border-cream/15 pt-5 sm:mt-16" aria-labelledby="cart-recommendations">
+    <section className="mt-14 border-t border-line pt-5 sm:mt-16" aria-labelledby="cart-recommendations">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="font-mono text-[7px] uppercase tracking-[0.18em] text-cream/40">Complete the room</p>
+          <p className="font-mono text-[7px] uppercase tracking-[0.18em] text-muted">Complete the room</p>
           <h2 id="cart-recommendations" className="mt-1 font-display text-2xl tracking-[-0.035em]">
             Pieces to <em className="font-light italic text-accent">consider.</em>
           </h2>
         </div>
         <Link
           to={shopHref}
-          className="focus-ring inline-flex items-center gap-1 font-mono text-[7px] uppercase tracking-[0.12em] text-cream/50 transition-colors hover:text-accent"
+          className="focus-ring inline-flex items-center gap-1 font-mono text-[7px] uppercase tracking-[0.12em] text-muted transition-colors hover:text-accent"
         >
           All pieces <ArrowRight className="h-3 w-3" aria-hidden="true" />
         </Link>
       </div>
       {error ? (
-        <p className="mt-5 text-[11px] text-cream/50" role="status">
+        <p className="mt-5 text-[11px] text-muted" role="status">
           The edit could not be loaded right now. Please try again later.
         </p>
       ) : isLoading && products.length === 0 ? (
@@ -52,7 +52,7 @@ export function CartRecommendations({
         <ul className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4">
           {products.map((product) => (
             <li key={product.id} className="group min-w-0">
-              <div className="relative overflow-hidden bg-cream/10">
+              <div className="relative overflow-hidden bg-canvas-alt">
                 <Link
                   to={`/products/${product.id}`}
                   className="block aspect-[4/5] focus-ring"
@@ -72,13 +72,13 @@ export function CartRecommendations({
                 <button
                   type="button"
                   onClick={() => onAdd(product)}
-                  className="focus-ring absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center border border-cream/35 bg-charcoal/80 text-cream transition-colors hover:border-accent hover:bg-accent hover:text-accent-ink"
+                  className="focus-ring absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center border border-line-strong bg-surface/90 text-ink transition-colors hover:border-accent hover:bg-accent hover:text-accent-ink"
                   aria-label={`Add ${product.title} to bag`}
                 >
                   <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               </div>
-              <p className="mt-2 font-mono text-[7px] uppercase tracking-[0.12em] text-cream/40">
+              <p className="mt-2 font-mono text-[7px] uppercase tracking-[0.12em] text-muted">
                 {product.category?.name ?? 'Selected piece'}
               </p>
               <div className="mt-0.5 flex items-start justify-between gap-2">
@@ -88,7 +88,7 @@ export function CartRecommendations({
                 >
                   {truncate(product.title, 48)}
                 </Link>
-                <span className="shrink-0 pt-0.5 font-mono text-[8px] tabular text-cream/55">
+                <span className="shrink-0 pt-0.5 font-mono text-[8px] tabular text-muted">
                   {formatPrice(product.price)}
                 </span>
               </div>
@@ -96,7 +96,7 @@ export function CartRecommendations({
           ))}
         </ul>
       ) : (
-        <p className="mt-5 text-[11px] text-cream/50">There are no other pieces in the edit just yet.</p>
+        <p className="mt-5 text-[11px] text-muted">There are no other pieces in the edit just yet.</p>
       )}
     </section>
   )

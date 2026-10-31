@@ -23,37 +23,37 @@ export function CartOrderSummary({
   const amountToFreeShipping = Math.max(FREE_SHIPPING_THRESHOLD - subtotal, 0)
 
   return (
-    <aside className="h-fit border border-cream/10 bg-[#181a17] p-4 sm:p-5 lg:sticky lg:top-32">
-      <div className="flex items-center justify-between border-b border-cream/10 pb-3">
-        <p className="font-mono text-[8px] uppercase tracking-[0.17em] text-cream/45">Order summary</p>
-        <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-cream/40">
+    <aside className="h-fit border border-line bg-surface p-4 sm:p-5 lg:sticky lg:top-32">
+      <div className="flex items-center justify-between border-b border-line pb-3">
+        <p className="font-mono text-[8px] uppercase tracking-[0.17em] text-muted">Order summary</p>
+        <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-muted">
           {pluralise(itemCount, 'piece')}
         </p>
       </div>
       <dl className="space-y-2.5 py-4 text-[10px]">
         <div className="flex justify-between gap-3">
-          <dt className="text-cream/55">Subtotal</dt>
+          <dt className="text-muted">Subtotal</dt>
           <dd className="tabular">{formatPrice(subtotal)}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-cream/55">Delivery</dt>
+          <dt className="text-muted">Delivery</dt>
           <dd className="tabular">{delivery === 0 ? 'Complimentary' : formatPrice(delivery)}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-cream/55">Collection</dt>
+          <dt className="text-muted">Collection</dt>
           <dd className="text-right">At-home counter</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-cream/55">Fulfilment</dt>
+          <dt className="text-muted">Fulfilment</dt>
           <dd className="text-right">Collect or delivery</dd>
         </div>
       </dl>
-      <div className="flex items-baseline justify-between border-t border-cream/10 py-4">
+      <div className="flex items-baseline justify-between border-t border-line py-4">
         <span className="font-mono text-[8px] uppercase tracking-[0.14em]">Total</span>
         <span className="font-display text-[21px] tabular">{formatPrice(subtotal + delivery)}</span>
       </div>
       {amountToFreeShipping > 0 ? (
-        <p className="mb-3 border border-cream/10 px-2.5 py-2 font-mono text-[7px] uppercase leading-relaxed tracking-[0.08em] text-cream/45">
+        <p className="mb-3 border border-line px-2.5 py-2 font-mono text-[7px] uppercase leading-relaxed tracking-[0.08em] text-muted">
           Free collection · delivery is complimentary over {formatPrice(FREE_SHIPPING_THRESHOLD)}
         </p>
       ) : (
@@ -66,11 +66,11 @@ export function CartOrderSummary({
       </Link>
       <Link
         to="/shop"
-        className="focus-ring mt-2 flex h-9 items-center justify-center border border-cream/15 font-mono text-[8px] uppercase tracking-[0.14em] text-cream/55 transition-colors hover:border-cream/40 hover:text-cream"
+        className="focus-ring mt-2 flex h-9 items-center justify-center border border-line font-mono text-[8px] uppercase tracking-[0.14em] text-muted transition-colors hover:border-line-strong hover:text-ink"
       >
         Keep looking
       </Link>
-      <p className="mt-3 font-mono text-[7px] uppercase leading-relaxed tracking-[0.09em] text-cream/35">
+      <p className="mt-3 font-mono text-[7px] uppercase leading-relaxed tracking-[0.09em] text-muted">
         Tax included · all fees final · secure checkout
       </p>
     </aside>
