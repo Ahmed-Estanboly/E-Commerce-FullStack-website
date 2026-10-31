@@ -8,6 +8,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import AdminAnalytics from './pages/AdminAnalytics'
 import { buttonStyles } from './components/ui/button-styles'
 
+
 /**
  * Temporary fallback for routes that have not been merged yet.
  * Remove this route once the team's page routes are registered.
@@ -38,6 +39,7 @@ function RoutePlaceholder() {
 function App() {
   return (
     <BrowserRouter>
+     
       <Routes>
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Signup />} />
@@ -48,6 +50,7 @@ function App() {
 
           <Route path="products/:id" element={<ProductPage />} />
 
+      
           {/* Reserved storefront paths. Replace each placeholder with the real
               page when its owner merges; the wildcard stays last. */}
           <Route path="shop" element={<RoutePlaceholder />} />
@@ -57,6 +60,7 @@ function App() {
           <Route path="*" element={<RoutePlaceholder />} />
         </Route>
       </Routes>
+   
     </BrowserRouter>
   )
 }
