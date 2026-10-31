@@ -1,6 +1,7 @@
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
 import { StoreLayout } from './components/layout/store-layout'
 import { HomePage } from './pages/HomePage'
+import { ProductPage } from './pages/ProductPage'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import AdminDashboard from './pages/AdminDashboard'
@@ -45,10 +46,11 @@ function App() {
         <Route element={<StoreLayout />}>
           <Route index element={<HomePage />} />
 
+          <Route path="products/:id" element={<ProductPage />} />
+
           {/* Reserved storefront paths. Replace each placeholder with the real
               page when its owner merges; the wildcard stays last. */}
           <Route path="shop" element={<RoutePlaceholder />} />
-          <Route path="products/:id" element={<RoutePlaceholder />} />
           <Route path="cart" element={<RoutePlaceholder />} />
           <Route path="checkout" element={<RoutePlaceholder />} />
 
