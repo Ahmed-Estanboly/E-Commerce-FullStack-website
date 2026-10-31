@@ -3,6 +3,8 @@ import { StoreLayout } from './components/layout/store-layout'
 import { HomePage } from './pages/HomePage'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import AdminDashboard from './pages/AdminDashboard'
+import AdminAnalytics from './pages/AdminAnalytics'
 import { buttonStyles } from './components/ui/button-styles'
 
 /**
@@ -38,6 +40,8 @@ function App() {
       <Routes>
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Signup />} />
+        <Route path="admin/dashboard" element={<AdminDashboard />} />
+        <Route path="admin/analytics" element={<AdminAnalytics />} />
         <Route element={<StoreLayout />}>
           <Route index element={<HomePage />} />
 
