@@ -37,15 +37,15 @@ const Signup = () => {
   }
 
   return (
-    <main className="relative grid min-h-dvh bg-canvas text-ink lg:grid-cols-[minmax(360px,0.9fr)_minmax(480px,1.1fr)]">
+    <main className="auth-page relative grid min-h-dvh bg-canvas text-ink lg:grid-cols-[minmax(360px,0.9fr)_minmax(480px,1.1fr)]">
       <div className="absolute right-4 top-4 z-20 sm:right-8 sm:top-8">
         <ThemeToggle />
       </div>
-      <section className="relative flex min-h-[360px] flex-col overflow-hidden bg-inverse px-6 py-7 text-inverse-ink sm:px-10 lg:min-h-dvh lg:px-[9%] lg:py-10" aria-label="NOVA store">
+      <section className="auth-art relative flex min-h-[360px] flex-col overflow-hidden bg-inverse px-6 py-7 text-inverse-ink sm:px-10 lg:min-h-dvh lg:px-[9%] lg:py-10" aria-label="NOVA store">
         <div className="absolute -bottom-28 -right-20 h-80 w-80 rounded-full border border-accent/30" aria-hidden="true" />
         <div className="absolute right-16 top-20 h-24 w-24 rounded-full border border-accent/20" aria-hidden="true" />
         <Logo className="relative z-10 text-inverse-ink" brandName="NOVA" />
-        <div className="relative z-10 my-auto max-w-lg py-16">
+        <div className="auth-art-copy relative z-10 my-auto max-w-lg py-16">
           <p className="mb-5 font-mono text-[9px] uppercase tracking-[0.2em] text-accent">Make room for more</p>
           <h1 className="max-w-[530px] font-display text-[clamp(3.2rem,6vw,6.6rem)] leading-[0.88] tracking-[-0.05em]">
             Your world,<br /><em className="font-light text-accent">your edit.</em>
@@ -62,16 +62,16 @@ const Signup = () => {
         </div>
       </section>
 
-      <section className="flex min-h-dvh flex-col justify-center px-6 py-10 sm:px-12 lg:px-[clamp(48px,9vw,130px)]">
+      <section className="auth-panel flex min-h-dvh flex-col justify-center px-6 py-10 sm:px-12 lg:px-[clamp(48px,9vw,130px)]">
         <div className="mx-auto w-full max-w-[390px]">
           <div className="mb-14 lg:hidden"><Logo brandName="NOVA" size="md" /></div>
-          <div className="mb-9">
+          <div className="auth-heading mb-9">
             <p className="eyebrow">A place of your own</p>
             <h2 className="mt-2 font-display text-4xl leading-none tracking-[-0.03em] sm:text-[2.8rem]">Create your account</h2>
             <p className="mt-4 text-[13px] text-muted">Join the NOVA edit and make it yours.</p>
           </div>
 
-          <form className="grid gap-5" onSubmit={handleSubmit} noValidate>
+          <form className="auth-form grid gap-5" onSubmit={handleSubmit} noValidate>
             <div className="grid gap-2">
               <label className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-soft" htmlFor="name">Your name</label>
               <input className="w-full border-0 border-b border-line-strong bg-transparent px-0 py-3 text-sm text-ink outline-none transition-colors placeholder:text-muted/70 focus:border-ink" id="name" name="name" type="text" autoComplete="name" placeholder="Alex Morgan" value={name} onChange={(event) => setName(event.target.value)} aria-invalid={Boolean(error)} />
