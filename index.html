@@ -4,7 +4,29 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>E-commerce</title>
+    <meta
+      name="description"
+      content="NOVA — the world, within reach. A considered edit of fashion, food, technology, furniture, beauty and objects."
+    />
+    <meta name="theme-color" content="#f2f0e8" />
+    <title>NOVA — The world, within reach</title>
+    <script>
+      // Apply the saved theme before paint to avoid a flash of the wrong theme.
+      ;(() => {
+        try {
+          const stored = JSON.parse(localStorage.getItem('nova.theme') || 'null')
+          const preference = stored?.state?.preference || 'system'
+          const dark =
+            preference === 'dark' ||
+            (preference === 'system' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', dark)
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+        } catch {
+          /* first visit — fall back to system styling */
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
