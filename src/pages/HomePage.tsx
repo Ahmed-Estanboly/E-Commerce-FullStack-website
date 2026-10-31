@@ -791,3 +791,4 @@ export function HomePage({ onAddToCart }: HomePageProps) {
     </div>
   )
 }
+  
