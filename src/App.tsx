@@ -1,6 +1,8 @@
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
 import { StoreLayout } from './components/layout/store-layout'
 import { HomePage } from './pages/HomePage'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
 import { buttonStyles } from './components/ui/button-styles'
 
 /**
@@ -34,6 +36,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="login" element={<Login />} />
+        <Route path="register" element={<Signup />} />
         <Route element={<StoreLayout />}>
           <Route index element={<HomePage />} />
 
@@ -43,8 +47,6 @@ function App() {
           <Route path="products/:id" element={<RoutePlaceholder />} />
           <Route path="cart" element={<RoutePlaceholder />} />
           <Route path="checkout" element={<RoutePlaceholder />} />
-          <Route path="login" element={<RoutePlaceholder />} />
-          <Route path="register" element={<RoutePlaceholder />} />
 
           <Route path="*" element={<RoutePlaceholder />} />
         </Route>
