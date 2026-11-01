@@ -9,9 +9,7 @@ import { pluralise } from '../lib/utils'
 export function CartPage() {
   const { items, itemCount, subtotal, addItem, updateQuantity, removeItem } = useCart()
   const { products, isLoading, error } = useStoreProducts(12)
-  const recommendations = products
-    .filter((product) => !items.some((item) => item.product.id === product.id))
-    .slice(0, 3)
+  const recommendations = products.slice(0, 3)
 
   return (
     <div className="cart-page page-enter bg-canvas text-ink">
