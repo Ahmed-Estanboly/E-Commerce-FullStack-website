@@ -117,10 +117,7 @@ const matchesSearch =
   
       {/* Page Introduction */}
       <section className="mb-10 border-b border-line pb-8">
-        <p className="eyebrow mb-4">
-          Home / Shop / All Pieces
-        </p>
-  
+        
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div>
             <p className="eyebrow-strong mb-3">

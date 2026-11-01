@@ -1,4 +1,7 @@
+
 import type { Product } from "../../types/product";
+import { Link } from "react-router-dom";
+import {formatPrice } from "../../lib/utils"
 
 interface ProductCardProps {
   product: Product;
@@ -6,6 +9,7 @@ interface ProductCardProps {
 
 function ProductCard({ product }: ProductCardProps) {
   return (
+    <Link to={`/products/${product.id}`}>
     <article className="group">
       {/* Product Image */}
       <div className="product-media aspect-[3/4] overflow-hidden bg-canvas-alt">
@@ -27,12 +31,16 @@ function ProductCard({ product }: ProductCardProps) {
         <h3 className="text-base font-medium text-ink">
           {product.title}
         </h3>
+       
+       
+        <p className="shrink-0 pt-0.5 text-[13px] tabular text-ink">
+              {formatPrice(product.price)}
+            </p>
 
-        <p className="text-sm text-ink-soft tabular">
-          {product.price.toFixed(2)}
-        </p>
+
       </div>
     </article>
+    </Link>
   );
 }
 
