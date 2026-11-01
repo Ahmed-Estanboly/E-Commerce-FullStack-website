@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Header, type HeaderProps } from './header'
 import { Footer, type FooterProps } from './footer'
+import { useCart } from '../../store/cart-context'
 
 function ScrollManager() {
   const { pathname, search, hash } = useLocation()
@@ -31,6 +32,8 @@ export interface StoreLayoutProps {
  * absent — those belong to other owners in the team project.
  */
 export function StoreLayout({ header, footer }: StoreLayoutProps) {
+  const { itemCount } = useCart()
+
   return (
     <div className="flex min-h-dvh flex-col bg-canvas">
       <a
@@ -40,7 +43,7 @@ export function StoreLayout({ header, footer }: StoreLayoutProps) {
         Skip to content
       </a>
       <ScrollManager />
-      <Header {...header} />
+      <Header {...header} cartCount={itemCount} />
       <main id="main-content" className="flex-1">
         <Outlet />
       </main>

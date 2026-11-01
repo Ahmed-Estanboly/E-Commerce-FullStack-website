@@ -193,6 +193,7 @@ export function departmentForCategory(name?: string): Department | undefined {
   if (value.includes('cloth') || value.includes('shoe') || value.includes('fashion')) {
     return HOME_DEPARTMENTS[0]
   }
+  if (value.includes('food') || value.includes('pantry')) return HOME_DEPARTMENTS[1]
   if (value.includes('electronic') || value.includes('tech')) return HOME_DEPARTMENTS[2]
   if (value.includes('furniture')) return HOME_DEPARTMENTS[3]
   if (value.includes('beauty')) return HOME_DEPARTMENTS[4]

@@ -22,6 +22,7 @@ import {
   presentationForCategory,
 } from '../data/home'
 import { useStoreProducts } from '../hooks/use-products'
+import { useCart } from '../store/cart-context'
 import type { Department } from '../types/home'
 import type { Product } from '../types/product'
 import { cn, formatPrice, pluralise, truncate } from '../lib/utils'
@@ -30,9 +31,8 @@ const TWO_DIGITS = (value: number) => String(value).padStart(2, '0')
 
 export interface HomePageProps {
   /**
-   * Optional quick-add integration. The cart belongs to another owner, so the
-   * homepage never imports a store. Pass a handler and the accent "Add to bag"
-   * controls appear; without it the same slots link to the product instead.
+   * Optional quick-add override. When omitted, the page uses the shared cart
+   * context mounted in `App`, so quick-add works without extra router wiring.
    */
   onAddToCart?: (product: Product) => void
 }
@@ -44,6 +44,7 @@ function AddToBag({ product, onAddToCart }: { product: Product; onAddToCart?: (p
         variant="accent"
         size="sm"
         onClick={() => onAddToCart(product)}
+        aria-label={`Add ${product.title} to bag`}
         rightIcon={<Plus className="h-3.5 w-3.5" aria-hidden="true" />}
       >
         Add to bag
@@ -211,6 +212,8 @@ export function HomePage({ onAddToCart }: HomePageProps) {
   const [activeDepartmentId, setActiveDepartmentId] = useState<string>(HOME_DEPARTMENTS[0].id)
   const [activeServiceId, setActiveServiceId] = useState<string>(HOME_SERVICES[0].id)
   const { products, isLoading, error, refetch } = useStoreProducts()
+  const { addItem } = useCart()
+  const addToCart = onAddToCart ?? addItem
 
   const activeDepartment =
     HOME_DEPARTMENTS.find((department) => department.id === activeDepartmentId) ?? HOME_DEPARTMENTS[0]
@@ -353,7 +356,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
               </div>
             </div>
 
-            <div className="home-hero-collage" aria-label="Featured departments">
+            <div className="home-hero-collage" role="group" aria-label="Featured departments">
               <Link
                 to="/shop?category=fashion"
                 className="home-hero-tile group"
@@ -623,7 +626,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
             <SelectionFeature
               product={featureProduct}
               department={departmentForCategory(featureProduct.category?.name)}
-              onAddToCart={onAddToCart}
+              onAddToCart={addToCart}
             />
             <div>
               {supportingSelection.map((product) => (
@@ -631,7 +634,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
                   key={product.id}
                   product={product}
                   department={departmentForCategory(product.category?.name)}
-                  onAddToCart={onAddToCart}
+                  onAddToCart={addToCart}
                 />
               ))}
               <div className="flex items-center justify-between gap-4 pt-5">
