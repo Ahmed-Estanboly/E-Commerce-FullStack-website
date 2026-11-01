@@ -22,11 +22,13 @@ export interface HeaderProps {
   /** Departments used by the mobile menu links. */
   departments?: Department[]
   /**
-   * Optional dashboard destination, e.g. `/admin/dashboard` or
-   * `/owner/dashboard`. The Dashboard action renders only when this prop is
-   * supplied; the Header performs no role or permission checks.
+   * Optional signed-in dashboard destination, e.g. `/account`.
    */
   dashboardHref?: string
+}
+
+function hasSignedInUser() {
+  return Boolean(window.localStorage.getItem('auth_token') || window.sessionStorage.getItem('auth_token'))
 }
 
 /** Navigation mirrors the routes agreed in the team brief. */
@@ -49,6 +51,8 @@ export function Header({
   const navigate = useNavigate()
   const [searchOpen, setSearchOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false)
+  const [isSignedIn, setIsSignedIn] = useState(hasSignedInUser)
 
   const isActive = (to: string) => {
     if (to.includes('#')) return false
@@ -70,12 +74,26 @@ export function Header({
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
+  useEffect(() => {
+    const syncAuthState = () => setIsSignedIn(hasSignedInUser())
+    window.addEventListener('storage', syncAuthState)
+    return () => window.removeEventListener('storage', syncAuthState)
+  }, [])
+
   const openCart = () => {
     if (onCartClick) {
       onCartClick()
       return
     }
     navigate('/cart')
+  }
+
+  const logout = () => {
+    window.localStorage.removeItem('auth_token')
+    window.sessionStorage.removeItem('auth_token')
+    setAccountMenuOpen(false)
+    setIsSignedIn(false)
+    navigate('/')
   }
 
   return (
@@ -128,16 +146,6 @@ export function Header({
                   {item.label}
                 </Link>
               ))}
-              {dashboardHref ? (
-                <Link
-                  to={dashboardHref}
-                  className="nav-link"
-                  data-active={isActive(dashboardHref)}
-                  aria-current={isActive(dashboardHref) ? 'page' : undefined}
-                >
-                  Dashboard
-                </Link>
-              ) : null}
             </nav>
 
             <div className="flex items-center gap-0.5 sm:gap-1">
@@ -150,7 +158,7 @@ export function Header({
                 <Search className="h-[17px] w-[17px]" strokeWidth={1.5} aria-hidden="true" />
               </button>
               <ThemeToggle />
-              <div className="hidden items-center gap-2 pl-1 lg:flex">
+              {isSignedIn ? <div className="relative ml-1"><button type="button" onClick={() => setAccountMenuOpen((open) => !open)} className="focus-ring flex h-8 w-8 items-center justify-center rounded-full bg-accent font-mono text-[10px] font-medium text-accent-ink transition-transform hover:scale-105" aria-label="Open account menu" aria-expanded={accountMenuOpen}>A</button>{accountMenuOpen ? <div className="absolute right-0 top-10 z-50 grid min-w-40 border border-line bg-surface p-1 shadow-lg"><Link to={dashboardHref ?? '/account'} onClick={() => setAccountMenuOpen(false)} className="px-3 py-2 text-left text-[11px] text-ink transition-colors hover:bg-canvas-alt">Account dashboard</Link><button type="button" onClick={logout} className="px-3 py-2 text-left text-[11px] text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink">Log out</button></div> : null}</div> : <div className="hidden items-center gap-2 pl-1 lg:flex">
                 <Link
                   to="/login"
                   className="nav-link text-[11px] tracking-[0.12em]"
@@ -171,7 +179,7 @@ export function Header({
                 >
                   Register
                 </Link>
-              </div>
+              </div>}
               <button
                 type="button"
                 onClick={openCart}
@@ -229,16 +237,6 @@ export function Header({
               <span className="font-mono text-[9px] text-muted">0{index + 1}</span>
             </Link>
           ))}
-          {dashboardHref ? (
-            <Link
-              to={dashboardHref}
-              className="group flex items-baseline justify-between border-b border-line/60 py-3.5 text-[22px] tracking-[-0.02em] text-ink last:border-0"
-              onClick={() => setMenuOpen(false)}
-            >
-              <span className="font-display">Dashboard</span>
-              <span className="font-mono text-[9px] text-muted">0{navigation.length + 1}</span>
-            </Link>
-          ) : null}
         </nav>
 
         <div className="mt-6 grid gap-2">

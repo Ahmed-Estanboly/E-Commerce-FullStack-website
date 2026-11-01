@@ -9,6 +9,7 @@ import AdminAnalytics from './pages/AdminAnalytics'
 import { buttonStyles } from './components/ui/button-styles'
 import { CartPage } from './pages/CartPage'
 import ProductsPage from './pages/ProductsPage'
+import UserDashboard from './pages/UserDashboard'
 
 
 
@@ -44,11 +45,14 @@ export function AppRouter() {
       <Routes>
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Signup />} />
+        <Route path="account" element={<StoreLayout header={{ dashboardHref: '/account' }} />}>
+          <Route index element={<UserDashboard />} />
+        </Route>
 
         <Route path="admin/dashboard" element={<AdminDashboard />} />
         <Route path="admin/analytics" element={<AdminAnalytics />} />
 
-        <Route element={<StoreLayout />}>
+        <Route element={<StoreLayout header={{ dashboardHref: '/account' }} />}>
           <Route index element={<HomePage />} />
           <Route path="products/:id" element={<ProductPage />} />
 

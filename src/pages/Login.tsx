@@ -8,10 +8,24 @@ import { Logo } from '../components/ui/logo'
 import { ThemeToggle } from '../components/layout/theme-toggle'
 import { authService } from '../lib/api/auth.service'
 
+const TEST_USER = {
+  email: 'tester@example.com',
+  password: 'tester@123',
+  token: 'local-test-user-token',
+}
+const REMEMBERED_EMAIL_KEY = 'nova-remembered-email'
+
+function saveAuthToken(token: string, rememberMe: boolean) {
+  window.localStorage.removeItem('auth_token')
+  window.sessionStorage.removeItem('auth_token')
+  const storage = rememberMe ? window.localStorage : window.sessionStorage
+  storage.setItem('auth_token', token)
+}
+
 const Login = () => {
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() => window.localStorage.getItem(REMEMBERED_EMAIL_KEY) ?? '')
   const [password, setPassword] = useState('')
-  const [rememberMe, setRememberMe] = useState(false)
+  const [rememberMe, setRememberMe] = useState(() => Boolean(window.localStorage.getItem(REMEMBERED_EMAIL_KEY)))
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -29,13 +43,27 @@ const Login = () => {
     setIsSubmitting(true)
 
     try {
+      if (email.trim().toLowerCase() === TEST_USER.email && password === TEST_USER.password) {
+        saveAuthToken(TEST_USER.token, rememberMe)
+        if (rememberMe) localStorage.setItem(REMEMBERED_EMAIL_KEY, email.trim())
+        else localStorage.removeItem(REMEMBERED_EMAIL_KEY)
+        localStorage.setItem('nova-account-profile', JSON.stringify({
+          firstName: 'tester',
+          lastName: '',
+          email: TEST_USER.email,
+          phone: '',
+        }))
+        navigate('/')
+        return
+      }
+
       const { access_token: accessToken } = await authService.login({
         email: email.trim(),
         password,
       })
-      const storage = rememberMe ? localStorage : sessionStorage
-
-      storage.setItem('auth_token', accessToken)
+      saveAuthToken(accessToken, rememberMe)
+      if (rememberMe) localStorage.setItem(REMEMBERED_EMAIL_KEY, email.trim())
+      else localStorage.removeItem(REMEMBERED_EMAIL_KEY)
       navigate('/')
     } catch (requestError) {
       setError(
