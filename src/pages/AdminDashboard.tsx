@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ArrowUpRight, ChevronDown } from '../components/ui/icons'
 import { AdminLayout } from '../components/layout/admin-layout'
+import { Skeleton } from '../components/ui/feedback'
 import { useStoreProducts } from '../hooks/use-products'
 import type { Product } from '../types/product'
 
@@ -8,11 +9,12 @@ const currency = new Intl.NumberFormat('en-IE', { style: 'currency', currency: '
 
 function buildChartPoints(values: number[]) {
   const max = Math.max(...values, 1)
-  return values.map((value, index) => {
+  const points = values.map((value, index) => {
     const x = values.length === 1 ? 355 : 24 + (662 / (values.length - 1)) * index
     const y = 188 - (value / max) * 142
     return `${x} ${y}`
-  }).join(' L')
+  }).join(' L ')
+  return `M ${points}`
 }
 
 function getCategoryStats(products: Product[]) {
@@ -29,6 +31,26 @@ function PanelHeading({ children, action }: { children: string; action?: string 
     <div className="admin-panel-heading">
       <span>{children}</span>
       {action ? <button className="admin-panel-action" type="button">{action}<ChevronDown aria-hidden="true" /></button> : null}
+    </div>
+  )
+}
+
+function AdminDashboardSkeleton() {
+  return (
+    <div className="admin-dashboard-skeleton" aria-label="Loading catalogue dashboard">
+      <section className="admin-metrics" aria-hidden="true">
+        {Array.from({ length: 4 }, (_, index) => (
+          <article key={index}><Skeleton className="h-2 w-16" /><Skeleton className="mt-3 h-8 w-20" /><Skeleton className="mt-2 h-2 w-24" /></article>
+        ))}
+      </section>
+      <div className="admin-primary-grid">
+        <section className="admin-panel"><div className="admin-panel-heading"><Skeleton className="h-2 w-40" /><Skeleton className="h-2 w-24" /></div><div className="admin-chart"><Skeleton className="h-full w-full" /></div></section>
+        <section className="admin-panel"><div className="admin-panel-heading"><Skeleton className="h-2 w-32" /><Skeleton className="h-2 w-20" /></div><div className="space-y-5 p-4">{Array.from({ length: 4 }, (_, index) => <Skeleton key={index} className="h-3 w-full" />)}</div></section>
+      </div>
+      <div className="admin-secondary-grid">
+        {Array.from({ length: 2 }, (_, index) => <section className="admin-panel" key={index}><div className="admin-panel-heading"><Skeleton className="h-2 w-32" /><Skeleton className="h-2 w-20" /></div><div className="space-y-5 p-4">{Array.from({ length: 4 }, (_, row) => <Skeleton key={row} className="h-3 w-full" />)}</div></section>)}
+      </div>
+      <section className="admin-panel"><div className="admin-panel-heading"><Skeleton className="h-2 w-28" /><Skeleton className="h-2 w-20" /></div><div className="space-y-5 p-4">{Array.from({ length: 5 }, (_, index) => <Skeleton key={index} className="h-3 w-full" />)}</div></section>
     </div>
   )
 }
@@ -53,9 +75,9 @@ const AdminDashboard = () => {
               <h1>The house,<br /><em>at a glance.</em></h1>
               <p>Product, category and pricing performance from the connected catalogue API. Order and stock data will appear when those endpoints are available.</p>
             </div>
-            <div className="admin-intro-actions"><button className="admin-outline-button" type="button">Last 6 months <ChevronDown aria-hidden="true" /></button><button className="admin-outline-button" type="button">Export CSV</button><button className="admin-accent-button" type="button">New demo order <ArrowUpRight aria-hidden="true" /></button></div>
           </div>
 
+          {isLoading && products.length === 0 ? <AdminDashboardSkeleton /> : <>
           <section className="admin-metrics" aria-label="Catalogue key performance indicators">
             <article><span>Products</span><strong>{isLoading ? '—' : products.length}</strong><small className="positive">Live catalogue count</small></article>
             <article><span>Categories</span><strong>{isLoading ? '—' : categoryStats.length}</strong><small className="positive">Live category count</small></article>
@@ -75,8 +97,9 @@ const AdminDashboard = () => {
             <section className="admin-panel"><PanelHeading action="Total value">Category performance</PanelHeading><div className="branch-list">{categoryStats.slice(0, 5).map((category, index) => <div className="branch-row" key={category.name}><div><span>{category.name}</span><small>{currency.format(category.total)} · {category.count} items</small></div><i className={`branch-bar ${index === 0 ? 'branch-lime' : ''}`} style={{ width: `${categoryStats[0] ? category.total / categoryStats[0].total * 100 : 0}%` }} /></div>)}</div><p className="panel-footnote">Grouped from product categories<br />Calculated from listed prices</p></section>
           </div>
 
-          <section className="admin-panel admin-orders-panel"><PanelHeading action="Live catalogue">Product feed</PanelHeading><div className="admin-table admin-orders-table"><div className="admin-table-head"><span>Product ID</span><span>Product</span><span>Category</span><span>Updated</span><span>Price</span><span>Source</span><span /></div>{latestProducts.map((product) => <div className="admin-table-row" key={product.id}><span>#{product.id}</span><span>{product.title}</span><span>{product.category.name}</span><span>{new Date(product.updatedAt).toLocaleDateString()}</span><span>{currency.format(product.price)}</span><span><em className="order-status status-complete">API</em></span><button className="admin-row-action" type="button">View</button></div>)}</div></section>
+          <section className="admin-panel admin-orders-panel"><PanelHeading action="Live catalogue">Product feed</PanelHeading><div className="admin-table admin-orders-table"><div className="admin-table-head"><span>Product ID</span><span>Product</span><span>Category</span><span>Updated</span><span>Price</span><span>Source</span><span /></div>{latestProducts.map((product) => <div className="admin-table-row" key={product.id}><span>#{product.id}</span><span>{product.title}</span><span>{product.category.name}</span><span>{new Date(product.updatedAt).toLocaleDateString()}</span><span>{currency.format(product.price)}</span><span><em className="order-status status-complete">API</em></span><Link className="admin-row-action" to={`/products/${product.id}`}>View</Link></div>)}</div></section>
           <footer className="admin-footer"><span>LIVE CATALOGUE · ESCUELAJS API</span><span>{error ? 'API ERROR · RETRY AVAILABLE' : isLoading ? 'LOADING CATALOGUE' : `LAST REFRESHED · ${products.length} PRODUCTS`}</span></footer>
+          </>}
         </div>
     </AdminLayout>
   )

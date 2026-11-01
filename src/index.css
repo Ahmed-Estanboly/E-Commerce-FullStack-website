@@ -972,10 +972,17 @@
 .admin-sidebar-meta { margin: 28px 10px 0; padding-top: 12px; border-top: 1px solid rgb(245 245 240 / 0.1); color: rgb(245 245 240 / 0.32); font-family: 'IBM Plex Mono', monospace; font-size: 7px; line-height: 1.7; letter-spacing: 0.06em; }
 .admin-main { min-height: 100dvh; margin-left: 218px; }
 .admin-topbar { display: flex; height: 58px; align-items: center; gap: 16px; padding: 0 30px; border-bottom: 1px solid var(--line); background: var(--header); backdrop-filter: blur(12px); }
-.admin-search { display: flex; width: min(390px, 42vw); align-items: center; gap: 9px; padding: 0 10px; border: 1px solid var(--line); background: var(--surface); }
+.admin-search { position: relative; display: flex; width: min(390px, 42vw); align-items: center; gap: 9px; padding: 0 10px; border: 1px solid var(--line); background: var(--surface); }
 .admin-search svg { width: 12px; height: 12px; color: var(--muted); stroke-width: 1.5; }
 .admin-search input { width: 100%; height: 29px; border: 0; outline: 0; color: var(--ink); background: transparent; font-size: 10px; }
 .admin-search input::placeholder { color: var(--muted); }
+.admin-search-results { position: absolute; top: calc(100% + 6px); right: -1px; left: -1px; z-index: 20; border: 1px solid var(--line); background: var(--surface); box-shadow: 0 12px 28px rgb(0 0 0 / 0.08); }
+.admin-search-result { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px; color: var(--ink); font-size: 10px; text-decoration: none; }
+.admin-search-result + .admin-search-result { border-top: 1px solid var(--line); }
+.admin-search-result:hover { background: var(--canvas-alt); }
+.admin-search-result span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-search-result small, .admin-search-status { color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 7px; text-transform: uppercase; }
+.admin-search-status { margin: 0; padding: 12px 10px; }
 .admin-topbar-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 .admin-icon-button, .admin-profile { display: flex; align-items: center; border: 1px solid var(--line); color: var(--ink); background: var(--surface); }
 .admin-icon-button { width: 29px; height: 29px; justify-content: center; }
