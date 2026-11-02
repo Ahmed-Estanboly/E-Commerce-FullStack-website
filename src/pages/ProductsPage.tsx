@@ -5,10 +5,55 @@ import { productsService } from "../lib/api/products.service";
 
 import ProductList from "../components/products/ProductList";
 import Pagination from "../components/products/Pagination";
+import { Skeleton } from "../components/ui/feedback";
 
 import type { Product, ProductCategory } from "../types/product";
 
 const PAGE_SIZE = 9;
+
+function ProductsPageSkeleton() {
+  return (
+    <main
+      className="min-h-screen bg-canvas px-5 py-10 sm:px-8 lg:px-10"
+      aria-label="Loading products"
+    >
+      <section className="mb-10 border-b border-line pb-8">
+        <Skeleton className="h-3 w-36" />
+        <Skeleton className="mt-5 h-16 w-72 max-w-full" />
+        <Skeleton className="mt-4 h-3 w-48" />
+      </section>
+
+      <section className="grid grid-cols-1 gap-8 md:grid-cols-[190px_minmax(0,1fr)] lg:gap-12">
+        <aside className="hidden border-r border-line pr-6 md:block">
+          <Skeleton className="h-3 w-24" />
+          <div className="mt-6 space-y-5">
+            {Array.from({ length: 5 }, (_, index) => (
+              <Skeleton key={index} className="h-3 w-28" />
+            ))}
+          </div>
+        </aside>
+
+        <div className="min-w-0">
+          <div className="mb-6 flex justify-between border-b border-line pb-4">
+            <Skeleton className="h-3 w-40" />
+            <Skeleton className="h-9 w-48" />
+          </div>
+
+          <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: PAGE_SIZE }, (_, index) => (
+              <div key={index}>
+                <Skeleton className="aspect-[3/4] w-full" />
+                <Skeleton className="mt-4 h-2.5 w-20" />
+                <Skeleton className="mt-3 h-4 w-4/5" />
+                <Skeleton className="mt-3 h-3 w-16" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
 
 function ProductsPage() {
   // جلب كل المنتجات مرة واحدة
@@ -109,7 +154,7 @@ const matchesSearch =
   }, [searchTerm, selectedCategory, minPrice, maxPrice, sortBy]);
 
   // حالات التحميل والخطأ
-  if (isLoading) return <p>Loading products...</p>;
+  if (isLoading) return <ProductsPageSkeleton />;
   if (error) return <p>Error: {error}</p>;
 
   return (
@@ -166,7 +211,7 @@ const matchesSearch =
               {categories.map((category) => (
                 <label
                   key={category.id}
-                  className="flex cursor-pointer items-center gap-2 text-xs text-ink-soft"
+                  className="flex min-w-0 cursor-pointer items-center gap-2 text-xs text-ink-soft"
                 >
                   <input
                     type="checkbox"
@@ -180,7 +225,9 @@ const matchesSearch =
                     }
                     className="accent-accent"
                   />
-                  {category.name}
+                  <span className="min-w-0 truncate" title={category.name}>
+                    {category.name}
+                  </span>
                 </label>
               ))}
             </div>
