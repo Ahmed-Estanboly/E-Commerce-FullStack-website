@@ -7,12 +7,8 @@ import { Button } from '../components/ui/button'
 import { Logo } from '../components/ui/logo'
 import { ThemeToggle } from '../components/layout/theme-toggle'
 import { authService } from '../lib/api/auth.service'
+import { FAKE_ACCOUNT_STORAGE_KEY, findFakeAccount, type FakeAccount } from '../lib/fake-auth'
 
-const TEST_USER = {
-  email: 'tester@example.com',
-  password: 'tester@123',
-  token: 'local-test-user-token',
-}
 const REMEMBERED_EMAIL_KEY = 'nova-remembered-email'
 
 function saveAuthToken(token: string, rememberMe: boolean) {
@@ -20,6 +16,13 @@ function saveAuthToken(token: string, rememberMe: boolean) {
   window.sessionStorage.removeItem('auth_token')
   const storage = rememberMe ? window.localStorage : window.sessionStorage
   storage.setItem('auth_token', token)
+}
+
+function saveFakeAccount(account: FakeAccount, rememberMe: boolean) {
+  window.localStorage.removeItem(FAKE_ACCOUNT_STORAGE_KEY)
+  window.sessionStorage.removeItem(FAKE_ACCOUNT_STORAGE_KEY)
+  const storage = rememberMe ? window.localStorage : window.sessionStorage
+  storage.setItem(FAKE_ACCOUNT_STORAGE_KEY, JSON.stringify(account))
 }
 
 const Login = () => {
@@ -43,17 +46,19 @@ const Login = () => {
     setIsSubmitting(true)
 
     try {
-      if (email.trim().toLowerCase() === TEST_USER.email && password === TEST_USER.password) {
-        saveAuthToken(TEST_USER.token, rememberMe)
+      const fakeAccount = findFakeAccount(email, password)
+      if (fakeAccount) {
+        saveAuthToken(`local-${fakeAccount.role}-token`, rememberMe)
+        saveFakeAccount(fakeAccount, rememberMe)
         if (rememberMe) localStorage.setItem(REMEMBERED_EMAIL_KEY, email.trim())
         else localStorage.removeItem(REMEMBERED_EMAIL_KEY)
         localStorage.setItem('nova-account-profile', JSON.stringify({
-          firstName: 'tester',
+          firstName: fakeAccount.name.split(' ')[0],
           lastName: '',
-          email: TEST_USER.email,
+          email: fakeAccount.email,
           phone: '',
         }))
-        navigate('/')
+        navigate(fakeAccount.destination)
         return
       }
 
@@ -109,7 +114,7 @@ const Login = () => {
               <div className="auth-heading mb-9">
                 <p className="eyebrow">Welcome back</p>
                 <h2 className="mt-2 font-display text-4xl leading-none tracking-[-0.03em] sm:text-[2.8rem]">Sign in to NOVA</h2>
-                <p className="mt-4 text-[13px] text-muted">Pick up where you left off.</p>
+                <p className="mt-4 text-[13px] text-muted">Pick up where you left off. Demo accounts are ready below.</p>
               </div>
 
               <form className="auth-form grid gap-6" onSubmit={handleSubmit} noValidate>
@@ -162,6 +167,12 @@ const Login = () => {
                   {isSubmitting ? 'Signing in...' : 'Sign in'}
                 </Button>
               </form>
+
+              <div className="mt-7 border border-line bg-surface p-3 text-[10px] text-muted">
+                <p className="mb-2 font-mono text-[8px] uppercase tracking-[0.08em] text-ink-soft">Demo access</p>
+                <p>Admin: admin@nova.local / admin123</p>
+                <p>Branch owners: ava@nova.local / ava123, noah@nova.local / noah123, mia@nova.local / mia123</p>
+              </div>
 
               <p className="mt-8 text-center text-xs text-muted">New to NOVA? <Link className="text-ink underline underline-offset-4 hover:text-ink-soft" to="/register">Create an account</Link></p>
           </>

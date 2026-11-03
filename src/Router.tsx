@@ -1,4 +1,5 @@
-import { BrowserRouter, Navigate, Link, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Link, Route, Routes, useParams } from 'react-router-dom'
+import type { ReactNode } from 'react'
 import { StoreLayout } from './components/layout/store-layout'
 import { HomePage } from './pages/HomePage'
 import { ProductPage } from './pages/ProductPage'
@@ -6,10 +7,12 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminAnalytics from './pages/AdminAnalytics'
+import AdminBranches from './pages/AdminBranches'
 import { buttonStyles } from './components/ui/button-styles'
 import { CartPage } from './pages/CartPage'
 import ProductsPage from './pages/ProductsPage'
 import UserDashboard from './pages/UserDashboard'
+import { getStoredFakeAccount, type FakeAccountRole } from './lib/fake-auth'
 
 
 
@@ -39,6 +42,18 @@ function RoutePlaceholder() {
     </section>
   )
 }
+
+function FakeRoleRoute({ role, children }: { role: FakeAccountRole; children: ReactNode }) {
+  const account = getStoredFakeAccount()
+  const { branchName } = useParams<{ branchName?: string }>()
+
+  if (!account) return <Navigate to="/login" replace />
+  if (account.role !== role) return <Navigate to={account.destination} replace />
+  if (role === 'branch-owner' && account.branchName !== branchName) return <Navigate to={account.destination} replace />
+
+  return <>{children}</>
+}
+
 export function AppRouter() {
   return (
     <BrowserRouter>
@@ -49,8 +64,10 @@ export function AppRouter() {
           <Route index element={<UserDashboard />} />
         </Route>
 
-        <Route path="admin/dashboard" element={<AdminDashboard />} />
-        <Route path="admin/analytics" element={<AdminAnalytics />} />
+        <Route path="admin/dashboard" element={<FakeRoleRoute role="admin"><AdminDashboard /></FakeRoleRoute>} />
+        <Route path="admin/analytics" element={<FakeRoleRoute role="admin"><AdminAnalytics /></FakeRoleRoute>} />
+        <Route path="admin/branches" element={<FakeRoleRoute role="admin"><AdminBranches /></FakeRoleRoute>} />
+        <Route path=":branchName/dashboard" element={<FakeRoleRoute role="branch-owner"><AdminBranches /></FakeRoleRoute>} />
 
         <Route element={<StoreLayout header={{ dashboardHref: '/account' }} />}>
           <Route index element={<HomePage />} />

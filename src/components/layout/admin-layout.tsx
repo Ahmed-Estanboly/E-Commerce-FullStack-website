@@ -5,11 +5,12 @@ import { Logo } from '../ui/logo'
 import { useStoreProducts } from '../../hooks/use-products'
 import { ThemeToggle } from './theme-toggle'
 
-type AdminPage = 'dashboard' | 'analytics'
+type AdminPage = 'dashboard' | 'analytics' | 'branches'
 
 const navigation = [
   { label: 'Dashboard', icon: Store, path: '/admin/dashboard', page: 'dashboard' as AdminPage },
   { label: 'Analytics', icon: ArrowUpRight, path: '/admin/analytics', page: 'analytics' as AdminPage },
+  { label: 'Branches', icon: Store, path: '/admin/branches', page: 'branches' as AdminPage },
   { label: 'Orders', icon: ShoppingBag, path: '/admin/dashboard' },
   { label: 'Inventory', icon: Package, path: '/admin/dashboard' },
   { label: 'Customers', icon: Users, path: '/admin/dashboard' },
@@ -44,17 +45,17 @@ export function AdminLayout({ children, activePage, searchPlaceholder = 'Search 
         </div>
         <nav className="admin-nav" aria-label="Admin navigation">
           <p className="admin-nav-label">Overview</p>
-          {navigation.slice(0, 2).map(({ label, icon: Icon, path, page }) => (
+          {navigation.slice(0, 3).map(({ label, icon: Icon, path, page }) => (
             <Link className={`admin-nav-item${page === activePage ? ' is-active' : ''}`} key={label} to={path} onClick={closeSidebar}>
               <Icon aria-hidden="true" /><span>{label}</span>
             </Link>
           ))}
           <p className="admin-nav-label">Operations</p>
-          {navigation.slice(2, 5).map(({ label, icon: Icon, path }) => (
+          {navigation.slice(3, 6).map(({ label, icon: Icon, path }) => (
             <Link className="admin-nav-item" key={label} to={path} onClick={closeSidebar}><Icon aria-hidden="true" /><span>{label}</span>{label === 'Orders' ? <small>84</small> : null}</Link>
           ))}
           <p className="admin-nav-label">Catalogue</p>
-          {navigation.slice(5).map(({ label, icon: Icon, path }) => <Link className="admin-nav-item" key={label} to={path} onClick={closeSidebar}><Icon aria-hidden="true" /><span>{label}</span></Link>)}
+          {navigation.slice(6).map(({ label, icon: Icon, path }) => <Link className="admin-nav-item" key={label} to={path} onClick={closeSidebar}><Icon aria-hidden="true" /><span>{label}</span></Link>)}
         </nav>
         <div className="admin-sidebar-bottom">
           <Link className="admin-store-link" to="/"><ArrowUpRight aria-hidden="true" /><span>View storefront</span></Link>

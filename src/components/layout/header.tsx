@@ -6,6 +6,7 @@ import { Drawer } from '../ui/drawer'
 import { Logo } from '../ui/logo'
 import { SearchOverlay } from './search-overlay'
 import { ThemeToggle } from './theme-toggle'
+import { FAKE_ACCOUNT_STORAGE_KEY } from '../../lib/fake-auth'
 import { HOME_DEPARTMENTS } from '../../data/home'
 import type { Department } from '../../types/home'
 import { cn } from '../../lib/utils'
@@ -91,6 +92,8 @@ export function Header({
   const logout = () => {
     window.localStorage.removeItem('auth_token')
     window.sessionStorage.removeItem('auth_token')
+    window.localStorage.removeItem(FAKE_ACCOUNT_STORAGE_KEY)
+    window.sessionStorage.removeItem(FAKE_ACCOUNT_STORAGE_KEY)
     setAccountMenuOpen(false)
     setIsSignedIn(false)
     navigate('/')
