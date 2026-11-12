@@ -36,4 +36,21 @@ export class ProductsController {
     const data = await this.productsService.remove(id);
     return {data, status: 'success', message: 'Product deleted successfuly'};
   }
+  @Get(':id/related')
+  async getRelatedProducts(@Param('id', ParseIntPipe) id: number) {
+    const data = await this.productsService.getRelatedProducts(id.toString());
+    return {data, status: 'success', message: 'Related products retrieved successfuly'};
+  }
+
+  @Get('slug/:slug')
+  async getProductBySlug(@Param('slug') slug: string) {
+    const data = await this.productsService.getProductBySlug(slug);
+    return {data, status: 'success', message: 'Product retrieved successfuly'};
+  }
+
+  @Get('slug/:slug/related')
+  async getRelatedProductBySlug(@Param('slug') slug: string) {
+    const data = await this.productsService.getRelatedProductBySlug(slug);
+    return {data, status: 'success', message: 'Related products retrieved successfuly'};
+  }
 }

@@ -20,6 +20,9 @@ export class Product {
     
     @Prop()
     images: string[];
+
+    @Prop()
+    slug: string;
 }
 export type ProductDocument = HydratedDocument<Product>;
 export const ProductSchema = SchemaFactory.createForClass(Product);

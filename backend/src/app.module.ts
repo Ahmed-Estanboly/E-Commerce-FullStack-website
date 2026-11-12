@@ -5,6 +5,7 @@ import { ProductsModule } from './products/products.module.js';
 import { Mongoose } from 'mongoose';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CategoryModule } from './category/category.module.js';
 
 @Module({
   imports: [
@@ -19,7 +20,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       useFactory: async (configService: ConfigService) => ({
         uri: configService.get<string>('MONGODB_URI'),
       }),
-    })],
+    }),
+    CategoryModule],
   controllers: [AppController],
   providers: [AppService],
 })

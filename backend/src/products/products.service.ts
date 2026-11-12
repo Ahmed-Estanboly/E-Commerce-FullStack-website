@@ -21,7 +21,9 @@ export class ProductsService implements OnApplicationBootstrap {
       return; // Skip if data already exists
     }
 
-    await this.productModel.insertMany(initialProducts);
+    await this.productModel.insertMany(
+      initialProducts.map((product) => ({ ...product, categoryId: product.category.id })),
+    );
     console.log(`Seeded ${initialProducts.length} products on startup.`);
   }
 
@@ -32,7 +34,7 @@ export class ProductsService implements OnApplicationBootstrap {
 
   async create(createProductDto: CreateProductDto) {
     const id = await this.getNextId();
-    return this.productModel.create({ ...createProductDto, id });
+    return this.productModel.create({ ...createProductDto, id, slug: createProductDto.title.toLowerCase().replace(/ /g, '-') });
   }
 
   findAll() {
@@ -49,5 +51,30 @@ export class ProductsService implements OnApplicationBootstrap {
 
   remove(id: number) {
     return this.productModel.findOneAndDelete({ id }).exec();
+  }
+  findByCategoryId(categoryId: number) {
+    return this.productModel.find({ categoryId }).exec();
+  }
+
+  async getRelatedProducts(id: string) {
+    const product = await this.productModel.findOne({ id: parseInt(id) }).exec();
+    if (!product) {
+      return [];
+    }
+    const category = product.categoryId;
+    return this.productModel.find({ categoryId: category }).exec();
+  }
+
+  getProductBySlug(slug: string) {
+    return this.productModel.findOne({ slug }).exec();
+  }
+
+  async getRelatedProductBySlug(slug: string) {
+    const product = await this.getProductBySlug(slug);
+    if (!product) {
+      return [];
+    }
+    const category = product.categoryId;
+    return this.productModel.find({ categoryId: category }).exec();
   }
 }
