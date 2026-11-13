@@ -6,6 +6,7 @@ import { Mongoose } from 'mongoose';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CategoryModule } from './category/category.module.js';
+import { UsersModule } from './users/users.module.js';
 
 @Module({
   imports: [
@@ -21,7 +22,8 @@ import { CategoryModule } from './category/category.module.js';
         uri: configService.get<string>('MONGODB_URI'),
       }),
     }),
-    CategoryModule],
+    CategoryModule,
+    UsersModule],
   controllers: [AppController],
   providers: [AppService],
 })

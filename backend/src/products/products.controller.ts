@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import { ProductsService } from './products.service.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
-import { Category } from '../category/schema/category.schema.js';
+import { Category } from '../category/schemas/category.schema.js';
 
 @Controller('products')
 export class ProductsController {
