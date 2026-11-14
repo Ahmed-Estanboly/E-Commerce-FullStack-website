@@ -13,6 +13,7 @@ import { CartPage } from './pages/CartPage'
 import ProductsPage from './pages/ProductsPage'
 import UserDashboard from './pages/UserDashboard'
 import { getStoredFakeAccount, type FakeAccountRole } from './lib/fake-auth'
+import CheckoutPage from './pages/CheckoutPage'
 
 
 
@@ -76,7 +77,7 @@ export function AppRouter() {
           <Route path="shop" element={<ProductsPage />} />
           <Route path="products" element={<Navigate to="/shop" replace />} />
           <Route path="cart" element={<CartPage />} />
-          <Route path="checkout" element={<RoutePlaceholder />} />
+          <Route path="checkout" element={<CheckoutPage />} />
 
           <Route path="*" element={<RoutePlaceholder />} />
         </Route>
