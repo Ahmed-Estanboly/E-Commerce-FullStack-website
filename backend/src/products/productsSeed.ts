@@ -1,4 +1,4 @@
-export const initialProducts = [
+const seededProducts = [
 {
 "id": 1,
 "title": "1123",
@@ -1616,4 +1616,9 @@ export const initialProducts = [
 "creationAt": "2026-11-11T17:06:49.000Z",
 "updatedAt": "2026-11-11T17:06:49.000Z"
 }
-]
+];
+
+export const initialProducts = seededProducts.map((product) => ({
+  ...product,
+  stock: Math.floor(Math.random() * 100) + 1,
+}));

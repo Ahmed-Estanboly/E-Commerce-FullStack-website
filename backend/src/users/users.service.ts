@@ -93,7 +93,7 @@ export class UsersService {
       .select('+password')
       .exec();
 
-    if (!user) return null;
+    if (!user) return false;
 
     const isMatch = await bcrypt.compare(plainPassword, user.password);
     return isMatch ? 'true' : 'false';

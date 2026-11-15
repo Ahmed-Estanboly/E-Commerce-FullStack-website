@@ -23,6 +23,9 @@ export class Product {
 
     @Prop()
     slug: string;
+    
+    @Prop()
+    stock:number;
 }
 export type ProductDocument = HydratedDocument<Product>;
 export const ProductSchema = SchemaFactory.createForClass(Product);

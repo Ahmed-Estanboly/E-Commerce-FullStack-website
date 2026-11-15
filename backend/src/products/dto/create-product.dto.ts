@@ -1,4 +1,4 @@
-import { ArrayNotEmpty, IsArray, IsInt, IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
+import { ArrayNotEmpty, IsArray, IsInt, IsNotEmpty, IsNumber, IsPositive, IsString, Min } from 'class-validator';
 
 export class CreateProductDto {
     @IsString()
@@ -17,5 +17,7 @@ export class CreateProductDto {
     @ArrayNotEmpty()
     @IsString({ each: true })
     images: string[];
-
+    @IsNumber()
+    @IsPositive()
+    stock: number;
 }
