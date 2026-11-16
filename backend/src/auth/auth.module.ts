@@ -7,7 +7,7 @@ import { UsersModule } from '../users/users.module.js';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
-export const JWT_REFRESH_SERVICE = 'JWT_REFRESH_SERVICE';
+import { JWT_REFRESH_SERVICE } from './tokens.js';
 
 @Module({
   imports: [

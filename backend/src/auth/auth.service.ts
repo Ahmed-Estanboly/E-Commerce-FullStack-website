@@ -6,7 +6,7 @@ import { UsersService } from '../users/users.service.js';
 import { registerDto } from './dto/register.dto.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { JwtService } from '@nestjs/jwt';
-import { JWT_REFRESH_SERVICE } from './auth.module.js';
+import { JWT_REFRESH_SERVICE } from './tokens.js';
 import { Inject } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'crypto';
