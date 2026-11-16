@@ -43,47 +43,47 @@ export class ProductsController {
   @Post()
   async create(@Body() createProductDto: CreateProductDto) {
     const data = await this.withCategory(await this.productsService.create(createProductDto));
-    return {data, status: 'success', message: 'Product added successfuly'};
+    return data;
   }
 
   @Get()
   async findAll() {
     const data = await this.withCategory(await this.productsService.findAll());
-    return {data, status: 'success', message: 'Product retrieved successfuly'};
+    return data;
   }
 
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const data = await this.withCategory(await this.productsService.findOne(id));
-    return {data, status: 'success', message: 'Product retrieved successfuly'};
+    return data;
   }
 
   @Patch(':id')
   async update(@Param('id', ParseIntPipe) id: number, @Body() updateProductDto: UpdateProductDto) { 
     const data = await this.withCategory(await this.productsService.update(id, updateProductDto));
-    return {data, status: 'success', message: 'Product updated successfuly'};
+    return data;
   }
 
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
     const data = await this.withCategory(await this.productsService.remove(id));
-    return {data, status: 'success', message: 'Product deleted successfuly'};
+    return data;
   }
   @Get(':id/related')
   async getRelatedProducts(@Param('id', ParseIntPipe) id: number) {
     const data = await this.withCategory(await this.productsService.getRelatedProducts(id.toString()));
-    return {data, status: 'success', message: 'Related products retrieved successfuly'};
+    return data;
   }
 
   @Get('slug/:slug')
   async getProductBySlug(@Param('slug') slug: string) {
     const data = await this.withCategory(await this.productsService.getProductBySlug(slug));
-    return {data, status: 'success', message: 'Product retrieved successfuly'};
+    return data;
   }
 
   @Get('slug/:slug/related')
   async getRelatedProductBySlug(@Param('slug') slug: string) {
     const data = await this.withCategory(await this.productsService.getRelatedProductBySlug(slug));
-    return {data, status: 'success', message: 'Related products retrieved successfuly'};
+    return data;
   }
 }

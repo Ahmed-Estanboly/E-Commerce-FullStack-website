@@ -20,6 +20,9 @@ export class User {
 
     @Prop()
     avatar: string;
+
+    @Prop({ select: false })
+    refreshToken?: string;
 }
 
 export type UserDocument = HydratedDocument<User>;

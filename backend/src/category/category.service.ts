@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto.js';
 import { UpdateCategoryDto } from './dto/update-category.dto.js';
 import { InjectModel } from '@nestjs/mongoose';
@@ -28,8 +28,14 @@ export class CategoryService {
     console.log(`Seeded ${categorySeed.length} categories on startup.`);
   }
 
-  async nextId(){
-    return await this.categoryModel.countDocuments() + 1;
+  async nextId() {
+    const lastCategory = await this.categoryModel
+      .findOne()
+      .sort({ id: -1 })
+      .select('id')
+      .lean()
+      .exec();
+    return (lastCategory?.id ?? 0) + 1;
   }
 
   async create(createCategoryDto: CreateCategoryDto) {
@@ -42,20 +48,36 @@ export class CategoryService {
     return this.categoryModel.find().exec();
   }
 
-  findOne(id: number) {
-    return this.categoryModel.findOne({ id }).exec();
+  async findOne(id: number) {
+    const category = await this.categoryModel.findOne({ id }).exec();
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+    return category;
   }
 
-  update(id: number, updateCategoryDto: UpdateCategoryDto) {
-    return this.categoryModel.findOneAndUpdate({ id }, updateCategoryDto, {new: true}).exec();
+  async update(id: number, updateCategoryDto: UpdateCategoryDto) {
+    const category = await this.categoryModel.findOneAndUpdate({ id }, updateCategoryDto, { new: true }).exec();
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+    return category;
   }
 
-  remove(id: number) {
-    return this.categoryModel.findOneAndDelete({ id }).exec();
+  async remove(id: number) {
+    const category = await this.categoryModel.findOneAndDelete({ id }).exec();
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+    return category;
   }
 
-  getBySlug(slug: string) {
-    return this.categoryModel.findOne({ slug }).exec();
+  async getBySlug(slug: string) {
+    const category = await this.categoryModel.findOne({ slug }).exec();
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+    return category;
   }
 
   getProductsByCategory(id:number){

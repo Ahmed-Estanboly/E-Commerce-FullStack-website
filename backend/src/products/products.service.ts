@@ -1,4 +1,4 @@
-import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Injectable, NotFoundException, OnApplicationBootstrap } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
 import { InjectModel } from '@nestjs/mongoose';
@@ -27,9 +27,14 @@ export class ProductsService implements OnApplicationBootstrap {
     console.log(`Seeded ${initialProducts.length} products on startup.`);
   }
 
-  async getNextId(){
-    let size = await this.productModel.countDocuments();
-    return size + 1;
+  async getNextId() {
+    const lastProduct = await this.productModel
+      .findOne()
+      .sort({ id: -1 })
+      .select('id')
+      .lean()
+      .exec();
+    return (lastProduct?.id ?? 0) + 1;
   }
 
   async create(createProductDto: CreateProductDto) {
@@ -41,16 +46,28 @@ export class ProductsService implements OnApplicationBootstrap {
     return this.productModel.find().exec();
   }
 
-  findOne(id: number) {
-    return this.productModel.findOne({id}).exec();
+  async findOne(id: number) {
+    const product = await this.productModel.findOne({ id }).exec();
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+    return product;
   }
 
-  update(id: number, updateProductDto: UpdateProductDto) {
-    return this.productModel.findOneAndUpdate({ id }, updateProductDto, { new: true }).exec();
+  async update(id: number, updateProductDto: UpdateProductDto) {
+    const product = await this.productModel.findOneAndUpdate({ id }, updateProductDto, { new: true }).exec();
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+    return product;
   }
 
-  remove(id: number) {
-    return this.productModel.findOneAndDelete({ id }).exec();
+  async remove(id: number) {
+    const product = await this.productModel.findOneAndDelete({ id }).exec();
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+    return product;
   }
   findByCategoryId(categoryId: number) {
     return this.productModel.find({ categoryId }).exec();
@@ -59,21 +76,22 @@ export class ProductsService implements OnApplicationBootstrap {
   async getRelatedProducts(id: string) {
     const product = await this.productModel.findOne({ id: parseInt(id) }).exec();
     if (!product) {
-      return [];
+      throw new NotFoundException('Product not found');
     }
     const category = product.categoryId;
     return this.productModel.find({ categoryId: category }).exec();
   }
 
-  getProductBySlug(slug: string) {
-    return this.productModel.findOne({ slug }).exec();
+  async getProductBySlug(slug: string) {
+    const product = await this.productModel.findOne({ slug }).exec();
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+    return product;
   }
 
   async getRelatedProductBySlug(slug: string) {
     const product = await this.getProductBySlug(slug);
-    if (!product) {
-      return [];
-    }
     const category = product.categoryId;
     return this.productModel.find({ categoryId: category }).exec();
   }

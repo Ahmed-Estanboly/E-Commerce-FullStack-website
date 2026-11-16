@@ -28,9 +28,14 @@ export class UsersService {
     console.log(`Seeded ${initialUsers.length} users on startup.`);
   }
 
-  async getNextId(){
-    let size = await this.userModel.countDocuments();
-    return size + 1;
+  async getNextId() {
+    const lastUser = await this.userModel
+      .findOne()
+      .sort({ id: -1 })
+      .select('id')
+      .lean()
+      .exec();
+    return (lastUser?.id ?? 0) + 1;
   }
 
   async create(dto: CreateUserDto) {
@@ -73,7 +78,12 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
-    const user = await this.userModel.findOneAndUpdate({ id }, { ...updateUserDto, password: updateUserDto.password ? await bcrypt.hash(updateUserDto.password, this.saltRounds) : undefined }, { new: true }).exec();
+    const { password, ...rest } = updateUserDto;
+    const update: Record<string, unknown> = { ...rest };
+    if (password) {
+      update.password = await bcrypt.hash(password, this.saltRounds);
+    }
+    const user = await this.userModel.findOneAndUpdate({ id }, update, { new: true }).exec();
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -82,8 +92,15 @@ export class UsersService {
     return userObj;
   }
 
-  remove(id: number) {
-    return this.userModel.findOneAndDelete({ id }).exec();
+  async remove(id: number) {
+    const user = await this.userModel.findOneAndDelete({ id }).exec();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    const userObj = user.toObject();
+    delete (userObj as Partial<User>).password;
+    delete userObj.refreshToken;
+    return userObj;
   }
 
   // Helper for your AuthService during login
@@ -96,7 +113,7 @@ export class UsersService {
     if (!user) return false;
 
     const isMatch = await bcrypt.compare(plainPassword, user.password);
-    return isMatch ? 'true' : 'false';
+    return isMatch;
   }
 
   async isAvailable(email: string) {

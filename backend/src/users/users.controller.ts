@@ -10,36 +10,36 @@ export class UsersController {
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {
     const data = await this.usersService.create(createUserDto);
-    return {data, status: 'success', message: 'User created successfully'};
+    return data;
   }
 
   @Get()
   async findAll() {
     const data = await this.usersService.findAll();
-    return {data, status: 'success', message: 'Users retrieved successfully'};
+    return data;
   }
 
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const data = await this.usersService.findOne(id);
-    return {data, status: 'success', message: 'User retrieved successfully'};
+    return data;
   }
 
   @Patch(':id')
   async update(@Param('id', ParseIntPipe) id: number, @Body() updateUserDto: UpdateUserDto) {
     const data = await this.usersService.update(id, updateUserDto);
-    return {data, status: 'success', message: 'User updated successfully'};
+    return data;
   }
 
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
     const data = await this.usersService.remove(id);
-    return {data, status: 'success', message: 'User deleted successfully'};
+    return data;
   }
 
   @Post('is-available')
   async isAvailable(@Body() body: { email: string }) {
     const data = await this.usersService.isAvailable(body.email);
-    return {data, status: 'success', message: data ? 'User is available' : 'User is not available'};
+    return data;
   }
 }

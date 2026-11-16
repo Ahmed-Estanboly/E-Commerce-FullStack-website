@@ -10,42 +10,42 @@ export class CategoryController {
   @Post()
   async create(@Body() createCategoryDto: CreateCategoryDto) {
     const data = await this.categoryService.create(createCategoryDto);
-    return {data, status: 'success', message: 'Category created successfully'};
+    return data;
   }
 
   @Get()
   async findAll() {
     const data = await this.categoryService.findAll();
-    return {data, status: 'success', message: 'Categories retrieved successfuly'};
+    return data;
   }
 
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const data = await this.categoryService.findOne(id);
-    return {data, status: 'success', message: 'Category retrieved successfuly'};
+    return data;
   }
 
   @Get('slug/:slug')
   async getBySlug(@Param('slug') slug: string) {
     const data = await this.categoryService.getBySlug(slug);
-    return {data, status: 'success', message: 'Category retrieved successfuly'};
+    return data;
   }
 
   @Get(':id/products')
   async getProductsByCategory(@Param('id', ParseIntPipe) id: number) {
     const data = await this.categoryService.getProductsByCategory(id);
-    return {data, status: 'success', message: 'Products retrieved successfuly'};
+    return data;
   }
 
   @Patch(':id')
   async update(@Param('id', ParseIntPipe) id: number, @Body() updateCategoryDto: UpdateCategoryDto) {
     const data = await this.categoryService.update(id, updateCategoryDto);
-    return {data, status: 'success', message: 'Category updated successfuly'};
+    return data;
   }
 
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
     const data = await this.categoryService.remove(id);
-    return {data, status: 'success', message: 'Category deleted successfuly'};
+    return data;
   }
 }
