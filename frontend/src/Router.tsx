@@ -12,7 +12,7 @@ import { buttonStyles } from './components/ui/button-styles'
 import { CartPage } from './pages/CartPage'
 import ProductsPage from './pages/ProductsPage'
 import UserDashboard from './pages/UserDashboard'
-import { getStoredFakeAccount, type FakeAccountRole } from './lib/fake-auth'
+import { getBranchSlug, getDashboardDestination, getStoredSession, isAdmin, isBranchOwner, type AuthSession } from './lib/auth'
 import CheckoutPage from './pages/CheckoutPage'
 
 
@@ -44,15 +44,31 @@ function RoutePlaceholder() {
   )
 }
 
-function FakeRoleRoute({ role, children }: { role: FakeAccountRole; children: ReactNode }) {
-  const account = getStoredFakeAccount()
+type GuardRole = 'admin' | 'branch-owner' | 'customer'
+
+function hasRole(session: AuthSession, role: GuardRole): boolean {
+  const { user } = session
+  if (role === 'admin') return isAdmin(user)
+  if (role === 'branch-owner') return isBranchOwner(user)
+  return !isAdmin(user) && !isBranchOwner(user)
+}
+
+function RoleRoute({ role, children }: { role: GuardRole; children: ReactNode }) {
+  const session = getStoredSession()
   const { branchName } = useParams<{ branchName?: string }>()
 
-  if (!account) return <Navigate to="/login" replace />
-  if (account.role !== role) return <Navigate to={account.destination} replace />
-  if (role === 'branch-owner' && account.branchName !== branchName) return <Navigate to={account.destination} replace />
+  if (!session) return <Navigate to="/login" replace />
+  if (!hasRole(session, role)) return <Navigate to={getDashboardDestination(session.user)} replace />
+  if (role === 'branch-owner' && getBranchSlug(session.user) !== branchName) {
+    return <Navigate to={getDashboardDestination(session.user)} replace />
+  }
 
   return <>{children}</>
+}
+
+function StorefrontLayout() {
+  const session = getStoredSession()
+  return <StoreLayout header={{ dashboardHref: session ? getDashboardDestination(session.user) : '/login' }} />
 }
 
 export function AppRouter() {
@@ -61,16 +77,16 @@ export function AppRouter() {
       <Routes>
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Signup />} />
-        <Route path="account" element={<StoreLayout header={{ dashboardHref: '/account' }} />}>
+        <Route path="account" element={<RoleRoute role="customer"><StoreLayout header={{ dashboardHref: '/account' }} /></RoleRoute>}>
           <Route index element={<UserDashboard />} />
         </Route>
 
-        <Route path="admin/dashboard" element={<FakeRoleRoute role="admin"><AdminDashboard /></FakeRoleRoute>} />
-        <Route path="admin/analytics" element={<FakeRoleRoute role="admin"><AdminAnalytics /></FakeRoleRoute>} />
-        <Route path="admin/branches" element={<FakeRoleRoute role="admin"><AdminBranches /></FakeRoleRoute>} />
-        <Route path=":branchName/dashboard" element={<FakeRoleRoute role="branch-owner"><AdminBranches /></FakeRoleRoute>} />
+        <Route path="admin/dashboard" element={<RoleRoute role="admin"><AdminDashboard /></RoleRoute>} />
+        <Route path="admin/analytics" element={<RoleRoute role="admin"><AdminAnalytics /></RoleRoute>} />
+        <Route path="admin/branches" element={<RoleRoute role="admin"><AdminBranches /></RoleRoute>} />
+        <Route path=":branchName/dashboard" element={<RoleRoute role="branch-owner"><AdminBranches /></RoleRoute>} />
 
-        <Route element={<StoreLayout header={{ dashboardHref: '/account' }} />}>
+        <Route element={<StorefrontLayout />}>
           <Route index element={<HomePage />} />
           <Route path="products/:id" element={<ProductPage />} />
 

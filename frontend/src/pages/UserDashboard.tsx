@@ -6,8 +6,8 @@ import { CartItemRow } from '../components/cart/CartItemRow'
 import { Skeleton } from '../components/ui/feedback'
 import { useCart } from '../store/cart-context'
 import { formatPrice } from '../lib/utils'
-
-const PROFILE_STORAGE_KEY = 'nova-account-profile'
+import { authService } from '../lib/api/auth.service'
+import { getStoredSession, updateSessionUser } from '../lib/auth'
 
 type Profile = {
   firstName: string
@@ -25,18 +25,21 @@ type Order = {
 }
 
 const defaultProfile: Profile = {
-  firstName: 'Alex',
-  lastName: 'Morgan',
-  email: 'alex@example.com',
+  firstName: '',
+  lastName: '',
+  email: '',
   phone: '',
 }
 
 function loadProfile(): Profile {
-  try {
-    const saved = window.localStorage.getItem(PROFILE_STORAGE_KEY)
-    return saved ? { ...defaultProfile, ...JSON.parse(saved) } : defaultProfile
-  } catch {
-    return defaultProfile
+  const user = getStoredSession()?.user
+  if (!user) return defaultProfile
+  const [firstName = '', ...rest] = user.name.trim().split(/\s+/)
+  return {
+    firstName,
+    lastName: rest.join(' '),
+    email: user.email,
+    phone: '',
   }
 }
 
@@ -57,6 +60,8 @@ const UserDashboard = () => {
   const { items, itemCount, subtotal, updateQuantity, removeItem } = useCart()
   const [profile, setProfile] = useState<Profile>(loadProfile)
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setIsLoading(false))
@@ -67,13 +72,29 @@ const UserDashboard = () => {
 
   function updateProfile(field: keyof Profile, value: string) {
     setSaved(false)
+    setSaveError(null)
     setProfile((current) => ({ ...current, [field]: value }))
   }
 
-  function saveProfile(event: FormEvent<HTMLFormElement>) {
+  async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile))
-    setSaved(true)
+    setSaveError(null)
+    const name = `${profile.firstName} ${profile.lastName}`.trim()
+    if (!name) {
+      setSaveError('Please enter your name.')
+      return
+    }
+    setSaving(true)
+    try {
+      const user = await authService.updateProfile({ name })
+      updateSessionUser(user)
+      setProfile((current) => ({ ...current, firstName: name.split(' ')[0] ?? '', lastName: name.split(' ').slice(1).join(' ') }))
+      setSaved(true)
+    } catch {
+      setSaveError('We could not save your details. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (isLoading) return <UserDashboardSkeleton />
@@ -84,7 +105,7 @@ const UserDashboard = () => {
         <p className="eyebrow">Your NOVA account</p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-5">
           <div>
-            <h1 className="font-display text-[clamp(2.7rem,6vw,5.2rem)] leading-[0.88] tracking-[-0.04em]">Welcome back,<br /><em className="font-light">{profile.firstName}.</em></h1>
+            <h1 className="font-display text-[clamp(2.7rem,6vw,5.2rem)] leading-[0.88] tracking-[-0.04em]">Welcome back,<br /><em className="font-light">{profile.firstName || 'there'}.</em></h1>
             <p className="mt-5 max-w-md text-[13px] leading-relaxed text-muted">Keep track of your orders, pick up your edit and keep your details current.</p>
           </div>
           <Link to="/shop" className="focus-ring inline-flex items-center gap-2 border border-line px-3 py-2 font-mono text-[9px] uppercase tracking-[0.12em] text-ink-soft transition-colors hover:border-ink hover:text-ink">Continue shopping <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" /></Link>
@@ -109,8 +130,11 @@ const UserDashboard = () => {
       <section className="mt-5 border border-line bg-surface p-5 sm:p-7" aria-labelledby="account-heading">
         <div className="flex items-start gap-3 border-b border-line pb-4"><span className="flex h-9 w-9 items-center justify-center bg-accent text-accent-ink"><Users className="h-4 w-4" aria-hidden="true" /></span><div><p className="eyebrow">Personal details</p><h2 id="account-heading" className="mt-1 font-display text-3xl tracking-[-0.03em]">Account information</h2></div></div>
         <form className="mt-6 grid gap-5 sm:grid-cols-2" onSubmit={saveProfile}>
-          {([['firstName', 'First name', 'text'], ['lastName', 'Last name', 'text'], ['email', 'Email address', 'email'], ['phone', 'Phone number', 'tel']] as const).map(([field, label, type]) => <label key={field} className="grid gap-2 text-[11px] font-medium uppercase tracking-[0.12em] text-ink-soft">{label}<input className="border-0 border-b border-line-strong bg-transparent px-0 py-3 text-sm font-normal normal-case tracking-normal text-ink outline-none transition-colors placeholder:text-muted/70 focus:border-ink" type={type} value={profile[field]} onChange={(event) => updateProfile(field, event.target.value)} placeholder={field === 'phone' ? 'Add a phone number' : undefined} /></label>)}
-          <div className="flex flex-wrap items-center gap-4 sm:col-span-2"><Button variant="accent" type="submit" rightIcon={saved ? <Check className="h-4 w-4" aria-hidden="true" /> : undefined}>{saved ? 'Details saved' : 'Save details'}</Button><p className="text-[11px] text-muted">Saved on this device for your next visit.</p></div>
+          {([['firstName', 'First name', 'text'], ['lastName', 'Last name', 'text'], ['email', 'Email address', 'email'], ['phone', 'Phone number', 'tel']] as const).map(([field, label, type]) => <label key={field} className="grid gap-2 text-[11px] font-medium uppercase tracking-[0.12em] text-ink-soft">{label}<input className="border-0 border-b border-line-strong bg-transparent px-0 py-3 text-sm font-normal normal-case tracking-normal text-ink outline-none transition-colors placeholder:text-muted/70 focus:border-ink" type={type} value={profile[field]} onChange={(event) => updateProfile(field, event.target.value)} placeholder={field === 'phone' ? 'Add a phone number' : undefined} disabled={field === 'email'} /></label>)}
+          <div className="flex flex-wrap items-center gap-4 sm:col-span-2">
+            <Button variant="accent" type="submit" loading={saving} rightIcon={saved ? <Check className="h-4 w-4" aria-hidden="true" /> : undefined}>{saved ? 'Details saved' : 'Save details'}</Button>
+            {saveError ? <p className="text-[11px] text-danger">{saveError}</p> : <p className="text-[11px] text-muted">Your name is saved to your account.</p>}
+          </div>
         </form>
       </section>
     </div>

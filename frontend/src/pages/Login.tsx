@@ -7,28 +7,12 @@ import { Button } from '../components/ui/button'
 import { Logo } from '../components/ui/logo'
 import { ThemeToggle } from '../components/layout/theme-toggle'
 import { authService } from '../lib/api/auth.service'
-import { FAKE_ACCOUNT_STORAGE_KEY, findFakeAccount, type FakeAccount } from '../lib/fake-auth'
-
-const REMEMBERED_EMAIL_KEY = 'nova-remembered-email'
-
-function saveAuthToken(token: string, rememberMe: boolean) {
-  window.localStorage.removeItem('auth_token')
-  window.sessionStorage.removeItem('auth_token')
-  const storage = rememberMe ? window.localStorage : window.sessionStorage
-  storage.setItem('auth_token', token)
-}
-
-function saveFakeAccount(account: FakeAccount, rememberMe: boolean) {
-  window.localStorage.removeItem(FAKE_ACCOUNT_STORAGE_KEY)
-  window.sessionStorage.removeItem(FAKE_ACCOUNT_STORAGE_KEY)
-  const storage = rememberMe ? window.localStorage : window.sessionStorage
-  storage.setItem(FAKE_ACCOUNT_STORAGE_KEY, JSON.stringify(account))
-}
+import { getDashboardDestination, saveSession } from '../lib/auth'
 
 const Login = () => {
-  const [email, setEmail] = useState(() => window.localStorage.getItem(REMEMBERED_EMAIL_KEY) ?? '')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [rememberMe, setRememberMe] = useState(() => Boolean(window.localStorage.getItem(REMEMBERED_EMAIL_KEY)))
+  const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,30 +30,12 @@ const Login = () => {
     setIsSubmitting(true)
 
     try {
-      const fakeAccount = findFakeAccount(email, password)
-      if (fakeAccount) {
-        saveAuthToken(`local-${fakeAccount.role}-token`, rememberMe)
-        saveFakeAccount(fakeAccount, rememberMe)
-        if (rememberMe) localStorage.setItem(REMEMBERED_EMAIL_KEY, email.trim())
-        else localStorage.removeItem(REMEMBERED_EMAIL_KEY)
-        localStorage.setItem('nova-account-profile', JSON.stringify({
-          firstName: fakeAccount.name.split(' ')[0],
-          lastName: '',
-          email: fakeAccount.email,
-          phone: '',
-        }))
-        navigate(fakeAccount.destination)
-        return
-      }
-
-      const { access_token: accessToken } = await authService.login({
+      const { access_token, user } = await authService.login({
         email: email.trim(),
         password,
       })
-      saveAuthToken(accessToken, rememberMe)
-      if (rememberMe) localStorage.setItem(REMEMBERED_EMAIL_KEY, email.trim())
-      else localStorage.removeItem(REMEMBERED_EMAIL_KEY)
-      navigate('/')
+      saveSession({ token: access_token, user }, rememberMe)
+      navigate(getDashboardDestination(user))
     } catch (requestError) {
       setError(
         axios.isAxiosError(requestError) && requestError.response?.status === 401

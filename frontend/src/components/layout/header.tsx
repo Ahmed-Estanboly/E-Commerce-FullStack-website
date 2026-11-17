@@ -6,7 +6,7 @@ import { Drawer } from '../ui/drawer'
 import { Logo } from '../ui/logo'
 import { SearchOverlay } from './search-overlay'
 import { ThemeToggle } from './theme-toggle'
-import { FAKE_ACCOUNT_STORAGE_KEY } from '../../lib/fake-auth'
+import { clearSession, getStoredSession } from '../../lib/auth'
 import { HOME_DEPARTMENTS } from '../../data/home'
 import type { Department } from '../../types/home'
 import { cn } from '../../lib/utils'
@@ -29,7 +29,7 @@ export interface HeaderProps {
 }
 
 function hasSignedInUser() {
-  return Boolean(window.localStorage.getItem('auth_token') || window.sessionStorage.getItem('auth_token'))
+  return Boolean(getStoredSession())
 }
 
 /** Navigation mirrors the routes agreed in the team brief. */
@@ -54,6 +54,7 @@ export function Header({
   const [menuOpen, setMenuOpen] = useState(false)
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const [isSignedIn, setIsSignedIn] = useState(hasSignedInUser)
+  const accountInitial = getStoredSession()?.user.name.trim().charAt(0).toUpperCase() || 'A'
 
   const isActive = (to: string) => {
     if (to.includes('#')) return false
@@ -90,10 +91,8 @@ export function Header({
   }
 
   const logout = () => {
-    window.localStorage.removeItem('auth_token')
-    window.sessionStorage.removeItem('auth_token')
-    window.localStorage.removeItem(FAKE_ACCOUNT_STORAGE_KEY)
-    window.sessionStorage.removeItem(FAKE_ACCOUNT_STORAGE_KEY)
+    clearSession()
+    window.localStorage.removeItem('nova-account-profile')
     setAccountMenuOpen(false)
     setIsSignedIn(false)
     navigate('/')
@@ -161,7 +160,7 @@ export function Header({
                 <Search className="h-[17px] w-[17px]" strokeWidth={1.5} aria-hidden="true" />
               </button>
               <ThemeToggle />
-              {isSignedIn ? <div className="relative ml-1"><button type="button" onClick={() => setAccountMenuOpen((open) => !open)} className="focus-ring flex h-8 w-8 items-center justify-center rounded-full bg-accent font-mono text-[10px] font-medium text-accent-ink transition-transform hover:scale-105" aria-label="Open account menu" aria-expanded={accountMenuOpen}>A</button>{accountMenuOpen ? <div className="absolute right-0 top-10 z-50 grid min-w-40 border border-line bg-surface p-1 shadow-lg"><Link to={dashboardHref ?? '/account'} onClick={() => setAccountMenuOpen(false)} className="px-3 py-2 text-left text-[11px] text-ink transition-colors hover:bg-canvas-alt">Account dashboard</Link><button type="button" onClick={logout} className="px-3 py-2 text-left text-[11px] text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink">Log out</button></div> : null}</div> : <div className="hidden items-center gap-2 pl-1 lg:flex">
+              {isSignedIn ? <div className="relative ml-1"><button type="button" onClick={() => setAccountMenuOpen((open) => !open)} className="focus-ring flex h-8 w-8 items-center justify-center rounded-full bg-accent font-mono text-[10px] font-medium text-accent-ink transition-transform hover:scale-105" aria-label="Open account menu" aria-expanded={accountMenuOpen}>{accountInitial}</button>{accountMenuOpen ? <div className="absolute right-0 top-10 z-50 grid min-w-40 border border-line bg-surface p-1 shadow-lg"><Link to={dashboardHref ?? '/account'} onClick={() => setAccountMenuOpen(false)} className="px-3 py-2 text-left text-[11px] text-ink transition-colors hover:bg-canvas-alt">Account dashboard</Link><button type="button" onClick={logout} className="px-3 py-2 text-left text-[11px] text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink">Log out</button></div> : null}</div> : <div className="hidden items-center gap-2 pl-1 lg:flex">
                 <Link
                   to="/login"
                   className="nav-link text-[11px] tracking-[0.12em]"
@@ -243,20 +242,32 @@ export function Header({
         </nav>
 
         <div className="mt-6 grid gap-2">
-          <Link
-            to="/login"
-            onClick={() => setMenuOpen(false)}
-            className={buttonStyles('primary', 'md', true)}
-          >
-            Login
-          </Link>
-          <Link
-            to="/register"
-            onClick={() => setMenuOpen(false)}
-            className={buttonStyles('outline', 'md', true)}
-          >
-            Register
-          </Link>
+          {isSignedIn ? (
+            <Link
+              to={dashboardHref ?? '/account'}
+              onClick={() => setMenuOpen(false)}
+              className={buttonStyles('primary', 'md', true)}
+            >
+              Account dashboard
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                onClick={() => setMenuOpen(false)}
+                className={buttonStyles('primary', 'md', true)}
+              >
+                Login
+              </Link>
+              <Link
+                to="/register"
+                onClick={() => setMenuOpen(false)}
+                className={buttonStyles('outline', 'md', true)}
+              >
+                Register
+              </Link>
+            </>
+          )}
         </div>
 
         <div className="mt-6">

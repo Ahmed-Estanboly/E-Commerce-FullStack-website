@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import axios from 'axios'
+import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight } from '../components/ui/icons'
 import { Button } from '../components/ui/button'
 import { Logo } from '../components/ui/logo'
 import { ThemeToggle } from '../components/layout/theme-toggle'
+import { authService } from '../lib/api/auth.service'
+import { getDashboardDestination, saveSession } from '../lib/auth'
 
 const Signup = () => {
   const [name, setName] = useState('')
@@ -12,9 +15,11 @@ const Signup = () => {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate()
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
 
@@ -33,7 +38,26 @@ const Signup = () => {
       return
     }
 
-    setError('Account creation is not available yet. Please contact support.')
+    setIsSubmitting(true)
+
+    try {
+      const { access_token, user } = await authService.register({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+      })
+      saveSession({ token: access_token, user }, true)
+      navigate(getDashboardDestination(user))
+    } catch (requestError) {
+      const status = axios.isAxiosError(requestError) ? requestError.response?.status : undefined
+      setError(
+        status === 409
+          ? 'That email is already registered. Try signing in instead.'
+          : 'We could not create your account. Please try again.',
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -97,7 +121,7 @@ const Signup = () => {
 
             {error && <p className="border border-danger/30 bg-danger-soft px-3 py-2 text-xs leading-relaxed text-danger" role="alert">{error}</p>}
 
-            <Button className="mt-1" variant="accent" size="lg" fullWidth type="submit" rightIcon={<ArrowRight className="h-4 w-4" aria-hidden="true" />}>Create account</Button>
+            <Button className="mt-1" variant="accent" size="lg" fullWidth type="submit" loading={isSubmitting} rightIcon={<ArrowRight className="h-4 w-4" aria-hidden="true" />}>{isSubmitting ? 'Creating account...' : 'Create account'}</Button>
           </form>
 
           <p className="mt-8 text-center text-xs text-muted">Already part of NOVA? <Link className="text-ink underline underline-offset-4 hover:text-ink-soft" to="/login">Sign in</Link></p>
