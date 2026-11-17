@@ -13,6 +13,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor.js';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware.js';
+import { OrdersModule } from './orders/orders.module.js';
 
 @Module({
   imports: [
@@ -31,7 +32,9 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware.j
     }),
     CategoryModule,
     UsersModule,
-    AuthModule],
+    AuthModule,
+    OrdersModule,
+  ],
   controllers: [AppController],
   providers: [
     AppService,
