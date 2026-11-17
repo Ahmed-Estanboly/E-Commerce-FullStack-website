@@ -26,6 +26,9 @@ export class Product {
     
     @Prop()
     stock:number;
+
+    @Prop({ enum: ['north', 'center', 'south'] })
+    branch: string;
 }
 export type ProductDocument = HydratedDocument<Product>;
 export const ProductSchema = SchemaFactory.createForClass(Product);

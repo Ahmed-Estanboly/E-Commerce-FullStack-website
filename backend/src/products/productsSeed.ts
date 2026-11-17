@@ -1618,7 +1618,10 @@ const seededProducts = [
 }
 ];
 
+const branches = ['north', 'center', 'south'];
+
 export const initialProducts = seededProducts.map((product) => ({
   ...product,
   stock: Math.floor(Math.random() * 100) + 1,
+  branch: branches[Math.floor(Math.random() * branches.length)],
 }));

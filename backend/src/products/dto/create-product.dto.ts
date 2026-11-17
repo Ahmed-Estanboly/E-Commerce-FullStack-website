@@ -1,4 +1,6 @@
-import { ArrayNotEmpty, IsArray, IsInt, IsNotEmpty, IsNumber, IsPositive, IsString, Min } from 'class-validator';
+import { ArrayNotEmpty, IsArray, IsIn, IsInt, IsNotEmpty, IsNumber, IsPositive, IsString, Min } from 'class-validator';
+
+export const BRANCHES = ['north', 'center', 'south'] as const;
 
 export class CreateProductDto {
     @IsString()
@@ -20,4 +22,6 @@ export class CreateProductDto {
     @IsNumber()
     @IsPositive()
     stock: number;
+    @IsIn(BRANCHES)
+    branch: string;
 }
