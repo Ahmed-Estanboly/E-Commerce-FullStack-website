@@ -16,6 +16,7 @@ export class UsersService {
   
   async onApplicationBootstrap() {
     await this.seed();
+    await this.hashPlaintextPasswords();
   }
 
   private async seed() {
@@ -24,8 +25,24 @@ export class UsersService {
       return; // Skip if data already exists
     }
 
-    await this.userModel.insertMany(initialUsers);
+    const hashedUsers = await Promise.all(
+      initialUsers.map(async (user) => ({
+        ...user,
+        password: await bcrypt.hash(user.password, this.saltRounds),
+      })),
+    );
+    await this.userModel.insertMany(hashedUsers);
     console.log(`Seeded ${initialUsers.length} users on startup.`);
+  }
+
+  private async hashPlaintextPasswords() {
+    const users = await this.userModel.find({}).select('+password').exec();
+    for (const user of users) {
+      if (user.password && !user.password.startsWith('$2')) {
+        user.password = await bcrypt.hash(user.password, this.saltRounds);
+        await user.save();
+      }
+    }
   }
 
   async getNextId() {
@@ -39,7 +56,8 @@ export class UsersService {
   }
 
   async create(dto: CreateUserDto) {
-    const existing = await this.userModel.exists({ email: dto.email });
+    const email = dto.email.toLowerCase();
+    const existing = await this.userModel.exists({ email });
     if (existing) {
       throw new ConflictException('Email is already registered');
     }
@@ -48,6 +66,7 @@ export class UsersService {
 
     const created = await this.userModel.create({
       ...dto,
+      email,
       id: await this.getNextId(),
       password: hashedPassword,
     });
@@ -90,6 +109,10 @@ export class UsersService {
     const userObj = user.toObject();
     delete (userObj as Partial<User>).password;
     return userObj;
+  }
+
+  async updateProfile(id: number, dto: { name?: string; avatar?: string; password?: string }) {
+    return this.update(id, dto as UpdateUserDto);
   }
 
   async remove(id: number) {
