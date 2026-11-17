@@ -14,6 +14,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware.js';
 import { OrdersModule } from './orders/orders.module.js';
+import { BranchesModule } from './branches/branches.module.js';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { OrdersModule } from './orders/orders.module.js';
       }),
     }),
     CategoryModule,
+    BranchesModule,
     UsersModule,
     AuthModule,
     OrdersModule,
