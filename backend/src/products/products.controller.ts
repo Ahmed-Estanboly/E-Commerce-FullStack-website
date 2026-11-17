@@ -25,7 +25,7 @@ export class ProductsController {
             name: plain.name,
             slug: plain.slug,
             image: plain.image,
-            creationAt: plain.createdAt ?? plain.creationAt,
+            createdAt: plain.createdAt ?? plain.creationAt,
             updatedAt: plain.updatedAt ?? plain.updatedAt,
           },
         ];
@@ -35,7 +35,15 @@ export class ProductsController {
       if (!product) return product;
       const plain = typeof product.toObject === 'function' ? product.toObject() : { ...product };
       const { categoryId, ...rest } = plain;
-      return { ...rest, category: byId.get(categoryId) ?? null };
+      const category = byId.get(categoryId) ?? {
+        id: categoryId ?? 0,
+        name: 'Uncategorised',
+        slug: 'uncategorised',
+        image: '',
+        createdAt: plain.createdAt,
+        updatedAt: plain.updatedAt,
+      };
+      return { ...rest, category };
     };
     return Array.isArray(data) ? data.map(transform) : transform(data);
   }
@@ -59,7 +67,7 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  async update(@Param('id', ParseIntPipe) id: number, @Body() updateProductDto: UpdateProductDto) { 
+  async update(@Param('id', ParseIntPipe) id: number, @Body() updateProductDto: UpdateProductDto) {
     const data = await this.withCategory(await this.productsService.update(id, updateProductDto));
     return data;
   }
@@ -69,6 +77,7 @@ export class ProductsController {
     const data = await this.withCategory(await this.productsService.remove(id));
     return data;
   }
+
   @Get(':id/related')
   async getRelatedProducts(@Param('id', ParseIntPipe) id: number) {
     const data = await this.withCategory(await this.productsService.getRelatedProducts(id.toString()));

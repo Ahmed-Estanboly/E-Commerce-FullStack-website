@@ -1,13 +1,5 @@
 import axios from 'axios'
 
-/** Public storefront API (products, categories). */
-export const apiClient = axios.create({
-  baseURL: 'https://api.escuelajs.co/api/v1',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
-
 const AUTH_STORAGE_KEY = 'nova-auth-session'
 
 function getStoredToken(): string | null {
@@ -19,13 +11,19 @@ function getStoredToken(): string | null {
   }
 }
 
-/** NestJS backend API (auth, users, branches). Base URL overridable via VITE_API_URL. */
+/** NestJS backend API for the whole storefront. Base URL overridable via VITE_API_URL. */
 export const backendClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
 })
+
+export interface ApiEnvelope<T> {
+  success: boolean
+  data: T
+  timestamp: string
+}
 
 backendClient.interceptors.request.use((config) => {
   const token = getStoredToken()

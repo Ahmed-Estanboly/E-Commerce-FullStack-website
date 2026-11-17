@@ -5,11 +5,13 @@ import { OrderSummaryCard } from '../components/checkout/OrderSummaryCard';
 import { OrderConfirmationView } from '../components/checkout/OrderConfirmationView';
 import { useCart } from '../store/cart-context';
 import { useBranches } from '../hooks/use-branches';
+import { getOrderRequestError, ordersService } from '../lib/api/orders.service';
+import { getStoredSession } from '../lib/auth';
 
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
 
-  const { items, subtotal, removeItem } = useCart();
+  const { items, subtotal, clearCart } = useCart();
   const { branches, isLoading: isLoadingBranches, error: branchesError } = useBranches();
   const activeBranches = useMemo(() => branches.filter((branch) => branch.isActive), [branches]);
 
@@ -17,6 +19,8 @@ export const CheckoutPage: React.FC = () => {
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<CheckoutFormData>({
     email: 'hello@nova.demo',
@@ -133,7 +137,7 @@ export const CheckoutPage: React.FC = () => {
     return nextErrors;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validationErrors = validate();
     setErrors(validationErrors);
@@ -142,39 +146,75 @@ export const CheckoutPage: React.FC = () => {
       window.scrollTo({ top: 180, behavior: 'smooth' });
       return;
     }
-    if (!activeBranch) return;
+    if (!activeBranch || isSubmitting) return;
 
-    const firstName =
-      formData.nameOnCard.trim().split(/\s+/)[0] ||
-      formData.email.split('@')[0] ||
-      'Guest';
+    setIsSubmitting(true);
+    setSubmitError(null);
 
-    const digits = formData.cardNumber.replace(/\s/g, '');
-    const order: ConfirmedOrder = {
-      orderNumber: `NOVA-${Math.floor(1000 + Math.random() * 9000)}`,
-      customerFirstName: firstName,
-      items: [...items],
-      subtotal,
-      shippingFee,
-      total,
-      fulfilment: formData.fulfilment,
-      branch: activeBranch,
-      deliveryAddress:
+    try {
+      const session = getStoredSession();
+      const customerName =
+        session?.user.name?.trim() ||
+        formData.nameOnCard.trim() ||
+        formData.email.trim();
+      const digits = formData.cardNumber.replace(/\s/g, '');
+      const deliveryAddress =
         formData.fulfilment === 'deliver'
           ? `${formData.deliveryAddress}, ${formData.deliveryPostalCode} ${formData.deliveryCity}`
-          : undefined,
-      paymentMethod: formData.paymentMethod,
-      cardLast4: digits.slice(-4) || '4242',
-      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
+          : undefined;
 
-    setConfirmedOrder(order);
-    setStep('confirmation');
+      const created = await ordersService.createOrder({
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        customerName,
+        items: items.map((item) => ({
+          productId: item.product.id,
+          title: item.product.title,
+          price: item.product.price,
+          quantity: item.quantity,
+        })),
+        subtotal,
+        shippingFee,
+        fulfilment: formData.fulfilment,
+        branch: { branchId: activeBranch._id },
+        deliveryAddress,
+        paymentMethod: formData.paymentMethod,
+        cardLast4: digits.slice(-4) || undefined,
+      });
 
-    // تفريغ السلة عبر استدعاء removeItem لكل منتج باستخدام useCart
-    items.forEach((item) => removeItem(item.product.id));
+      const order: ConfirmedOrder = {
+        orderNumber: created.orderNumber,
+        customerFirstName:
+          customerName.split(/\s+/)[0] ||
+          formData.email.split('@')[0] ||
+          'Guest',
+        items: [...items],
+        subtotal: created.subtotal,
+        shippingFee: created.shippingFee,
+        total: created.total,
+        fulfilment: created.fulfilment,
+        branch: activeBranch,
+        deliveryAddress,
+        paymentMethod: formData.paymentMethod,
+        cardLast4: digits.slice(-4) || '4242',
+        createdAt: new Date(created.createdAt).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      };
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+      setConfirmedOrder(order);
+      setStep('confirmation');
+      clearCart();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (requestError) {
+      setSubmitError(
+        getOrderRequestError(requestError, 'Unable to place your order. Please try again.'),
+      );
+      window.scrollTo({ top: 180, behavior: 'smooth' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const hasErrors = Object.keys(errors).length > 0;
@@ -218,8 +258,7 @@ export const CheckoutPage: React.FC = () => {
             </h1>
 
             <p className="max-w-xs text-xs leading-relaxed text-muted">
-              A demo checkout. No payment is taken, no card is stored, and no order leaves this
-              browser. Every field is validated as it would be in production.
+              Orders are recorded by the Nova backend. No payment is taken and no card is stored.
             </p>
           </div>
         </div>
@@ -283,7 +322,7 @@ export const CheckoutPage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-3 border border-line bg-accent-soft/50 px-4 py-3">
               <span className="bg-accent px-1.5 py-0.5 font-mono text-[9px] font-medium text-accent-ink uppercase">DEMO</span>
               <p className="eyebrow text-[9px] text-ink-soft">
-                NOTHING IS CHARGED. USE ANY WELL-FORMED EMAIL AND CARD DETAILS. THE ORDER IS SIMULATED.
+                NO PAYMENT IS CHARGED. USE ANY WELL-FORMED CARD DETAILS. THE ORDER IS RECORDED BY THE BACKEND.
               </p>
             </div>
 
@@ -293,6 +332,13 @@ export const CheckoutPage: React.FC = () => {
                 <p><strong>Check the highlighted fields.</strong> Please fix the errors below before placing the demo order.</p>
               </div>
             )}
+
+            {submitError ? (
+              <div role="alert" className="flex items-start gap-3 border border-danger bg-danger-soft px-4 py-3 text-xs text-danger">
+                <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center border border-danger font-mono text-[10px] font-bold">!</span>
+                <p><strong>Order not placed.</strong> {submitError}</p>
+              </div>
+            ) : null}
 
             <section>
               <div className="flex items-baseline justify-between border-b border-line pb-3">
@@ -467,16 +513,20 @@ export const CheckoutPage: React.FC = () => {
                   className="mt-0.5 h-4 w-4 accent-[#d4ff00]"
                 />
                 <span className="text-xs text-ink-soft">
-                  I understand this is a demonstration checkout and no real order will be placed.
+                  I understand this order is recorded by the store backend and no real payment will be taken.
                 </span>
               </label>
 
               <button
                 type="submit"
-                disabled={isLoadingBranches || activeBranches.length === 0}
-                className="tabular mt-6 flex h-12 w-full items-center justify-center gap-2 bg-accent font-mono text-[10px] font-medium tracking-[0.2em] text-accent-ink uppercase transition hover:bg-accent-strong"
+                disabled={isSubmitting || isLoadingBranches || activeBranches.length === 0}
+                className="tabular mt-6 flex h-12 w-full items-center justify-center gap-2 bg-accent font-mono text-[10px] font-medium tracking-[0.2em] text-accent-ink uppercase transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <span>PLACE DEMO ORDER · €{total.toFixed(2)}</span>
+                <span>
+                  {isSubmitting
+                    ? 'PLACING ORDER…'
+                    : `PLACE ORDER · €${total.toFixed(2)}`}
+                </span>
                 <span>→</span>
               </button>
             </section>

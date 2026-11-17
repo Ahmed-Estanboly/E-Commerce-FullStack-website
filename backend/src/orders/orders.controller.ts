@@ -1,14 +1,26 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto.js';
 import { OrdersService } from './orders.service.js';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
+import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard.js';
 
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
-  create(@Body() createOrderDto: CreateOrderDto) {
-    return this.ordersService.create(createOrderDto);
+  @UseGuards(OptionalJwtAuthGuard)
+  create(
+    @Body() createOrderDto: CreateOrderDto,
+    @Request() req: { user?: { sub: number } },
+  ) {
+    return this.ordersService.create(createOrderDto, req.user?.sub);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  findMine(@Request() req: { user: { sub: number } }) {
+    return this.ordersService.findMine(req.user.sub);
   }
 
   @Get()

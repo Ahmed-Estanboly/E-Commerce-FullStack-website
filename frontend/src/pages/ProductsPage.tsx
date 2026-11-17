@@ -92,7 +92,7 @@ function ProductsPage() {
 
   // البحث والفلترة والترتيب
   const filteredProducts = useMemo(() => {
-    let result = products.filter((product) => {
+    const result = products.filter((product) => {
 
       const searchValue = searchTerm.trim().toLowerCase();
 

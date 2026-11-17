@@ -5,7 +5,10 @@ import { HydratedDocument } from 'mongoose';
 export class Order {
   @Prop({ required: true, unique: true })
   orderNumber: string;
-  
+
+  @Prop()
+  userId?: number;
+
   @Prop({ required: true })
   email: string;
 
@@ -18,7 +21,7 @@ export class Order {
   @Prop({
     type: [
       {
-        productId: { type: String, required: true },
+        productId: { type: Number, required: true },
         title: { type: String, required: true },
         price: { type: Number, required: true },
         quantity: { type: Number, required: true },
@@ -27,7 +30,7 @@ export class Order {
     required: true,
   })
   items: {
-    productId: string;
+    productId: number;
     title: string;
     price: number;
     quantity: number;
@@ -47,16 +50,22 @@ export class Order {
 
   @Prop({
     type: {
-      id: Number,
+      _id: String,
       name: String,
-      city: String,
+      address: String,
+      phone: String,
+      workingHours: String,
+      isActive: Boolean,
     },
     required: true,
   })
   branch: {
-    id: number;
+    _id: string;
     name: string;
-    city: string;
+    address: string;
+    phone: string;
+    workingHours?: string;
+    isActive?: boolean;
   };
 
   @Prop()
@@ -68,7 +77,7 @@ export class Order {
   @Prop()
   cardLast4?: string;
 
-  @Prop({ default: 'confirmed', enum: ['pending', 'confirmed', 'delivered', 'cancelled'] })
+  @Prop({ default: 'pending', enum: ['pending', 'confirmed', 'delivered', 'cancelled'] })
   status: string;
 }
 

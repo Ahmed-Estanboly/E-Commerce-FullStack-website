@@ -11,6 +11,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isProduct(value: unknown): value is Product {
   return (
     isRecord(value) &&
+    typeof value._id === 'string' &&
     typeof value.id === 'number' &&
     Number.isInteger(value.id) &&
     typeof value.title === 'string' &&
@@ -90,6 +91,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((current) => current.filter((item) => item.product.id !== productId))
   }, [])
 
+  const clearCart = useCallback(() => {
+    setItems([])
+  }, [])
 
   const value = useMemo(
     () => ({
@@ -99,8 +103,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       addItem,
       updateQuantity,
       removeItem,
+      clearCart,
     }),
-    [items, addItem, updateQuantity, removeItem],
+    [items, addItem, updateQuantity, removeItem, clearCart],
   )
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>

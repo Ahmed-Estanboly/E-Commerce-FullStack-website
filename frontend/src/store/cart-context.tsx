@@ -13,6 +13,7 @@ interface CartContextValue {
   addItem: (product: Product) => void
   updateQuantity: (productId: number, quantity: number) => void
   removeItem: (productId: number) => void
+  clearCart: () => void
 }
 
 /** Shared cart contract used by the storefront shell, product surfaces, and cart page. */
