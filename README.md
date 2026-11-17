@@ -1,75 +1,238 @@
-# React + TypeScript + Vite
+# Nova — Full-Stack E-Commerce Website
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack e-commerce application with a React storefront, customer dashboards,
+an admin panel, and a multi-branch inventory backend.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Storefront** — Home page, product catalog (`/shop`), product detail pages, search overlay, theme toggle (light/dark), cart, and checkout flow.
+- **Authentication** — Register / login with JWT access tokens, session persistence (local or session storage), protected routes per role.
+- **Roles** — `master admin` (admin dashboard, analytics, branches & inventory), `branch owner` / `central owner` / `south owner` (per-branch dashboards), and `customer` (account dashboard).
+- **Branch inventory** — Per-branch stock levels for products, managed by branch owners.
+- **Orders** — Order creation and lookup.
+- **Catalog** — Products, categories, and related-product recommendations.
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Project Structure
 
 ```
-
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+E-Commerce-FullStack-website/
+├── backend/    # NestJS REST API (TypeScript, MongoDB via Mongoose)
+└── frontend/   # React + Vite SPA (Tailwind CSS v4)
 ```
+
+## Tech Stack
+
+### Backend (`backend/`)
+
+| Technology | Purpose |
+|---|---|
+| NestJS 12 | Application framework / REST API |
+| TypeScript | Language |
+| MongoDB + Mongoose 9 | Database & ODM (`@nestjs/mongoose`) |
+| JWT (`@nestjs/jwt`) | Access-token auth; `bcrypt` for password hashing |
+| class-validator / class-transformer | DTO validation & serialization |
+| helmet | HTTP security headers |
+| Vitest + supertest | Unit & e2e tests |
+| oxlint + Prettier | Linting & formatting |
+
+### Frontend (`frontend/`)
+
+| Technology | Purpose |
+|---|---|
+| React 19 | UI library |
+| Vite 8 | Build tool & dev server |
+| react-router-dom 7 | Client-side routing & role-based route guards |
+| Tailwind CSS 4 (`@tailwindcss/vite`) | Styling |
+| axios | HTTP client (two instances — see below) |
+| clsx + tailwind-merge | Conditional class utilities |
+| ESLint + typescript-eslint | Linting |
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v20+ recommended)
+- A MongoDB database (MongoDB Atlas URI works)
+
+### Backend
+
+```bash
+cd backend
+npm install
+```
+
+Create `backend/.env` with:
+
+```env
+MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>/<db>
+JWT_SECRET=<random-secret>
+JWT_REFRESH_SECRET=<random-secret>
+FRONTEND_URL=http://localhost:5173
+PORT=3000
+```
+
+Optional API-key variables referenced in the environment: `ADMIN_API_KEY`, `USER_API_KEY`, `BRANCH_ADMIN_API_KEY`.
+
+Run in development:
+
+```bash
+npm run start:dev    # watch mode, http://localhost:3000/api/v1
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev          # http://localhost:5173
+```
+
+Optional: create `frontend/.env` to override the backend URL:
+
+```env
+VITE_API_URL=http://localhost:3000/api/v1
+```
+
+## Data Sources
+
+The frontend uses **two API clients** (`frontend/src/lib/api/client.ts`):
+
+- `apiClient` → `https://api.escuelajs.co/api/v1` — public storefront catalog (products/categories) served from the external Escuelajs API.
+- `backendClient` → `VITE_API_URL` (default `http://localhost:3000/api/v1`) — the NestJS backend for auth, users, branches, orders, etc. It automatically attaches the stored JWT as a `Bearer` token.
+
+Backend responses are wrapped by a global `TransformInterceptor` as
+`{ success, data, timestamp }` — use the `unwrap()` helper in `client.ts` to extract `data`.
+
+## API Reference (Backend)
+
+All routes are prefixed with `/api/v1`. Successful responses are wrapped as
+`{ success: true, data, timestamp }`; errors pass through a global
+`HttpExceptionFilter`.
+
+### Auth — `auth`
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/auth/register` | Register a customer → returns `{ access_token, user }` |
+| POST | `/auth/login` | Login → returns `{ access_token, user }` |
+| GET | `/auth/me` | Current user profile (JWT required) |
+| PATCH | `/auth/profile` | Update own profile (JWT required) |
+
+### Users — `users`
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/users` | Create user |
+| GET | `/users` | List users |
+| GET | `/users/:id` | Get user |
+| PATCH | `/users/:id` | Update user |
+| DELETE | `/users/:id` | Delete user |
+| POST | `/users/is-available` | Check email availability |
+
+### Products — `products`
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/products` | Create product |
+| GET | `/products` | List products (category is populated onto each product) |
+| GET | `/products/:id` | Get product by id |
+| PATCH | `/products/:id` | Update product |
+| DELETE | `/products/:id` | Delete product |
+| GET | `/products/:id/related` | Related products by id |
+| GET | `/products/slug/:slug` | Get product by slug |
+| GET | `/products/slug/:slug/related` | Related products by slug |
+
+### Category — `category`
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/category` | Create category |
+| GET | `/category` | List categories |
+| GET | `/category/:id` | Get category |
+| GET | `/category/slug/:slug` | Get category by slug |
+| GET | `/category/:id/products` | Products in a category |
+| PATCH | `/category/:id` | Update category |
+| DELETE | `/category/:id` | Delete category |
+
+### Branches — `branches`
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/branches` | List branches (auto-seeds 3 defaults when empty) |
+| GET | `/branches/:id` | Get branch |
+| POST | `/branches` | Create branch |
+| PATCH | `/branches/:id` | Update branch |
+| DELETE | `/branches/:id` | Delete branch |
+| GET | `/branches/:branchId/inventory` | Branch inventory |
+| PUT | `/branches/:branchId/inventory/:productId` | Update stock for a product |
+| DELETE | `/branches/:branchId/inventory/:productId` | Remove product from inventory |
+
+### Orders — `orders`
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/orders` | Create order |
+| GET | `/orders` | List orders |
+| GET | `/orders/:id` | Get order |
+
+## Backend Architecture
+
+Feature modules under `backend/src/`:
+
+- **`auth/`** — `AuthService` (register/login/JWT issuance), `JwtAuthGuard`, `tokens.ts`, DTOs.
+- **`users/`** — User CRUD, bcrypt credential validation, `userSeed.ts` (seed users: `admin@nova.local`, `ava@nova.local`, etc.).
+- **`products/`** — Product CRUD, slug lookups, related products, `productsSeed.ts`. Products store `branch` (`north | center | south`) and `stock`.
+- **`category/`** — Category CRUD with slug support, `category.seed.ts`.
+- **`branches/`** — Branch CRUD plus per-branch inventory via `BranchInventoryService`.
+- **`orders/`** — Order creation and queries.
+- **`common/`** — Cross-cutting concerns:
+  - `middleware/request-id.middleware.ts` — assigns a request ID to every request.
+  - `interceptors/transform.interceptor.ts` — wraps responses in `{ success, data, timestamp }`.
+  - `interceptors/logging.interceptor.ts` — request logging.
+  - `filters/http-exception.filter.ts` — uniform error responses.
+  - `guards/` & `decorators/` — JWT auth + role guards (`@Roles`).
+
+Global setup in `main.ts`: `helmet`, CORS (origin from `FRONTEND_URL`, credentials enabled), global prefix `api/v1`, and a global `ValidationPipe` with `whitelist` + `transform`.
+
+## Frontend Architecture
+
+- **Routing** (`src/Router.tsx`) — `RoleRoute` guards redirect unauthenticated users to `/login` and enforce roles: `admin` → `/admin/*`, `branch-owner` → `/:branchName/dashboard`, `customer` → `/account`.
+- **Auth** (`src/lib/auth.ts`, `src/lib/api/auth.service.ts`) — session stored under `nova-auth-session` (localStorage when "remember me" is checked, otherwise sessionStorage); helpers `isAdmin`, `isBranchOwner`, `getDashboardDestination`.
+- **API layer** (`src/lib/api/`) — `client.ts` (axios instances + `unwrap`), plus `auth.service.ts`, `products.service.ts`, `branches.service.ts`.
+- **State** — cart state via React context (`src/store/cart-context.tsx`, `cart-provider.tsx`).
+- **Hooks** — `useFetch`, `use-products`, `use-branches`, `use-theme`, `use-click-outside`.
+- **UI** — custom design system in `src/components/ui` (button, dialog, drawer, icons, smart-image, etc.), layout components (`store-layout`, `admin-layout`, `branch-layout`, header/footer), and feature components for cart, checkout, products, and storefront.
+- **Pages** (`src/pages/`) — `HomePage`, `ProductsPage`, `ProductPage`, `CartPage`, `CheckoutPage`, `Login`, `Signup`, `UserDashboard`, `AdminDashboard`, `AdminAnalytics`, `AdminBranches`, `BranchesPage`, `BranchInventoryPage`.
+
+## Scripts
+
+### Backend
+
+| Command | Description |
+|---|---|
+| `npm run start:dev` | Dev server with watch |
+| `npm run build` / `npm run start:prod` | Build / run production bundle |
+| `npm run lint` | oxlint (type-aware) |
+| `npm run format` | Prettier write |
+| `npm test` / `npm run test:e2e` | Vitest unit / e2e tests |
+
+### Frontend
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Vite dev server |
+| `npm run build` | Type-check + production build |
+| `npm run lint` | ESLint |
+| `npm run preview` | Preview production build |
+
+## Notes & Caveats
+
+- The NestJS boilerplate `backend/README.md` is still present alongside this file.
+- Seed data exists for users, categories, and products (`*.seed.ts` / `*Seed.ts`); branches auto-seed three default locations when the collection is empty.
+- `backend/.env` is gitignored-style local config — never commit real secrets.
+- Role detection is string-based (`role.toLowerCase().includes('admin' | 'owner')`), so keep seeded role names consistent.
+- Per `backend/AGENTS.md`, production telemetry can be sent to NestJS Observe via `npx @nestjs/observe link` (not yet wired in).
+
+## License
+
+UNLICENSED (private project).
