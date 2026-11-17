@@ -72,11 +72,11 @@ export const OrderConfirmationView: React.FC<OrderConfirmationViewProps> = ({
                     <div>
                       <p className="eyebrow text-muted">SELECTED BRANCH</p>
                       <p className="mt-1 font-medium text-ink">{order.branch.name}</p>
-                      <p className="mt-0.5 text-muted">{order.branch.city}</p>
+                      <p className="mt-0.5 text-muted">{order.branch.address}</p>
                     </div>
                     <div>
-                      <p className="eyebrow text-muted">BRANCH MANAGER</p>
-                      <p className="mt-1 text-ink">{order.branch.manager}</p>
+                      <p className="eyebrow text-muted">BRANCH CONTACT</p>
+                      <p className="mt-1 text-ink">{order.branch.phone}</p>
                     </div>
                   </>
                 ) : (

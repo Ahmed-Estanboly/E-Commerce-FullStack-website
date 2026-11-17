@@ -1,23 +1,20 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import type { CheckoutFormData, CheckoutStep, ConfirmedOrder, FormErrors, Branch } from '../types/checkout';
+import type { CheckoutFormData, CheckoutStep, ConfirmedOrder, FormErrors } from '../types/checkout';
 import { OrderSummaryCard } from '../components/checkout/OrderSummaryCard';
 import { OrderConfirmationView } from '../components/checkout/OrderConfirmationView';
 import { useCart } from '../store/cart-context';
-
-const BRANCHES: Branch[] = [
-  { id: 0, slug: 'north-house', name: 'North House', city: 'Dublin · N01', manager: 'Ava Byrne' },
-  { id: 1, slug: 'central-house', name: 'Central House', city: 'Cork · C02', manager: 'Noah Walsh' },
-  { id: 2, slug: 'south-house', name: 'South House', city: 'Galway · G03', manager: 'Mia Kelly' },
-];
+import { useBranches } from '../hooks/use-branches';
 
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
 
   const { items, subtotal, removeItem } = useCart();
+  const { branches, isLoading: isLoadingBranches, error: branchesError } = useBranches();
+  const activeBranches = useMemo(() => branches.filter((branch) => branch.isActive), [branches]);
 
   const [step, setStep] = useState<CheckoutStep>('details');
-  const [selectedBranchId, setSelectedBranchId] = useState<number>(0);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -36,10 +33,8 @@ export const CheckoutPage: React.FC = () => {
     acceptedTerms: true,
   });
 
-  const activeBranch = useMemo(
-    () => BRANCHES.find((b) => b.id === selectedBranchId) ?? BRANCHES[0],
-    [selectedBranchId]
-  );
+  const activeBranch =
+    activeBranches.find((branch) => branch._id === selectedBranchId) ?? activeBranches[0];
 
   const shippingFee = formData.fulfilment === 'deliver' ? 6.5 : 0;
   const total = subtotal + shippingFee;
@@ -73,6 +68,10 @@ export const CheckoutPage: React.FC = () => {
 
   const validate = (): FormErrors => {
     const nextErrors: FormErrors = {};
+
+    if (!activeBranch) {
+      nextErrors.branch = 'Select an active branch before placing your order.';
+    }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
       nextErrors.email = 'Enter a valid email address.';
@@ -143,6 +142,7 @@ export const CheckoutPage: React.FC = () => {
       window.scrollTo({ top: 180, behavior: 'smooth' });
       return;
     }
+    if (!activeBranch) return;
 
     const firstName =
       formData.nameOnCard.trim().split(/\s+/)[0] ||
@@ -245,16 +245,28 @@ export const CheckoutPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="eyebrow">BRANCH:</span>
             <select
-              value={selectedBranchId}
-              onChange={(e) => setSelectedBranchId(Number(e.target.value))}
+              value={activeBranch?._id ?? ''}
+              onChange={(e) => {
+                setSelectedBranchId(e.target.value);
+                setErrors((current) => {
+                  const next = { ...current };
+                  delete next.branch;
+                  return next;
+                });
+              }}
+              disabled={isLoadingBranches || activeBranches.length === 0}
               className="border border-line-strong bg-surface px-2.5 py-1 font-mono text-[10px] uppercase text-ink"
             >
-              {BRANCHES.map((branch) => (
-                <option key={branch.id} value={branch.id}>
+              {activeBranches.map((branch) => (
+                <option key={branch._id} value={branch._id}>
                   {branch.name}
                 </option>
               ))}
             </select>
+            {isLoadingBranches ? <span className="text-[10px] text-muted">Loading branches...</span> : null}
+            {!isLoadingBranches && activeBranches.length === 0 && !branchesError ? (
+              <span className="text-[10px] text-muted">No active branches are available.</span>
+            ) : null}
           </div>
         </div>
       </div>
@@ -262,6 +274,12 @@ export const CheckoutPage: React.FC = () => {
       <div className="container-nova pt-8">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-start">
           <form onSubmit={handleSubmit} noValidate className="space-y-10 lg:col-span-8">
+            {branchesError ? (
+              <div role="alert" className="border border-danger bg-danger-soft px-4 py-3 text-xs text-danger">
+                Could not load store branches: {branchesError}
+              </div>
+            ) : null}
+            {errors.branch ? <p role="alert" className="text-xs text-danger">{errors.branch}</p> : null}
             <div className="flex flex-wrap items-center gap-3 border border-line bg-accent-soft/50 px-4 py-3">
               <span className="bg-accent px-1.5 py-0.5 font-mono text-[9px] font-medium text-accent-ink uppercase">DEMO</span>
               <p className="eyebrow text-[9px] text-ink-soft">
@@ -334,9 +352,9 @@ export const CheckoutPage: React.FC = () => {
                   <div className="flex items-start gap-3">
                     <span className="mt-0.5 flex h-5 w-5 items-center justify-center border border-line-strong font-mono text-[10px]">⌂</span>
                     <div>
-                      <p className="text-xs font-medium text-ink">{activeBranch.name}</p>
-                      <p className="mt-0.5 text-xs text-muted">{activeBranch.city}</p>
-                      <p className="mt-0.5 text-xs text-muted">Manager: {activeBranch.manager}</p>
+                      <p className="text-xs font-medium text-ink">{activeBranch?.name}</p>
+                      <p className="mt-0.5 text-xs text-muted">{activeBranch?.address}</p>
+                      <p className="mt-0.5 text-xs text-muted">{activeBranch?.phone} · {activeBranch?.workingHours}</p>
                     </div>
                   </div>
                 </div>
@@ -455,6 +473,7 @@ export const CheckoutPage: React.FC = () => {
 
               <button
                 type="submit"
+                disabled={isLoadingBranches || activeBranches.length === 0}
                 className="tabular mt-6 flex h-12 w-full items-center justify-center gap-2 bg-accent font-mono text-[10px] font-medium tracking-[0.2em] text-accent-ink uppercase transition hover:bg-accent-strong"
               >
                 <span>PLACE DEMO ORDER · €{total.toFixed(2)}</span>

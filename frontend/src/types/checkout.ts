@@ -1,16 +1,11 @@
-import { CartItem } from "../store/cart-context";
+import type { CartItem } from "../store/cart-context";
+import type { Branch } from './branch';
+
+export type { Branch } from './branch';
 
 export type FulfilmentMethod = 'collect' | 'deliver';
 export type PaymentMethod = 'card' | 'apple_pay' | 'bancontact';
 export type CheckoutStep = 'details' | 'confirmation';
-
-export interface Branch {
-    id: number;
-    slug: string;
-    name: string;
-    city: string;
-    manager: string;
-  }
 
 export interface CheckoutFormData {
   email: string;
@@ -30,6 +25,7 @@ export interface CheckoutFormData {
 export interface FormErrors {
   email?: string;
   phone?: string;
+  branch?: string;
   deliveryAddress?: string;
   deliveryCity?: string;
   deliveryPostalCode?: string;

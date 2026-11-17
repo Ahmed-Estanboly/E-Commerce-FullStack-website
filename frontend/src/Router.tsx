@@ -8,6 +8,8 @@ import Signup from './pages/Signup'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminAnalytics from './pages/AdminAnalytics'
 import AdminBranches from './pages/AdminBranches'
+import BranchesPage from './pages/BranchesPage'
+import BranchInventoryPage from './pages/BranchInventoryPage'
 import { buttonStyles } from './components/ui/button-styles'
 import { CartPage } from './pages/CartPage'
 import ProductsPage from './pages/ProductsPage'
@@ -67,7 +69,8 @@ export function AppRouter() {
 
         <Route path="admin/dashboard" element={<FakeRoleRoute role="admin"><AdminDashboard /></FakeRoleRoute>} />
         <Route path="admin/analytics" element={<FakeRoleRoute role="admin"><AdminAnalytics /></FakeRoleRoute>} />
-        <Route path="admin/branches" element={<FakeRoleRoute role="admin"><AdminBranches /></FakeRoleRoute>} />
+        <Route path="admin/branches/:branchId/inventory" element={<FakeRoleRoute role="admin"><BranchInventoryPage /></FakeRoleRoute>} />
+        <Route path="admin/branches" element={<FakeRoleRoute role="admin"><BranchesPage /></FakeRoleRoute>} />
         <Route path=":branchName/dashboard" element={<FakeRoleRoute role="branch-owner"><AdminBranches /></FakeRoleRoute>} />
 
         <Route element={<StoreLayout header={{ dashboardHref: '/account' }} />}>
