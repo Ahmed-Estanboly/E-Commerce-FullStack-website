@@ -19,7 +19,7 @@ function getStoredToken(): string | null {
   }
 }
 
-/** NestJS backend API (auth, users). Base URL overridable via VITE_API_URL. */
+/** NestJS backend API (auth, users, branches). Base URL overridable via VITE_API_URL. */
 export const backendClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api/v1',
   headers: {
@@ -34,6 +34,9 @@ backendClient.interceptors.request.use((config) => {
   }
   return config
 })
+
+/** Alias kept for API modules that refer to the backend client by this name. */
+export const backendApiClient = backendClient
 
 /** The backend wraps successful responses as { success, data, timestamp }. */
 export function unwrap<T>(payload: { success: boolean; data: T }): T {

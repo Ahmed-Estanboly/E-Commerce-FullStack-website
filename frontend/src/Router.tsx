@@ -8,6 +8,8 @@ import Signup from './pages/Signup'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminAnalytics from './pages/AdminAnalytics'
 import AdminBranches from './pages/AdminBranches'
+import BranchesPage from './pages/BranchesPage'
+import BranchInventoryPage from './pages/BranchInventoryPage'
 import { buttonStyles } from './components/ui/button-styles'
 import { CartPage } from './pages/CartPage'
 import ProductsPage from './pages/ProductsPage'
@@ -83,7 +85,8 @@ export function AppRouter() {
 
         <Route path="admin/dashboard" element={<RoleRoute role="admin"><AdminDashboard /></RoleRoute>} />
         <Route path="admin/analytics" element={<RoleRoute role="admin"><AdminAnalytics /></RoleRoute>} />
-        <Route path="admin/branches" element={<RoleRoute role="admin"><AdminBranches /></RoleRoute>} />
+        <Route path="admin/branches/:branchId/inventory" element={<RoleRoute role="admin"><BranchInventoryPage /></RoleRoute>} />
+        <Route path="admin/branches" element={<RoleRoute role="admin"><BranchesPage /></RoleRoute>} />
         <Route path=":branchName/dashboard" element={<RoleRoute role="branch-owner"><AdminBranches /></RoleRoute>} />
 
         <Route element={<StorefrontLayout />}>

@@ -31,6 +31,25 @@
 $ npm install
 ```
 
+## Store branches
+
+The branch API is available under `/api/v1/branches` and seeds three default
+locations when the branches collection is empty. It supports `GET /branches`,
+`GET /branches/:id`, `POST /branches`, `PATCH /branches/:id`, and
+`DELETE /branches/:id`.
+
+Each branch's inventory is stored separately in the shared MongoDB database,
+keyed by branch and product references; it does not change the catalogue-wide
+product stock. Use `GET /branches/:branchId/inventory` to list catalogue
+products with that branch's quantity (unassigned products have quantity `0`),
+`PUT /branches/:branchId/inventory/:productId` with `{ "quantity": 12 }` to set
+stock, or `DELETE` on the same path to remove a branch's stock record.
+
+The frontend connects to `http://localhost:3000/api/v1` by default. Set
+`VITE_API_URL` in the frontend environment to use a different backend
+URL. Set `FRONTEND_URL` in the backend environment when the frontend is hosted
+on a different origin; it defaults to `http://localhost:5173`.
+
 ## Compile and run the project
 
 ```bash

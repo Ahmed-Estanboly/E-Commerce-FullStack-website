@@ -8,7 +8,7 @@ interface OrderSummaryCardProps {
   shippingFee: number;
   total: number;
   fulfilment: FulfilmentMethod;
-  branch: Branch;
+  branch?: Branch;
   mode: 'checkout' | 'confirmation';
   orderNumber?: string;
   cardLast4?: string;
@@ -75,7 +75,7 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
         {mode === 'checkout' && (
           <div className="flex items-center justify-between">
             <span className="text-muted">Branch</span>
-            <span className="text-ink">{branch.city}</span>
+            <span className="text-ink">{branch?.address ?? 'Select a branch'}</span>
           </div>
         )}
       </div>
