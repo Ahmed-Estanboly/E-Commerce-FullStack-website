@@ -113,7 +113,7 @@ export class UsersService {
     return userObj;
   }
 
-  async updateProfile(id: number, dto: { name?: string; avatar?: string; password?: string }) {
+  async updateProfile(id: number, dto: { name?: string; avatar?: string; phone?: string; password?: string }) {
     return this.update(id, dto as UpdateUserDto);
   }
 

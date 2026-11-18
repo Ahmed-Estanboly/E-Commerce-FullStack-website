@@ -11,6 +11,10 @@ export class UpdateProfileDto {
   avatar?: string;
 
   @IsString()
+  @IsOptional()
+  phone?: string;
+
+  @IsString()
   @MinLength(6)
   @IsOptional()
   password?: string;

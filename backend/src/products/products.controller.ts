@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { ProductsService } from './products.service.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
-import { Category } from '../category/schemas/category.schema.js';
+import { withCategory } from '../common/with-category.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
@@ -16,39 +16,8 @@ export class ProductsController {
     @InjectConnection() private readonly connection: mongoose.Connection,
   ) {}
 
-  private async withCategory(data: any) {
-    const categories = await this.connection.model(Category.name).find().exec();
-    const byId = new Map(
-      categories.map((category: any) => {
-        const plain = typeof category.toObject === 'function' ? category.toObject() : category;
-        return [
-          plain.id,
-          {
-            id: plain.id,
-            name: plain.name,
-            slug: plain.slug,
-            image: plain.image,
-            createdAt: plain.createdAt ?? plain.creationAt,
-            updatedAt: plain.updatedAt ?? plain.updatedAt,
-          },
-        ];
-      }),
-    );
-    const transform = (product: any) => {
-      if (!product) return product;
-      const plain = typeof product.toObject === 'function' ? product.toObject() : { ...product };
-      const { categoryId, ...rest } = plain;
-      const category = byId.get(categoryId) ?? {
-        id: categoryId ?? 0,
-        name: 'Uncategorised',
-        slug: 'uncategorised',
-        image: '',
-        createdAt: plain.createdAt,
-        updatedAt: plain.updatedAt,
-      };
-      return { ...rest, category };
-    };
-    return Array.isArray(data) ? data.map(transform) : transform(data);
+  private withCategory<T>(data: T): Promise<T> {
+    return withCategory(this.connection, data);
   }
 
   @Post()
@@ -60,8 +29,8 @@ export class ProductsController {
   }
 
   @Get()
-  async findAll() {
-    const data = await this.withCategory(await this.productsService.findAll());
+  async findAll(@Query('categoryId', new ParseIntPipe({ optional: true })) categoryId?: number) {
+    const data = await this.withCategory(await this.productsService.findAll(categoryId));
     return data;
   }
 

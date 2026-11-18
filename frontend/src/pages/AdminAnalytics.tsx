@@ -39,7 +39,7 @@ const AdminAnalytics = () => {
         <div className="admin-content">
           <div className="admin-page-intro">
             <div><p className="eyebrow">Analytics · live API data</p><h1>Read the<br /><em>collection.</em></h1><p>Pricing and category signals calculated from every product currently returned by the connected catalogue API.</p></div>
-            <div className="admin-intro-actions"><Link className="admin-outline-button" to="/admin/dashboard">Back to dashboard <ArrowUpRight aria-hidden="true" /></Link><button className="admin-accent-button" type="button">Refresh data <ArrowUpRight aria-hidden="true" /></button></div>
+            <div className="admin-intro-actions"><Link className="admin-outline-button" to="/admin/dashboard">Back to dashboard <ArrowUpRight aria-hidden="true" /></Link><button className="admin-accent-button" type="button" onClick={() => void refetch()}>Refresh data <ArrowUpRight aria-hidden="true" /></button></div>
           </div>
 
           <section className="admin-metrics" aria-label="Analytics summary"><article><span>Catalogue value</span><strong>{isLoading ? '—' : currency.format(totalValue)}</strong><small>Sum of listed prices</small></article><article><span>Average price</span><strong>{isLoading ? '—' : currency.format(averagePrice)}</strong><small>Across {products.length} products</small></article><article><span>Largest category</span><strong>{isLoading ? '—' : categories[0]?.name ?? '—'}</strong><small>{categories[0] ? currency.format(categories[0].total) : 'No data'}</small></article><article><span>Price bands</span><strong>{isLoading ? '—' : bands.filter((band) => band.count > 0).length}</strong><small>Active pricing ranges</small></article></section>
@@ -52,7 +52,7 @@ const AdminAnalytics = () => {
           </div>
 
           <section className="admin-panel admin-orders-panel"><div className="admin-panel-heading"><span>Recently updated products</span><span>Latest API response <ChevronDown aria-hidden="true" /></span></div><div className="admin-table analytics-products-table"><div className="admin-table-head"><span>Product</span><span>Category</span><span>Updated</span><span>Price</span></div>{recentlyUpdated.map((product) => <div className="admin-table-row" key={product.id}><span className="product-name"><img className="product-thumb" src={product.images[0]} alt="" />{product.title}</span><span>{product.category.name}</span><span>{new Date(product.updatedAt).toLocaleDateString()}</span><span>{currency.format(product.price)}</span></div>)}</div></section>
-          <footer className="admin-footer"><span>LIVE ANALYTICS · ESCUELAJS API</span><span>{isLoading ? 'LOADING CATALOGUE' : `${products.length} PRODUCTS ANALYSED`}</span></footer>
+          <footer className="admin-footer"><span>LIVE ANALYTICS · BACKEND API</span><span>{isLoading ? 'LOADING CATALOGUE' : `${products.length} PRODUCTS ANALYSED`}</span></footer>
         </div>
     </AdminLayout>
   )

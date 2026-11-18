@@ -27,6 +27,8 @@ export class BranchesController {
   ) {}
 
   @Get(':branchId/inventory')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('master admin', 'branch owner', 'central owner', 'south owner')
   getInventory(@Param('branchId') branchId: string) {
     return this.branchInventoryService.findAll(branchId);
   }

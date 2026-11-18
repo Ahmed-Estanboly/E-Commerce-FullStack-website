@@ -6,6 +6,7 @@ export interface AuthUser {
   email: string
   role: string
   avatar?: string
+  phone?: string
 }
 
 export interface LoginCredentials {
@@ -27,6 +28,7 @@ export interface AuthResponse {
 export interface UpdateProfilePayload {
   name?: string
   avatar?: string
+  phone?: string
   password?: string
 }
 

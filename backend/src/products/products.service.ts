@@ -53,8 +53,9 @@ export class ProductsService implements OnApplicationBootstrap {
     return this.productModel.create(plainDto);
   }
 
-  findAll() {
-    return this.productModel.find().exec();
+  findAll(categoryId?: number) {
+    const filter = categoryId === undefined ? {} : { categoryId };
+    return this.productModel.find(filter).exec();
   }
 
   async findOne(id: number) {

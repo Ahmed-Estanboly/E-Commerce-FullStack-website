@@ -7,6 +7,7 @@ import { Skeleton } from '../components/ui/feedback'
 import { useCart } from '../store/cart-context'
 import { formatPrice } from '../lib/utils'
 import { authService } from '../lib/api/auth.service'
+import { ordersService, type BackendOrder } from '../lib/api/orders.service'
 import { getStoredSession, updateSessionUser } from '../lib/auth'
 
 type Profile = {
@@ -39,7 +40,17 @@ function loadProfile(): Profile {
     firstName,
     lastName: rest.join(' '),
     email: user.email,
-    phone: '',
+    phone: user.phone ?? '',
+  }
+}
+
+function toOrderView(order: BackendOrder): Order {
+  return {
+    id: order.orderNumber,
+    date: new Date(order.createdAt).toLocaleDateString(),
+    status: order.status,
+    total: order.total,
+    items: order.items.reduce((sum, item) => sum + item.quantity, 0),
   }
 }
 
@@ -59,6 +70,7 @@ const UserDashboard = () => {
   const [isLoading, setIsLoading] = useState(true)
   const { items, itemCount, subtotal, updateQuantity, removeItem } = useCart()
   const [profile, setProfile] = useState<Profile>(loadProfile)
+  const [orders, setOrders] = useState<Order[] | null>(null)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -68,7 +80,20 @@ const UserDashboard = () => {
     return () => window.cancelAnimationFrame(frame)
   }, [])
 
-  const orders: Order[] = []
+  useEffect(() => {
+    let cancelled = false
+    ordersService
+      .getMyOrders()
+      .then((list) => {
+        if (!cancelled) setOrders(list.map(toOrderView))
+      })
+      .catch(() => {
+        if (!cancelled) setOrders([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   function updateProfile(field: keyof Profile, value: string) {
     setSaved(false)
@@ -86,7 +111,7 @@ const UserDashboard = () => {
     }
     setSaving(true)
     try {
-      const user = await authService.updateProfile({ name })
+      const user = await authService.updateProfile({ name, phone: profile.phone.trim() || undefined })
       updateSessionUser(user)
       setProfile((current) => ({ ...current, firstName: name.split(' ')[0] ?? '', lastName: name.split(' ').slice(1).join(' ') }))
       setSaved(true)
@@ -116,9 +141,15 @@ const UserDashboard = () => {
         <section className="border border-line bg-surface p-5 sm:p-7" aria-labelledby="orders-heading">
           <div className="flex items-start justify-between gap-4 border-b border-line pb-4">
             <div><p className="eyebrow">The paper trail</p><h2 id="orders-heading" className="mt-1 font-display text-3xl tracking-[-0.03em]">Order history</h2></div>
-            <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted">{orders.length} orders</span>
+            <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted">{orders?.length ?? 0} orders</span>
           </div>
-          {orders.length ? <div className="divide-y divide-line">{orders.map((order) => <div key={order.id} className="flex flex-wrap items-center justify-between gap-4 py-4"><div><p className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted">{order.id} · {order.date}</p><p className="mt-1 text-[13px] text-ink">{order.items} {order.items === 1 ? 'item' : 'items'}</p></div><div className="text-right"><p className="font-mono text-[11px] tabular text-ink">{formatPrice(order.total)}</p><p className="mt-1 text-[9px] uppercase tracking-[0.1em] text-success">{order.status}</p></div></div>)}</div> : <div className="py-16 text-center"><ShoppingBag className="mx-auto h-7 w-7 text-muted" strokeWidth={1.25} aria-hidden="true" /><h3 className="mt-4 font-display text-2xl">No orders yet.</h3><p className="mx-auto mt-2 max-w-xs text-[12px] leading-relaxed text-muted">Your completed purchases will appear here once you place your first order.</p><Link to="/shop" className="mt-5 inline-flex font-mono text-[9px] uppercase tracking-[0.12em] text-ink underline underline-offset-4">Explore the edit</Link></div>}
+          {orders === null ? (
+            <div className="space-y-4 py-8"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-2/3" /></div>
+          ) : orders.length ? (
+            <div className="divide-y divide-line">{orders.map((order) => <div key={order.id} className="flex flex-wrap items-center justify-between gap-4 py-4"><div><p className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted">{order.id} · {order.date}</p><p className="mt-1 text-[13px] text-ink">{order.items} {order.items === 1 ? 'item' : 'items'}</p></div><div className="text-right"><p className="font-mono text-[11px] tabular text-ink">{formatPrice(order.total)}</p><p className="mt-1 text-[9px] uppercase tracking-[0.1em] text-success">{order.status}</p></div></div>)}</div>
+          ) : (
+            <div className="py-16 text-center"><ShoppingBag className="mx-auto h-7 w-7 text-muted" strokeWidth={1.25} aria-hidden="true" /><h3 className="mt-4 font-display text-2xl">No orders yet.</h3><p className="mx-auto mt-2 max-w-xs text-[12px] leading-relaxed text-muted">Your completed purchases will appear here once you place your first order.</p><Link to="/shop" className="mt-5 inline-flex font-mono text-[9px] uppercase tracking-[0.12em] text-ink underline underline-offset-4">Explore the edit</Link></div>
+          )}
         </section>
 
         <section className="border border-line bg-surface p-5 sm:p-7" aria-labelledby="cart-heading">
@@ -133,7 +164,7 @@ const UserDashboard = () => {
           {([['firstName', 'First name', 'text'], ['lastName', 'Last name', 'text'], ['email', 'Email address', 'email'], ['phone', 'Phone number', 'tel']] as const).map(([field, label, type]) => <label key={field} className="grid gap-2 text-[11px] font-medium uppercase tracking-[0.12em] text-ink-soft">{label}<input className="border-0 border-b border-line-strong bg-transparent px-0 py-3 text-sm font-normal normal-case tracking-normal text-ink outline-none transition-colors placeholder:text-muted/70 focus:border-ink" type={type} value={profile[field]} onChange={(event) => updateProfile(field, event.target.value)} placeholder={field === 'phone' ? 'Add a phone number' : undefined} disabled={field === 'email'} /></label>)}
           <div className="flex flex-wrap items-center gap-4 sm:col-span-2">
             <Button variant="accent" type="submit" loading={saving} rightIcon={saved ? <Check className="h-4 w-4" aria-hidden="true" /> : undefined}>{saved ? 'Details saved' : 'Save details'}</Button>
-            {saveError ? <p className="text-[11px] text-danger">{saveError}</p> : <p className="text-[11px] text-muted">Your name is saved to your account.</p>}
+            {saveError ? <p className="text-[11px] text-danger">{saveError}</p> : <p className="text-[11px] text-muted">Your details are saved to your account.</p>}
           </div>
         </form>
       </section>

@@ -21,6 +21,9 @@ export class User {
     @Prop()
     avatar: string;
 
+    @Prop()
+    phone?: string;
+
     @Prop({ select: false })
     refreshToken?: string;
 }

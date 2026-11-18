@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowUpRight, ChevronDown } from '../components/ui/icons'
+import { ArrowUpRight } from '../components/ui/icons'
 import { AdminLayout } from '../components/layout/admin-layout'
 import { Skeleton } from '../components/ui/feedback'
 import { useStoreProducts } from '../hooks/use-products'
@@ -30,7 +30,7 @@ function PanelHeading({ children, action }: { children: string; action?: string 
   return (
     <div className="admin-panel-heading">
       <span>{children}</span>
-      {action ? <button className="admin-panel-action" type="button">{action}<ChevronDown aria-hidden="true" /></button> : null}
+      {action ? <span className="admin-panel-action">{action}</span> : null}
     </div>
   )
 }
@@ -98,7 +98,7 @@ const AdminDashboard = () => {
           </div>
 
           <section className="admin-panel admin-orders-panel"><PanelHeading action="Live catalogue">Product feed</PanelHeading><div className="admin-table admin-orders-table"><div className="admin-table-head"><span>Product ID</span><span>Product</span><span>Category</span><span>Updated</span><span>Price</span><span>Source</span><span /></div>{latestProducts.map((product) => <div className="admin-table-row" key={product.id}><span>#{product.id}</span><span>{product.title}</span><span>{product.category.name}</span><span>{new Date(product.updatedAt).toLocaleDateString()}</span><span>{currency.format(product.price)}</span><span><em className="order-status status-complete">API</em></span><Link className="admin-row-action" to={`/products/${product.id}`}>View</Link></div>)}</div></section>
-          <footer className="admin-footer"><span>LIVE CATALOGUE · ESCUELAJS API</span><span>{error ? 'API ERROR · RETRY AVAILABLE' : isLoading ? 'LOADING CATALOGUE' : `LAST REFRESHED · ${products.length} PRODUCTS`}</span></footer>
+          <footer className="admin-footer"><span>LIVE CATALOGUE · BACKEND API</span><span>{error ? 'API ERROR · RETRY AVAILABLE' : isLoading ? 'LOADING CATALOGUE' : `LAST REFRESHED · ${products.length} PRODUCTS`}</span></footer>
           </>}
         </div>
     </AdminLayout>

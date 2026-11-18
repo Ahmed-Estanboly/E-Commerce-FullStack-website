@@ -12,6 +12,62 @@ import type { Product, ProductCategory } from "../types/product";
 
 const PAGE_SIZE = 9;
 
+/**
+ * Homepage department slugs → catalogue categories.
+ *
+ * Departments are editorial groupings; the backend only knows flat
+ * categories. Each department lists the category names it draws from, plus
+ * optional title keywords used to narrow shared categories (e.g. perfume
+ * inside Miscellaneous for Beauty & Care).
+ */
+const DEPARTMENT_SLUGS = new Set([
+  "fashion",
+  "pantry-fresh",
+  "audio-tech",
+  "furniture-home",
+  "beauty-care",
+  "objects-gifts",
+]);
+
+const DEPARTMENT_NAMES: Record<string, string> = {
+  fashion: "Fashion & Footwear",
+  "pantry-fresh": "Pantry & Fresh",
+  "audio-tech": "Audio & Tech",
+  "furniture-home": "Furniture & Home",
+  "beauty-care": "Beauty & Care",
+  "objects-gifts": "Objects & Gifts",
+};
+
+const DEPARTMENT_FILTERS: Record<string, { categories: string[]; keywords?: string[] }> = {
+  fashion: { categories: ["Clothes", "Shoes"] },
+  "pantry-fresh": {
+    categories: ["Miscellaneous"],
+    keywords: ["food", "pantry", "grocery", "kitchen", "culinary", "fresh", "produce"],
+  },
+  "audio-tech": { categories: ["Electronics"] },
+  "furniture-home": { categories: ["Furniture"] },
+  "beauty-care": {
+    categories: ["Miscellaneous"],
+    keywords: ["beauty", "care", "parfum", "perfume", "fragrance", "cosmetic"],
+  },
+  "objects-gifts": {
+    categories: ["Miscellaneous"],
+    keywords: ["object", "gift", "tumbler", "luggage", "handbag", "sunglass", "bicycle", "kart", "decor", "ceramic", "candle"],
+  },
+};
+
+function matchesDepartment(product: Product, slug: string): boolean {
+  const filter = DEPARTMENT_FILTERS[slug];
+  if (!filter) return false;
+  const categoryName = product.category?.name ?? "";
+  if (!filter.categories.some((name) => name.toLowerCase() === categoryName.toLowerCase())) {
+    return false;
+  }
+  if (!filter.keywords?.length) return true;
+  const value = `${product.title} ${categoryName}`.toLowerCase();
+  return filter.keywords.some((keyword) => value.includes(keyword));
+}
+
 function ProductsPageSkeleton() {
   return (
     <main
@@ -57,10 +113,12 @@ function ProductsPageSkeleton() {
 }
 
 function ProductsPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const categoryParam = searchParams.get("category") ?? "all";
   const searchParam = searchParams.get("q") ?? "";
+  const departmentParam =
+    categoryParam !== "all" && DEPARTMENT_SLUGS.has(categoryParam) ? categoryParam : null;
 
   // جلب كل المنتجات مرة واحدة
   const fetchProducts = useCallback(
@@ -83,9 +141,22 @@ function ProductsPage() {
     error: categoriesError,
   } = useFetch<ProductCategory[]>(fetchCategories);
 
-  // حالات الفلاتر
+  const products = useMemo(() => data ?? [], [data]);
+  const categories = useMemo(() => categoriesData ?? [], [categoriesData]);
+
+  // معاملات الفئة في الرابط: id رقمي أو slug أو slug القسم (department)
+  const urlCategoryId = useMemo(() => {
+    if (!categoryParam || categoryParam === "all" || departmentParam) return null;
+    const byId = categories.find((c) => c.id.toString() === categoryParam);
+    if (byId) return byId.id.toString();
+    const bySlug = categories.find((c) => c.slug === categoryParam);
+    return bySlug ? bySlug.id.toString() : categoryParam;
+  }, [categoryParam, departmentParam, categories]);
+
+  const effectiveSelectedCategory = departmentParam ?? urlCategoryId ?? "all";
+
+  // حالات الفلاتر المحلية
   const [searchTerm, setSearchTerm] = useState(searchParam);
-  const [selectedCategory, setSelectedCategory] = useState(categoryParam === "all" ? "all" : "");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [sortBy, setSortBy] = useState("default");
@@ -93,56 +164,55 @@ function ProductsPage() {
   // الصفحة الحالية
   const [currentPage, setCurrentPage] = useState(1);
 
-  const products = useMemo(() => data ?? [], [data]);
-  const categories = useMemo(() => categoriesData ?? [], [categoriesData]);
+  // مزامنة حقل البحث مع معامل ?q والعودة للصفحة الأولى عند تغيّر الفلاتر
+  const urlKey = `${searchParam}|${categoryParam}`;
+  const [appliedUrlKey, setAppliedUrlKey] = useState(urlKey);
+  if (appliedUrlKey !== urlKey) {
+    setAppliedUrlKey(urlKey);
+    setSearchTerm(searchParam);
+    setCurrentPage(1);
+  }
 
-  const effectiveSearchTerm = searchTerm;
+  const filterKey = `${searchTerm}|${effectiveSelectedCategory}|${minPrice}|${maxPrice}|${sortBy}`;
+  const [appliedFilterKey, setAppliedFilterKey] = useState(filterKey);
+  if (appliedFilterKey !== filterKey) {
+    setAppliedFilterKey(filterKey);
+    setCurrentPage(1);
+  }
 
-  const effectiveSelectedCategory = useMemo(() => {
-    if (!categoryParam || categoryParam === "all") return selectedCategory;
+  const goToCategory = (categoryId: string | null) => {
+    const params = new URLSearchParams();
+    if (searchParam) params.set("q", searchParam);
+    if (categoryId) params.set("category", categoryId);
+    const query = params.toString();
+    navigate(query ? `/shop?${query}` : "/shop", { replace: true });
+  };
 
-    const departmentSlugs = new Set([
-      "fashion",
-      "pantry-fresh",
-      "audio-tech",
-      "furniture-home",
-      "beauty-care",
-      "objects-gifts",
-    ]);
-
-    return departmentSlugs.has(categoryParam)
-      ? `department:${categoryParam}`
-      : selectedCategory;
-  }, [categoryParam, selectedCategory]);
+  const resetFilters = () => {
+    setSearchTerm("");
+    setMinPrice("");
+    setMaxPrice("");
+    setSortBy("default");
+    setSearchParams({}, { replace: true });
+  };
 
   // البحث والفلترة والترتيب
   const filteredProducts = useMemo(() => {
     const result = products.filter((product) => {
+      const searchValue = searchTerm.trim().toLowerCase();
 
-      const searchValue = effectiveSearchTerm.trim().toLowerCase();
+      const matchesSearch =
+        !searchValue ||
+        product.title.toLowerCase().includes(searchValue) ||
+        product.description.toLowerCase().includes(searchValue) ||
+        (product.category?.name ?? "").toLowerCase().includes(searchValue);
 
-const matchesSearch =
-  product.title.toLowerCase().includes(searchValue) ||
-  product.description.toLowerCase().includes(searchValue) ||
-  product.category.name.toLowerCase().includes(searchValue);
+      let matchesCategory = effectiveSelectedCategory === "all" || effectiveSelectedCategory === "";
 
-      let matchesCategory = effectiveSelectedCategory === "all";
-
-      if (!matchesCategory && effectiveSelectedCategory.startsWith("department:")) {
-        const slug = effectiveSelectedCategory.slice("department:".length);
-        const departmentKeywords: Record<string, string[]> = {
-          fashion: ["cloth", "shoe", "fashion", "sunglass", "handbag"],
-          "pantry-fresh": ["food", "pantry", "grocery", "grosery", "kitchen", "culinary"],
-          "audio-tech": ["electronic", "tech", "audio", "computer", "bicycle", "go-kart"],
-          "furniture-home": ["furniture", "home", "glass", "luggage", "decor"],
-          "beauty-care": ["beauty", "care", "parfum", "perfume", "fragrance", "cosmetic"],
-          "objects-gifts": ["misc", "object", "gift", "glass tumbler", "luggage", "handbag", "sunglass"],
-        };
-        const keywords = departmentKeywords[slug] ?? [];
-        const value = `${product.title} ${product.category.name}`.toLowerCase();
-        matchesCategory = keywords.some((keyword) => value.includes(keyword));
+      if (!matchesCategory && DEPARTMENT_SLUGS.has(effectiveSelectedCategory)) {
+        matchesCategory = matchesDepartment(product, effectiveSelectedCategory);
       } else if (!matchesCategory) {
-        matchesCategory = product.category.id.toString() === effectiveSelectedCategory;
+        matchesCategory = product.category?.id?.toString() === effectiveSelectedCategory;
       }
 
       const matchesMinPrice =
@@ -170,7 +240,7 @@ const matchesSearch =
     return result;
   }, [
     products,
-    effectiveSearchTerm,
+    searchTerm,
     effectiveSelectedCategory,
     minPrice,
     maxPrice,
@@ -193,6 +263,8 @@ const matchesSearch =
   if (isLoading) return <ProductsPageSkeleton />;
   if (error) return <p>Error: {error}</p>;
 
+  const activeDepartment = departmentParam ? DEPARTMENT_NAMES[departmentParam] : null;
+
   return (
     <main className="min-h-screen bg-canvas px-5 py-10 font-sans text-ink sm:px-8 lg:px-10 page-enter">
   
@@ -202,15 +274,19 @@ const matchesSearch =
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div>
             <p className="eyebrow-strong mb-3">
-              The full catalogue
+              {activeDepartment ?? 'The full catalogue'}
             </p>
   
             <h1 className="font-display text-5xl tracking-tight sm:text-6xl lg:text-7xl">
-              The full <span className="italic text-accent">edit.</span>
+              {activeDepartment ? (
+                <>{activeDepartment} <span className="italic text-accent">edit.</span></>
+              ) : (
+                <>The full <span className="italic text-accent">edit.</span></>
+              )}
             </h1>
   
             <p className="eyebrow mt-4">
-              {products.length} Pieces — {categories.length} Departments
+              {filteredProducts.length} Pieces — {categories.length} Departments
             </p>
           </div>
   
@@ -237,11 +313,8 @@ const matchesSearch =
               <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-soft">
                 <input
                   type="checkbox"
-                  checked={effectiveSelectedCategory === "all" || effectiveSelectedCategory === ""}
-                  onChange={() => {
-                    setSelectedCategory("all");
-                    navigate("/shop", { replace: true });
-                  }}
+                  checked={effectiveSelectedCategory === "all"}
+                  onChange={() => goToCategory(null)}
                   className="accent-accent"
                 />
                 All pieces
@@ -255,13 +328,13 @@ const matchesSearch =
                   <input
                     type="checkbox"
                     checked={effectiveSelectedCategory === category.id.toString()}
-                    onChange={() => {
-                      const nextCategory = effectiveSelectedCategory === category.id.toString()
-                        ? "all"
-                        : category.id.toString();
-                      setSelectedCategory(nextCategory);
-                      navigate("/shop", { replace: true });
-                    }}
+                    onChange={() =>
+                      goToCategory(
+                        effectiveSelectedCategory === category.id.toString()
+                          ? null
+                          : category.id.toString(),
+                      )
+                    }
                     className="accent-accent"
                   />
                   <span className="min-w-0 truncate" title={category.name}>
@@ -318,42 +391,36 @@ const matchesSearch =
             </label>
           </div>
         </div>
-
+  
         {/* Reset Filters */}
         <button
-          onClick={() => {
-            setSearchTerm("");
-            setSelectedCategory("all");
-            navigate("/shop", { replace: true });
-            setMinPrice("");
-            setMaxPrice("");
-            setSortBy("default");
-          }}
+          type="button"
+          onClick={resetFilters}
           className="mt-6 text-[10px] uppercase tracking-[0.2em] text-muted underline underline-offset-4 transition-colors hover:text-ink"
         >
           Reset all filters
         </button>
       </aside>
-
+  
       {/* Products Area */}
       <div className="min-w-0">
-
+  
         {/* Toolbar */}
         <div className="mb-6 flex flex-col justify-between gap-4 border-b border-line pb-4 sm:flex-row sm:items-center">
-
+  
           <p className="eyebrow">
             Showing {filteredProducts.length} of {products.length} pieces
           </p>
-
+  
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
               type="text"
               placeholder="Search products..."
-              value={effectiveSearchTerm}
+              value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full border border-line bg-surface px-3 py-2 text-xs text-ink placeholder:text-muted outline-none transition-colors focus:border-ink sm:w-48"
             />
-
+  
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -366,20 +433,20 @@ const matchesSearch =
             </select>
           </div>
         </div>
-
+  
         {/* Loading Categories */}
         {isLoadingCategories && (
           <p className="mb-4 text-xs text-muted">
             Loading categories...
           </p>
         )}
-
+  
         {categoriesError && (
           <p className="mb-4 text-xs text-danger">
             Failed to load categories.
           </p>
         )}
-
+  
         {/* Product Grid */}
         {currentProducts.length > 0 ? (
           <ProductList products={currentProducts} />
@@ -388,11 +455,11 @@ const matchesSearch =
             No products found.
           </p>
         )}
-
+  
         {/* Pagination */}
         <div className="mt-10 border-t border-line pt-6">
           <Pagination
-            currentPage={currentPage}
+            currentPage={effectivePage}
             totalPages={totalPages}
             onPageChange={setCurrentPage}
           />
