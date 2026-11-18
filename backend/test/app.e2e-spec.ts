@@ -20,7 +20,13 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
-      .expect('Hello World!');
+      .expect((response) => {
+        expect(response.body).toMatchObject({
+          success: true,
+          data: 'Hello World!',
+        });
+        expect(response.body.timestamp).toBeDefined();
+      });
   });
 
   afterEach(async () => {

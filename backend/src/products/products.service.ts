@@ -39,7 +39,18 @@ export class ProductsService implements OnApplicationBootstrap {
 
   async create(createProductDto: CreateProductDto) {
     const id = await this.getNextId();
-    return this.productModel.create({ ...createProductDto, id, slug: createProductDto.title.toLowerCase().replace(/ /g, '-') });
+    const plainDto = {
+      title: createProductDto.title,
+      slug: createProductDto.title.toLowerCase().replace(/ /g, '-'),
+      price: createProductDto.price,
+      description: createProductDto.description,
+      categoryId: createProductDto.categoryId,
+      images: createProductDto.images,
+      stock: createProductDto.stock,
+      branch: createProductDto.branch,
+      id,
+    };
+    return this.productModel.create(plainDto);
   }
 
   findAll() {

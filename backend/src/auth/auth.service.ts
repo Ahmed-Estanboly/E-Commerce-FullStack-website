@@ -62,11 +62,11 @@ export class AuthService {
   }
 
   private sanitizeUser(user: UserDocument | Record<string, unknown>) {
-    const obj = (user as UserDocument).toObject
-      ? (user as UserDocument).toObject()
-      : { ...user };
-    delete (obj as Partial<User>).password;
-    delete (obj as Partial<User>).refreshToken;
+    const obj: Record<string, unknown> = typeof (user as UserDocument).toObject === 'function'
+      ? (user as UserDocument).toObject() as unknown as Record<string, unknown>
+      : { ...(user as Record<string, unknown>) };
+    delete obj.password;
+    delete obj.refreshToken;
     return obj;
   }
 }

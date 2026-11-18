@@ -106,8 +106,9 @@ export const CheckoutPage: React.FC = () => {
       const expParts = formData.expiry.split('/').map((s) => s.trim());
       const month = Number(expParts[0]);
       const year = Number(expParts[1]);
-      const currentYear = 26;
-      const currentMonth = 11;
+      const now = new Date();
+      const currentYear = now.getFullYear() % 100;
+      const currentMonth = now.getMonth() + 1;
 
       if (
         expParts.length !== 2 ||

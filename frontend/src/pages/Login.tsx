@@ -124,7 +124,7 @@ const Login = () => {
                     <input className="h-3.5 w-3.5 accent-[var(--accent)]" type="checkbox" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} />
                     <span>Remember me</span>
                   </label>
-                  <button className="text-xs text-ink-soft underline-offset-4 hover:text-ink hover:underline" type="button" onClick={() => setError('Password reset is not available yet. Please contact support.')}>Forgot password?</button>
+                  <button className="text-xs text-ink-soft underline-offset-4 hover:text-ink hover:underline" type="button" onClick={() => setError('For account recovery, please contact the NOVA support team.')}>Forgot password?</button>
                 </div>
 
                 {error && <p className="border border-danger/30 bg-danger-soft px-3 py-2 text-xs leading-relaxed text-danger" role="alert">{error}</p>}

@@ -73,7 +73,7 @@ const AdminDashboard = () => {
             <div>
               <p className="eyebrow">Catalogue overview · live API data</p>
               <h1>The house,<br /><em>at a glance.</em></h1>
-              <p>Product, category and pricing performance from the connected catalogue API. Order and stock data will appear when those endpoints are available.</p>
+              <p>Product, category and pricing performance from the connected catalogue API, with order and branch inventory data available through the backend.</p>
             </div>
           </div>
 

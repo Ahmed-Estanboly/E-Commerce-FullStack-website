@@ -54,11 +54,42 @@ export function Header({
   const [menuOpen, setMenuOpen] = useState(false)
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const [isSignedIn, setIsSignedIn] = useState(hasSignedInUser)
+  const [activeSection, setActiveSection] = useState(location.hash || (location.pathname === '/' ? '/' : location.pathname))
   const accountInitial = getStoredSession()?.user.name.trim().charAt(0).toUpperCase() || 'A'
 
+  useEffect(() => {
+    if (location.pathname !== '/') return
+
+    const trackVisibleSection = () => {
+      const sections = [
+        { id: 'universes', active: '#universes' },
+        { id: 'contact', active: '#contact' },
+      ]
+      const marker = 180
+      let nextSection = '/'
+      for (const section of sections) {
+        const element = document.getElementById(section.id)
+        if (element && element.getBoundingClientRect().top <= marker) nextSection = section.active
+      }
+      setActiveSection(nextSection)
+    }
+
+    const frame = window.requestAnimationFrame(trackVisibleSection)
+    window.addEventListener('scroll', trackVisibleSection, { passive: true })
+    window.addEventListener('resize', trackVisibleSection)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', trackVisibleSection)
+      window.removeEventListener('resize', trackVisibleSection)
+    }
+  }, [location.pathname, location.hash])
+
   const isActive = (to: string) => {
-    if (to.includes('#')) return false
-    if (to === '/') return location.pathname === '/'
+    if (to.includes('#')) {
+      if (location.pathname !== '/') return false
+      return activeSection === `#${to.split('#')[1]}`
+    }
+    if (to === '/') return location.pathname === '/' && activeSection === '/'
     if (to === '/shop') {
       return location.pathname.startsWith('/shop') || location.pathname.startsWith('/products')
     }

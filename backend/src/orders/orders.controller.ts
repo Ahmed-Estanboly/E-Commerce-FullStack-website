@@ -3,6 +3,8 @@ import { CreateOrderDto } from './dto/create-order.dto.js';
 import { OrdersService } from './orders.service.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard.js';
+import { RolesGuard } from '../common/guards/roles.guard.js';
+import { Roles } from '../common/decorators/roles.decorator.js';
 
 @Controller('orders')
 export class OrdersController {
@@ -24,11 +26,15 @@ export class OrdersController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('master admin')
   findAll() {
     return this.ordersService.findAll();
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('master admin')
   findOne(@Param('id') id: string) {
     return this.ordersService.findOne(id);
   }

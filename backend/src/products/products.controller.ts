@@ -1,10 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { ProductsService } from './products.service.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
 import { Category } from '../category/schemas/category.schema.js';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
+import { RolesGuard } from '../common/guards/roles.guard.js';
+import { Roles } from '../common/decorators/roles.decorator.js';
 
 @Controller('products')
 export class ProductsController {
@@ -49,6 +52,8 @@ export class ProductsController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('master admin')
   async create(@Body() createProductDto: CreateProductDto) {
     const data = await this.withCategory(await this.productsService.create(createProductDto));
     return data;
@@ -67,12 +72,16 @@ export class ProductsController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('master admin')
   async update(@Param('id', ParseIntPipe) id: number, @Body() updateProductDto: UpdateProductDto) {
     const data = await this.withCategory(await this.productsService.update(id, updateProductDto));
     return data;
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('master admin')
   async remove(@Param('id', ParseIntPipe) id: number) {
     const data = await this.withCategory(await this.productsService.remove(id));
     return data;

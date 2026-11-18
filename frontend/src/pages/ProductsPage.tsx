@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { useFetch } from "../hooks/useFetch";
 import { productsService } from "../lib/api/products.service";
@@ -56,6 +57,11 @@ function ProductsPageSkeleton() {
 }
 
 function ProductsPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const categoryParam = searchParams.get("category") ?? "all";
+  const searchParam = searchParams.get("q") ?? "";
+
   // جلب كل المنتجات مرة واحدة
   const fetchProducts = useCallback(
     (signal: AbortSignal) =>
@@ -78,8 +84,8 @@ function ProductsPage() {
   } = useFetch<ProductCategory[]>(fetchCategories);
 
   // حالات الفلاتر
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [searchTerm, setSearchTerm] = useState(searchParam);
+  const [selectedCategory, setSelectedCategory] = useState(categoryParam === "all" ? "all" : "");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [sortBy, setSortBy] = useState("default");
@@ -87,23 +93,57 @@ function ProductsPage() {
   // الصفحة الحالية
   const [currentPage, setCurrentPage] = useState(1);
 
-  const products = data ?? [];
-  const categories = categoriesData ?? [];
+  const products = useMemo(() => data ?? [], [data]);
+  const categories = useMemo(() => categoriesData ?? [], [categoriesData]);
+
+  const effectiveSearchTerm = searchTerm;
+
+  const effectiveSelectedCategory = useMemo(() => {
+    if (!categoryParam || categoryParam === "all") return selectedCategory;
+
+    const departmentSlugs = new Set([
+      "fashion",
+      "pantry-fresh",
+      "audio-tech",
+      "furniture-home",
+      "beauty-care",
+      "objects-gifts",
+    ]);
+
+    return departmentSlugs.has(categoryParam)
+      ? `department:${categoryParam}`
+      : selectedCategory;
+  }, [categoryParam, selectedCategory]);
 
   // البحث والفلترة والترتيب
   const filteredProducts = useMemo(() => {
     const result = products.filter((product) => {
 
-      const searchValue = searchTerm.trim().toLowerCase();
+      const searchValue = effectiveSearchTerm.trim().toLowerCase();
 
 const matchesSearch =
   product.title.toLowerCase().includes(searchValue) ||
   product.description.toLowerCase().includes(searchValue) ||
   product.category.name.toLowerCase().includes(searchValue);
 
-      const matchesCategory =
-        selectedCategory === "all" ||
-        product.category.id.toString() === selectedCategory;
+      let matchesCategory = effectiveSelectedCategory === "all";
+
+      if (!matchesCategory && effectiveSelectedCategory.startsWith("department:")) {
+        const slug = effectiveSelectedCategory.slice("department:".length);
+        const departmentKeywords: Record<string, string[]> = {
+          fashion: ["cloth", "shoe", "fashion", "sunglass", "handbag"],
+          "pantry-fresh": ["food", "pantry", "grocery", "grosery", "kitchen", "culinary"],
+          "audio-tech": ["electronic", "tech", "audio", "computer", "bicycle", "go-kart"],
+          "furniture-home": ["furniture", "home", "glass", "luggage", "decor"],
+          "beauty-care": ["beauty", "care", "parfum", "perfume", "fragrance", "cosmetic"],
+          "objects-gifts": ["misc", "object", "gift", "glass tumbler", "luggage", "handbag", "sunglass"],
+        };
+        const keywords = departmentKeywords[slug] ?? [];
+        const value = `${product.title} ${product.category.name}`.toLowerCase();
+        matchesCategory = keywords.some((keyword) => value.includes(keyword));
+      } else if (!matchesCategory) {
+        matchesCategory = product.category.id.toString() === effectiveSelectedCategory;
+      }
 
       const matchesMinPrice =
         minPrice === "" || product.price >= Number(minPrice);
@@ -130,28 +170,24 @@ const matchesSearch =
     return result;
   }, [
     products,
-    searchTerm,
-    selectedCategory,
+    effectiveSearchTerm,
+    effectiveSelectedCategory,
     minPrice,
     maxPrice,
     sortBy,
   ]);
 
   // عدد صفحات النتائج
-  const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
+  const effectivePage = Math.min(currentPage, totalPages);
 
   // المنتجات التي ستظهر في الصفحة الحالية فقط
   const currentProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    const startIndex = (effectivePage - 1) * PAGE_SIZE;
     const endIndex = startIndex + PAGE_SIZE;
 
     return filteredProducts.slice(startIndex, endIndex);
-  }, [filteredProducts, currentPage]);
-
-  // العودة للصفحة الأولى عند تغيير الفلاتر
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedCategory, minPrice, maxPrice, sortBy]);
+  }, [filteredProducts, effectivePage]);
 
   // حالات التحميل والخطأ
   if (isLoading) return <ProductsPageSkeleton />;
@@ -201,8 +237,11 @@ const matchesSearch =
               <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-soft">
                 <input
                   type="checkbox"
-                  checked={selectedCategory === "all"}
-                  onChange={() => setSelectedCategory("all")}
+                  checked={effectiveSelectedCategory === "all" || effectiveSelectedCategory === ""}
+                  onChange={() => {
+                    setSelectedCategory("all");
+                    navigate("/shop", { replace: true });
+                  }}
                   className="accent-accent"
                 />
                 All pieces
@@ -215,14 +254,14 @@ const matchesSearch =
                 >
                   <input
                     type="checkbox"
-                    checked={selectedCategory === category.id.toString()}
-                    onChange={() =>
-                      setSelectedCategory(
-                        selectedCategory === category.id.toString()
-                          ? "all"
-                          : category.id.toString()
-                      )
-                    }
+                    checked={effectiveSelectedCategory === category.id.toString()}
+                    onChange={() => {
+                      const nextCategory = effectiveSelectedCategory === category.id.toString()
+                        ? "all"
+                        : category.id.toString();
+                      setSelectedCategory(nextCategory);
+                      navigate("/shop", { replace: true });
+                    }}
                     className="accent-accent"
                   />
                   <span className="min-w-0 truncate" title={category.name}>
@@ -285,6 +324,7 @@ const matchesSearch =
           onClick={() => {
             setSearchTerm("");
             setSelectedCategory("all");
+            navigate("/shop", { replace: true });
             setMinPrice("");
             setMaxPrice("");
             setSortBy("default");
@@ -309,7 +349,7 @@ const matchesSearch =
             <input
               type="text"
               placeholder="Search products..."
-              value={searchTerm}
+              value={effectiveSearchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full border border-line bg-surface px-3 py-2 text-xs text-ink placeholder:text-muted outline-none transition-colors focus:border-ink sm:w-48"
             />

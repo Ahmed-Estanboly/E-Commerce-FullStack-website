@@ -40,7 +40,12 @@ export class CategoryService {
 
   async create(createCategoryDto: CreateCategoryDto) {
     const id = await this.nextId();
-    const newData = {...createCategoryDto, id, slug:createCategoryDto.name.toLowerCase().replace(/ /g, '-')}
+    const newData = {
+      name: createCategoryDto.name,
+      image: createCategoryDto.image,
+      id,
+      slug: createCategoryDto.name.toLowerCase().replace(/ /g, '-'),
+    };
     return this.categoryModel.create(newData);
   }
 

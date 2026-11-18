@@ -645,7 +645,10 @@
     color: var(--ink);
   }
 
-  .nav-link[data-active='true']::after,
+  .nav-link[data-active='true']::after {
+    transform: scaleX(1);
+  }
+
   .nav-link:hover::after {
     transform: scaleX(1);
   }
