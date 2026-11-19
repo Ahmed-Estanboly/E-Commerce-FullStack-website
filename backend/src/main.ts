@@ -24,7 +24,9 @@ async function bootstrap() {
 
       const isLocalViteOrigin = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
       const isConfiguredOrigin = allowedOrigins.includes(origin);
-      callback(isLocalViteOrigin || isConfiguredOrigin ? null : new Error('Origin not allowed by CORS'), isLocalViteOrigin || isConfiguredOrigin);
+      const isNgrokOrigin = /^https:\/\/[a-z0-9-]+\.ngrok-free\.dev$/.test(origin);
+      const allowed = isLocalViteOrigin || isConfiguredOrigin || isNgrokOrigin;
+      callback(allowed ? null : new Error('Origin not allowed by CORS'), allowed);
     },
     credentials: true,
   });

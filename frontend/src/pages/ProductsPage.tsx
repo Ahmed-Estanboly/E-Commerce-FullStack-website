@@ -461,7 +461,10 @@ function ProductsPage() {
           <Pagination
             currentPage={effectivePage}
             totalPages={totalPages}
-            onPageChange={setCurrentPage}
+            onPageChange={(page) => {
+              setCurrentPage(page);
+              window.scrollTo({ top: 200, behavior: "smooth" });
+            }}
           />
         </div>
       </div>
