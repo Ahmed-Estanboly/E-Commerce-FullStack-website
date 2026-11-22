@@ -11,6 +11,7 @@ import {
   IsOptional,
   IsString,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
@@ -62,9 +63,10 @@ export class CreateOrderDto {
   @Min(0)
   subtotal?: number;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  shippingFee: number;
+  shippingFee?: number;
 
   @IsOptional()
   @IsNumber()
@@ -78,8 +80,9 @@ export class CreateOrderDto {
   @Type(() => OrderBranchDto)
   branch: OrderBranchDto;
 
-  @IsOptional()
+  @ValidateIf((order: CreateOrderDto) => order.fulfilment === 'deliver')
   @IsString()
+  @IsNotEmpty()
   deliveryAddress?: string;
 
   @IsIn(PAYMENT_METHODS)

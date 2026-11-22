@@ -1,6 +1,16 @@
-import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto.js';
-import { OrdersService } from './orders.service.js';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto.js';
+import { ORDER_MANAGER_ROLES, OrdersService } from './orders.service.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
@@ -22,8 +32,8 @@ export class OrdersController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  findMine(@Request() req: { user: { sub: number } }) {
-    return this.ordersService.findMine(req.user.sub);
+  findMine(@Request() req: { user: { sub: number; email?: string } }) {
+    return this.ordersService.findMine(req.user.sub, req.user.email);
   }
 
   @Get('branch/:branchId')
@@ -45,5 +55,16 @@ export class OrdersController {
   @Roles('master admin')
   findOne(@Param('id') id: string) {
     return this.ordersService.findOne(id);
+  }
+
+  @Patch(':id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...ORDER_MANAGER_ROLES)
+  updateStatus(
+    @Param('id') id: string,
+    @Body() updateOrderStatusDto: UpdateOrderStatusDto,
+    @Request() req: { user: { role?: string; branchId?: string } },
+  ) {
+    return this.ordersService.updateStatus(id, updateOrderStatusDto.status, req.user);
   }
 }

@@ -52,6 +52,8 @@ export interface BackendOrder {
   updatedAt: string
 }
 
+export type OrderStatus = BackendOrder['status']
+
 export const ordersService = {
   async createOrder(payload: CreateOrderPayload, signal?: AbortSignal): Promise<BackendOrder> {
     const response = await backendClient.post<ApiEnvelope<BackendOrder>>('/orders', payload, { signal })
@@ -73,6 +75,11 @@ export const ordersService = {
 
   async getAllOrders(signal?: AbortSignal): Promise<BackendOrder[]> {
     const response = await backendClient.get<ApiEnvelope<BackendOrder[]>>('/orders', { signal })
+    return unwrap(response.data)
+  },
+
+  async updateOrderStatus(id: string, status: OrderStatus): Promise<BackendOrder> {
+    const response = await backendClient.patch<ApiEnvelope<BackendOrder>>(`/orders/${id}/status`, { status })
     return unwrap(response.data)
   },
 }
