@@ -2,6 +2,8 @@ import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { useFetch } from "../hooks/useFetch";
+import { useBranchCatalog } from "../hooks/use-branch-catalog";
+import { useBranchSelection } from "../store/branch-context";
 import { productsService } from "../lib/api/products.service";
 
 import ProductList from "../components/products/ProductList";
@@ -128,6 +130,19 @@ function ProductsPage() {
   );
 
   const { data, isLoading, error } = useFetch<Product[]>(fetchProducts);
+  const { selectedBranchId } = useBranchSelection();
+  const { data: branchCatalog } = useBranchCatalog(selectedBranchId);
+  const branchProducts = useMemo(() => {
+    const assignedItems = new Map(
+      (branchCatalog ?? []).map((item) => [item.productId, item]),
+    );
+    return (data ?? []).flatMap((product) => {
+      const inventory = assignedItems.get(product.id);
+      return inventory
+        ? [{ ...product, stock: inventory.quantity }]
+        : [];
+    });
+  }, [branchCatalog, data]);
 
   // جلب الفئات
   const fetchCategories = useCallback(
@@ -198,7 +213,7 @@ function ProductsPage() {
 
   // البحث والفلترة والترتيب
   const filteredProducts = useMemo(() => {
-    const result = products.filter((product) => {
+    const result = branchProducts.filter((product) => {
       const searchValue = searchTerm.trim().toLowerCase();
 
       const matchesSearch =
@@ -239,7 +254,7 @@ function ProductsPage() {
 
     return result;
   }, [
-    products,
+    branchProducts,
     searchTerm,
     effectiveSelectedCategory,
     minPrice,

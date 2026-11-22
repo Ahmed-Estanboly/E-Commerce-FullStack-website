@@ -1,4 +1,4 @@
-import type { Product, ProductCategory, GetProductsParams } from '../../types/product'
+import type { Product, ProductCategory, GetProductsParams, CreateProductInput } from '../../types/product'
 import { backendClient, unwrap, type ApiEnvelope } from './client'
 
 export const productsService = {
@@ -28,6 +28,11 @@ export const productsService = {
 
   async getCategories(signal?: AbortSignal): Promise<ProductCategory[]> {
     const response = await backendClient.get<ApiEnvelope<ProductCategory[]>>('/category', { signal })
+    return unwrap(response.data)
+  },
+
+  async createProduct(input: CreateProductInput): Promise<Product> {
+    const response = await backendClient.post<ApiEnvelope<Product>>('/products', input)
     return unwrap(response.data)
   },
 }

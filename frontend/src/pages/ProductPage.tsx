@@ -23,6 +23,8 @@ import {
 import { productsService } from '../lib/api/products.service'
 import { useFetch } from '../hooks/useFetch'
 import { useStoreProducts } from '../hooks/use-products'
+import { useBranchCatalog } from '../hooks/use-branch-catalog'
+import { useBranchSelection } from '../store/branch-context'
 import { useCart } from '../store/cart-context'
 import type { Department } from '../types/home'
 import type { Product } from '../types/product'
@@ -45,8 +47,8 @@ type Feedback = {
   message: string
 }
 
-const clampQuantity = (value: number) =>
-  Math.min(MAX_QUANTITY, Math.max(1, Math.trunc(value)))
+const clampQuantity = (value: number, maxQuantity = MAX_QUANTITY) =>
+  Math.min(maxQuantity, Math.max(1, Math.trunc(value)))
 
 function ProductGallery({
   product,
@@ -315,6 +317,8 @@ function ProductDetail({
   const [quantity, setQuantity] = useState(1)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const { addItem } = useCart()
+  const { selectedBranchId } = useBranchSelection()
+  const { data: branchCatalog, isLoading: branchCatalogLoading } = useBranchCatalog(selectedBranchId)
 
   const request = useCallback(
     (signal: AbortSignal) => productsService.getProduct(productId, signal),
@@ -323,8 +327,14 @@ function ProductDetail({
   const { data: product, isLoading, error, refetch } = useFetch<Product>(request)
   const { products: catalogue, isLoading: catalogueLoading } = useStoreProducts(100)
 
-  const currentProduct =
-    product && String(product.id) === String(productId) ? product : null
+  const branchInventoryItem = branchCatalog?.find((item) => item.productId === product?.id)
+  const currentProduct = useMemo(
+    () => product && String(product.id) === String(productId) && branchInventoryItem?.isAssigned
+      ? { ...product, stock: branchInventoryItem.quantity }
+      : null,
+    [branchInventoryItem, product, productId],
+  )
+  const maxQuantity = Math.min(MAX_QUANTITY, currentProduct?.stock ?? 0)
   const department = currentProduct
     ? departmentForCategory(currentProduct.category?.name)
     : undefined
@@ -361,7 +371,7 @@ function ProductDetail({
     return () => window.clearTimeout(timer)
   }, [feedback])
 
-  if (isLoading && !currentProduct) return <ProductSkeleton />
+  if ((isLoading || branchCatalogLoading) && !currentProduct) return <ProductSkeleton />
   if (error || !currentProduct) {
     return <ProductUnavailable error={error} onRetry={refetch} />
   }
@@ -371,10 +381,7 @@ function ProductDetail({
       if (onAddToCart) {
         onAddToCart(currentProduct, quantity)
       } else {
-        // The shared cart adds one unit per call. Repeat the public `addItem`
-        // operation so the selected quantity is honoured without creating a
-        // second cart or editing the provider.
-        for (let unit = 0; unit < quantity; unit += 1) addItem(currentProduct)
+        addItem(currentProduct, quantity)
       }
       setFeedback({
         tone: 'success',
@@ -494,7 +501,7 @@ function ProductDetail({
               <div className="flex items-end justify-between gap-4">
                 <p className="eyebrow">Quantity</p>
                 <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-muted">
-                  Maximum {MAX_QUANTITY}
+                  Maximum {maxQuantity}
                 </p>
               </div>
 
@@ -502,7 +509,7 @@ function ProductDetail({
                 <div className="flex h-[52px] items-stretch border border-line bg-surface">
                   <button
                     type="button"
-                    onClick={() => setQuantity((current) => clampQuantity(current - 1))}
+                    onClick={() => setQuantity((current) => clampQuantity(current - 1, maxQuantity))}
                     disabled={quantity <= 1}
                     className="focus-ring flex w-11 items-center justify-center text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink disabled:pointer-events-none disabled:opacity-35"
                     aria-label="Decrease quantity"
@@ -520,7 +527,7 @@ function ProductDetail({
                           event.target.value.replace(/\D/g, ''),
                           10,
                         )
-                        setQuantity(Number.isFinite(next) ? clampQuantity(next) : 1)
+                        setQuantity(Number.isFinite(next) ? clampQuantity(next, maxQuantity) : 1)
                       }}
                       className="w-full bg-transparent text-center font-mono text-[12px] tabular text-ink outline-none"
                       aria-label="Quantity"
@@ -528,8 +535,8 @@ function ProductDetail({
                   </span>
                   <button
                     type="button"
-                    onClick={() => setQuantity((current) => clampQuantity(current + 1))}
-                    disabled={quantity >= MAX_QUANTITY}
+                    onClick={() => setQuantity((current) => clampQuantity(current + 1, maxQuantity))}
+                    disabled={quantity >= maxQuantity || maxQuantity === 0}
                     className="focus-ring flex w-11 items-center justify-center text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink disabled:pointer-events-none disabled:opacity-35"
                     aria-label="Increase quantity"
                   >
@@ -541,6 +548,7 @@ function ProductDetail({
                   variant="accent"
                   size="lg"
                   onClick={handleAddToCart}
+                  disabled={maxQuantity === 0}
                   className="min-w-[190px] flex-1"
                   leftIcon={<ShoppingBag className="h-4 w-4" aria-hidden="true" />}
                 >

@@ -57,6 +57,11 @@ export function ProductCard({
           <span className="absolute left-3 top-3 border border-cream/30 bg-charcoal/65 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.16em] text-cream/80 backdrop-blur-sm">
             {label}
           </span>
+          {product.stock <= 0 ? (
+            <span className="absolute right-3 top-3 border border-cream/30 bg-charcoal/75 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-cream/90">
+              Out of stock
+            </span>
+          ) : null}
           <span className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center border border-cream/40 bg-charcoal/65 text-cream/80 backdrop-blur-sm transition-colors group-hover:border-accent group-hover:bg-accent group-hover:text-accent-ink">
             <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
           </span>
@@ -74,6 +79,12 @@ export function ProductCard({
               {formatPrice(product.price)}
             </p>
           </div>
+          <p className={cn(
+            'mt-2 font-mono text-[8px] uppercase tracking-[0.1em]',
+            product.stock > 0 ? 'text-muted' : 'text-danger',
+          )}>
+            {product.stock > 0 ? `${product.stock} available at this branch` : 'Unavailable at this branch'}
+          </p>
         </div>
       </Link>
     </article>

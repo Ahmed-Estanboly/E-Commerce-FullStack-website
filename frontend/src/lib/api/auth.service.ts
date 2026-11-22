@@ -7,6 +7,7 @@ export interface AuthUser {
   role: string
   avatar?: string
   phone?: string
+  branchId?: string
 }
 
 export interface LoginCredentials {

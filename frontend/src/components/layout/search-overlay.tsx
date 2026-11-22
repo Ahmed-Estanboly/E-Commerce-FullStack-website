@@ -1,4 +1,4 @@
-import { useDeferredValue, useState } from 'react'
+import { useDeferredValue, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, Search } from '../ui/icons'
 import { Dialog } from '../ui/dialog'
@@ -10,6 +10,8 @@ import {
   presentationForCategory,
 } from '../../data/home'
 import { useStoreProducts } from '../../hooks/use-products'
+import { useBranchCatalog } from '../../hooks/use-branch-catalog'
+import { useBranchSelection } from '../../store/branch-context'
 import { formatPrice } from '../../lib/utils'
 
 export interface SearchOverlayProps {
@@ -29,6 +31,17 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
   const deferredQuery = useDeferredValue(query.trim())
   const navigate = useNavigate()
   const { products, isLoading, error } = useStoreProducts()
+  const { selectedBranchId } = useBranchSelection()
+  const { data: branchCatalog } = useBranchCatalog(selectedBranchId)
+  const branchProducts = useMemo(() => {
+    const assignedItems = new Map(
+      (branchCatalog ?? []).map((item) => [item.productId, item]),
+    )
+    return products.flatMap((product) => {
+      const inventory = assignedItems.get(product.id)
+      return inventory ? [{ ...product, stock: inventory.quantity }] : []
+    })
+  }, [branchCatalog, products])
   const term = deferredQuery.toLowerCase()
   const active = term.length >= 2
 
@@ -38,7 +51,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
   }
 
   const results = active
-    ? products
+    ? branchProducts
         .filter((product) =>
           `${product.title} ${product.description} ${product.category?.name ?? ''}`
             .toLowerCase()
@@ -46,7 +59,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
         )
         .slice(0, 6)
     : []
-  const featured = products.slice(0, 3)
+  const featured = branchProducts.slice(0, 3)
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault()

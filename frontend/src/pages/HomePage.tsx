@@ -22,7 +22,9 @@ import {
   presentationForCategory,
 } from '../data/home'
 import { useStoreProducts } from '../hooks/use-products'
+import { useBranchCatalog } from '../hooks/use-branch-catalog'
 import { useCart } from '../store/cart-context'
+import { useBranchSelection } from '../store/branch-context'
 import type { Department } from '../types/home'
 import type { Product } from '../types/product'
 import { cn, formatPrice, pluralise, truncate } from '../lib/utils'
@@ -214,6 +216,25 @@ export function HomePage({ onAddToCart }: HomePageProps) {
   const { products, isLoading, error, refetch } = useStoreProducts()
   const { addItem } = useCart()
   const addToCart = onAddToCart ?? addItem
+  const { selectedBranchId } = useBranchSelection()
+  const {
+    data: branchCatalog,
+    isLoading: isLoadingBranchCatalog,
+    error: branchCatalogError,
+    refetch: refetchBranchCatalog,
+  } = useBranchCatalog(selectedBranchId)
+  const isLoadingProducts = isLoading || isLoadingBranchCatalog
+  const branchProducts = useMemo(() => {
+    const assignedItems = new Map(
+      (branchCatalog ?? []).map((item) => [item.productId, item]),
+    )
+    return products.flatMap((product) => {
+      const inventory = assignedItems.get(product.id)
+      return inventory && inventory.quantity > 0
+        ? [{ ...product, stock: inventory.quantity }]
+        : []
+    })
+  }, [branchCatalog, products])
 
   const activeDepartment =
     HOME_DEPARTMENTS.find((department) => department.id === activeDepartmentId) ?? HOME_DEPARTMENTS[0]
@@ -226,13 +247,13 @@ export function HomePage({ onAddToCart }: HomePageProps) {
   const ActiveServiceIcon = activeService.icon
 
   const selection = useMemo(
-    () => products.filter((product) => Boolean(product.images?.length)).slice(0, 6),
-    [products],
+    () => branchProducts.filter((product) => Boolean(product.images?.length)).slice(0, 6),
+    [branchProducts],
   )
   const featureProduct = selection[0]
   const supportingSelection = selection.slice(1)
-  const heroProduct = products[0]
-  const secondHeroProduct = products[1]
+  const heroProduct = branchProducts[0]
+  const secondHeroProduct = branchProducts[1]
   const departments = HOME_DEPARTMENTS
   const selectionDepartments = new Set(
     selection.map((product) => product.category?.name).filter(Boolean),
@@ -265,7 +286,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
       observer.observe(node)
     })
     return () => observer.disconnect()
-  }, [products.length, isLoading])
+  }, [products.length, isLoadingProducts])
 
   return (
     <div ref={rootRef} className="page-enter">
@@ -348,7 +369,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
                     The edit
                   </span>
                   <span className="mt-1.5 block text-[12px] text-cream/80">
-                    {isLoading ? 'Loading pieces' : pluralise(products.length, 'piece')}
+                    {isLoadingProducts ? 'Loading pieces' : pluralise(branchProducts.length, 'piece')}
                     {' · '}
                     {departments.length} departments
                   </span>
@@ -597,19 +618,26 @@ export function HomePage({ onAddToCart }: HomePageProps) {
           data-reveal
         />
 
-        {error ? (
+        {error || branchCatalogError ? (
           <EmptyState
             className="mt-8"
             icon={Package}
             title="The edit could not be loaded."
-            description={error}
+            description={error ?? branchCatalogError ?? 'Unable to load branch availability.'}
             action={
-              <Button variant="outline" size="sm" onClick={refetch}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  refetch()
+                  refetchBranchCatalog()
+                }}
+              >
                 Try again
               </Button>
             }
           />
-        ) : isLoading && products.length === 0 ? (
+        ) : isLoadingProducts && branchProducts.length === 0 ? (
           <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-10">
             <Skeleton className="aspect-[4/5] w-full" />
             <div className="space-y-2">
