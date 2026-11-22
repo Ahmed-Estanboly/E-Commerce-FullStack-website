@@ -1,5 +1,5 @@
 import { Prop, Schema as NestSchema, SchemaFactory } from "@nestjs/mongoose";
-import { HydratedDocument } from "mongoose";
+import type { HydratedDocument } from "mongoose";
 
 @NestSchema({ timestamps: true })
 export class Product {
