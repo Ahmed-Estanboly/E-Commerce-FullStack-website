@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { isValidObjectId, Model, Types } from 'mongoose';
+import { isValidObjectId, Types } from 'mongoose';
+import type { Model } from 'mongoose';
 import { Product, ProductDocument } from '../products/schemas/products.schema.js';
 import { Branch, BranchDocument } from './schemas/branch.schema.js';
 import {
@@ -8,6 +9,8 @@ import {
   BranchInventoryDocument,
 } from './schemas/branch-inventory.schema.js';
 import { UpdateBranchInventoryDto } from './dto/update-branch-inventory.dto.js';
+import { CreateBranchProductDto } from './dto/create-branch-product.dto.js';
+import { ProductsService } from '../products/products.service.js';
 
 @Injectable()
 export class BranchInventoryService {
@@ -18,6 +21,7 @@ export class BranchInventoryService {
     private readonly productModel: Model<ProductDocument>,
     @InjectModel(BranchInventory.name)
     private readonly inventoryModel: Model<BranchInventoryDocument>,
+    private readonly productsService: ProductsService,
   ) {}
 
   async findAll(branchId: string) {
@@ -26,7 +30,7 @@ export class BranchInventoryService {
       this.productModel.find().sort({ title: 1 }).lean().exec(),
       this.inventoryModel.find({ branch: branchObjectId }).lean().exec(),
     ]);
-    const quantities = new Map(
+    const inventoryByProduct = new Map(
       inventory.map((item) => [item.product.toString(), item.quantity]),
     );
 
@@ -36,8 +40,102 @@ export class BranchInventoryService {
       categoryId: product.categoryId,
       price: product.price,
       images: product.images,
-      quantity: quantities.get(product._id.toString()) ?? 0,
+      quantity: inventoryByProduct.get(product._id.toString()) ?? 0,
+      isAssigned: inventoryByProduct.has(product._id.toString()),
     }));
+  }
+
+  async findCatalog(branchId: string) {
+    const branch = await this.branchModel.findById(await this.getBranchId(branchId)).exec();
+    if (!branch?.isActive) {
+      throw new NotFoundException('Active branch not found');
+    }
+
+    return (await this.findAll(branchId)).filter((item) => item.isAssigned);
+  }
+
+  async seedDemoInventory() {
+    const [branches, products] = await Promise.all([
+      this.branchModel.find({ isActive: true }).sort({ name: 1 }).lean().exec(),
+      this.productModel.find().sort({ id: 1 }).lean().exec(),
+    ]);
+    if (!branches.length || !products.length) return;
+
+    const categorySets: number[][] = [[1, 3], [2, 4], [3, 5]];
+    const operations = branches.flatMap((branch, branchIndex) => {
+      const categories = categorySets[branchIndex % categorySets.length];
+      const candidates = products.filter((product) => categories.includes(product.categoryId));
+      if (!candidates.length) return [];
+
+      const offset = (branchIndex * 3) % candidates.length;
+      return Array.from({ length: Math.min(5, candidates.length) }, (_, index) => {
+        const product = candidates[(offset + index) % candidates.length];
+        return {
+          updateOne: {
+            filter: { branch: branch._id, product: product._id },
+            update: { $setOnInsert: { quantity: index === 0 ? 0 : 4 + ((branchIndex + index) * 3) % 18 } },
+            upsert: true,
+          },
+        };
+      });
+    });
+
+    if (operations.length) {
+      const result = await this.inventoryModel.bulkWrite(operations, { ordered: false });
+      if (result.upsertedCount > 0) {
+        console.log(`Seeded ${result.upsertedCount} missing branch inventory items.`);
+      }
+    }
+  }
+
+  async add(branchId: string, productId: number, dto: UpdateBranchInventoryDto) {
+    const branchObjectId = await this.getBranchId(branchId);
+    const product = await this.productModel.findOne({ id: productId }).select('_id').lean().exec();
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    if (await this.inventoryModel.exists({ branch: branchObjectId, product: product._id })) {
+      throw new ConflictException('Product is already assigned to this branch');
+    }
+
+    let inventory: BranchInventoryDocument;
+    try {
+      inventory = await this.inventoryModel.create({
+        branch: branchObjectId,
+        product: product._id,
+        quantity: dto.quantity,
+      });
+    } catch (error) {
+      if (this.isDuplicateKeyError(error)) {
+        throw new ConflictException('Product is already assigned to this branch');
+      }
+      throw error;
+    }
+
+    return { productId, quantity: inventory.quantity };
+  }
+
+  async createProduct(branchId: string, dto: CreateBranchProductDto) {
+    const branchObjectId = await this.getBranchId(branchId);
+    const { branchQuantity, ...productData } = dto;
+    const product = await this.productsService.create({
+      ...productData,
+      stock: branchQuantity,
+    });
+
+    try {
+      await this.inventoryModel.create({
+        branch: branchObjectId,
+        product: product._id,
+        quantity: branchQuantity,
+      });
+    } catch (error) {
+      await this.productsService.remove(product.id);
+      throw error;
+    }
+
+    return Object.assign(product.toObject(), { branchQuantity });
   }
 
   async update(branchId: string, productId: number, dto: UpdateBranchInventoryDto) {
@@ -90,5 +188,9 @@ export class BranchInventoryService {
       throw new NotFoundException('Branch not found');
     }
     return objectId;
+  }
+
+  private isDuplicateKeyError(error: unknown): boolean {
+    return typeof error === 'object' && error !== null && 'code' in error && error.code === 11000;
   }
 }

@@ -1,5 +1,6 @@
 import { Prop, Schema as NestSchema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { Types } from 'mongoose';
+import type { HydratedDocument } from 'mongoose';
 import { Branch } from './branch.schema.js';
 
 @NestSchema({ timestamps: true })

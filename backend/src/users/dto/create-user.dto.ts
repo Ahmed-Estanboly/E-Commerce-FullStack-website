@@ -19,4 +19,8 @@ export class CreateUserDto {
     @IsString()
     @IsOptional()
     avatar?: string;
+
+    @IsString()
+    @IsOptional()
+    branchId?: string;
 }

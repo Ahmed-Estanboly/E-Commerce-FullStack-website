@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from '../users/schemas/users.schema.js';
-import { Model } from 'mongoose';
+import type { Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service.js';
 import { loginDto } from './dto/login.dto.js';
@@ -53,6 +53,7 @@ export class AuthService {
       sub: user!.id,
       email: user!.email,
       role: user!.role,
+      branchId: user!.branchId,
     };
     const access_token = await this.jwtService.signAsync(payload);
     return {
