@@ -4,13 +4,14 @@ import type { Product } from '../types/product'
 export interface CartItem {
   product: Product
   quantity: number
+  branchId: string
 }
 
 interface CartContextValue {
   items: CartItem[]
   itemCount: number
   subtotal: number
-  addItem: (product: Product) => void
+  addItem: (product: Product, quantity?: number) => void
   updateQuantity: (productId: number, quantity: number) => void
   removeItem: (productId: number) => void
   clearCart: () => void

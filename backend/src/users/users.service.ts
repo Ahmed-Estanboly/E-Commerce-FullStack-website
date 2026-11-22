@@ -2,7 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import type { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/users.schema.js';
 import { initialUsers } from './userSeed.js';
 import * as bcrypt from 'bcrypt';
@@ -20,19 +20,26 @@ export class UsersService {
   }
 
   private async seed() {
-    const count = await this.userModel.countDocuments();
-    if (count > 0) {
-      return; // Skip if data already exists
+    let seededCount = 0;
+
+    for (const user of initialUsers) {
+      const email = user.email.toLowerCase();
+      const existingUser = await this.userModel.exists({ email });
+      if (existingUser) {
+        continue;
+      }
+
+      await this.userModel.create({
+        ...user,
+        email,
+        password: await bcrypt.hash(user.password, this.saltRounds),
+      });
+      seededCount++;
     }
 
-    const hashedUsers = await Promise.all(
-      initialUsers.map(async (user) => ({
-        ...user,
-        password: await bcrypt.hash(user.password, this.saltRounds),
-      })),
-    );
-    await this.userModel.insertMany(hashedUsers);
-    console.log(`Seeded ${initialUsers.length} users on startup.`);
+    if (seededCount > 0) {
+      console.log(`Seeded ${seededCount} missing users on startup.`);
+    }
   }
 
   private async hashPlaintextPasswords() {
@@ -69,6 +76,7 @@ export class UsersService {
       name: dto.name,
       role: dto.role,
       avatar: dto.avatar,
+      branchId: dto.branchId,
       id: await this.getNextId(),
       password: hashedPassword,
     });
@@ -76,6 +84,17 @@ export class UsersService {
     const userObj = created.toObject();
     delete (userObj as Partial<User>).password;
     return userObj;
+  }
+
+  async assignLegacyBranchOwner(role: string, branchId: string) {
+    await this.userModel.updateMany(
+      { role, branchId: { $exists: false } },
+      { $set: { branchId } },
+    ).exec();
+  }
+
+  async removeBranchUsers(branchId: string) {
+    await this.userModel.deleteMany({ branchId }).exec();
   }
 
   async findAll() {

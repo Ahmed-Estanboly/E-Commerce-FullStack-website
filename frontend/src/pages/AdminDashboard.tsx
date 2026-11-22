@@ -3,6 +3,7 @@ import { ArrowUpRight } from '../components/ui/icons'
 import { AdminLayout } from '../components/layout/admin-layout'
 import { Skeleton } from '../components/ui/feedback'
 import { useStoreProducts } from '../hooks/use-products'
+import { useBranches } from '../hooks/use-branches'
 import type { Product } from '../types/product'
 
 const currency = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
@@ -57,6 +58,7 @@ function AdminDashboardSkeleton() {
 
 const AdminDashboard = () => {
   const { products, isLoading, error, refetch } = useStoreProducts()
+  const { branches, isLoading: branchesLoading, error: branchesError, refetch: refetchBranches } = useBranches()
   const categoryStats = getCategoryStats(products)
   const latestProducts = [...products].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)).slice(0, 5)
   const topProducts = [...products].sort((a, b) => b.price - a.price).slice(0, 5)
@@ -83,6 +85,45 @@ const AdminDashboard = () => {
             <article><span>Categories</span><strong>{isLoading ? '—' : categoryStats.length}</strong><small className="positive">Live category count</small></article>
             <article><span>Average price</span><strong>{isLoading ? '—' : currency.format(averagePrice)}</strong><small className="positive">Across all products</small></article>
             <article><span>Catalogue value</span><strong>{isLoading ? '—' : currency.format(totalCatalogueValue)}</strong><small>Sum of listed prices</small></article>
+          </section>
+
+          <section className="admin-panel admin-orders-panel mt-4" aria-labelledby="branch-network-heading">
+            <div className="admin-panel-heading">
+              <span id="branch-network-heading">Branch network</span>
+              <Link to="/admin/branches" className="admin-row-action">Manage branches</Link>
+            </div>
+            {branchesError ? (
+              <div className="admin-api-error m-3" role="alert">
+                <span>Could not load branches: {branchesError}</span>
+                <button type="button" onClick={refetchBranches}>Retry</button>
+              </div>
+            ) : branchesLoading && branches.length === 0 ? (
+              <div className="p-5 text-xs text-muted" role="status">Loading branches...</div>
+            ) : (
+              <div className="grid gap-px bg-line sm:grid-cols-2 xl:grid-cols-3">
+                {branches.map((branch) => (
+                  <article key={branch._id} className="bg-surface p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h2 className="font-display text-lg text-ink">{branch.name}</h2>
+                        <p className="mt-1 text-[10px] text-muted">{branch.address}</p>
+                      </div>
+                      <span className={`order-status ${branch.isActive ? 'status-complete' : 'status-cancelled'}`}>
+                        {branch.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <p className="mt-3 truncate font-mono text-[8px] uppercase text-muted">
+                      {branch.ownerEmail ?? 'Manager account not assigned'}
+                    </p>
+                    <div className="mt-3 flex gap-2">
+                      <Link to={`/admin/branches/${branch._id}/inventory`} className="admin-row-action">Inventory</Link>
+                      <Link to="/admin/branches" className="admin-row-action">Branch details</Link>
+                    </div>
+                  </article>
+                ))}
+                {!branches.length && !branchesLoading ? <p className="bg-surface p-5 text-xs text-muted">No branches have been added.</p> : null}
+              </div>
+            )}
           </section>
 
           {error ? <div className="admin-api-error" role="alert"><span>Could not load catalogue data: {error}</span><button type="button" onClick={refetch}>Retry</button></div> : null}

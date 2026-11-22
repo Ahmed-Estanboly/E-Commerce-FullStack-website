@@ -1,28 +1,29 @@
 import { useDeferredValue, useState, type FormEvent, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowUpRight, Menu, Package, Search, Shirt, ShoppingBag, Store, X } from '../ui/icons'
 import { Logo } from '../ui/logo'
 import { useStoreProducts } from '../../hooks/use-products'
 import { ThemeToggle } from './theme-toggle'
+import { ProfileMenu } from './profile-menu'
 
-const navigation = [
-  { label: 'Dashboard', icon: Store, path: './' },
-  { label: 'Orders', icon: ShoppingBag, path: './' },
-  { label: 'Inventory', icon: Package, path: './' },
-  { label: 'Products', icon: Shirt, path: '/shop' },
-]
-
-export function BranchLayout({ children, branchName, ownerName, searchPlaceholder = 'Search products' }: { children: ReactNode; branchName: string; ownerName: string; searchPlaceholder?: string }) {
+export function BranchLayout({ children, branchId, branchName, ownerName, searchPlaceholder = 'Search products' }: { children: ReactNode; branchId: string; branchName: string; ownerName: string; searchPlaceholder?: string }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query.trim().toLowerCase())
   const navigate = useNavigate()
+  const location = useLocation()
   const { products, isLoading } = useStoreProducts()
   const searchResults = deferredQuery.length >= 2
     ? products.filter((product) => `${product.title} ${product.description} ${product.category?.name ?? ''}`.toLowerCase().includes(deferredQuery)).slice(0, 5)
     : []
 
   const closeSidebar = () => setSidebarOpen(false)
+  const navigation = [
+    { label: 'Dashboard', icon: Store, path: `/${branchId}/dashboard` },
+    { label: 'Orders', icon: ShoppingBag, path: `/${branchId}/dashboard#orders` },
+    { label: 'Inventory', icon: Package, path: `/${branchId}/inventory` },
+    { label: 'Products', icon: Shirt, path: '/shop' },
+  ]
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const value = query.trim()
@@ -39,12 +40,10 @@ export function BranchLayout({ children, branchName, ownerName, searchPlaceholde
         </div>
         <nav className="admin-nav" aria-label={`${branchName} navigation`}>
           <p className="admin-nav-label">{branchName}</p>
-          {navigation.slice(0, 1).map(({ label, icon: Icon, path }) => (
-            <Link className="admin-nav-item is-active" key={label} to={path} onClick={closeSidebar}><Icon aria-hidden="true" /><span>{label}</span></Link>
-          ))}
+          <Link className={`admin-nav-item${location.pathname.endsWith('/dashboard') ? ' is-active' : ''}`} to={navigation[0].path} onClick={closeSidebar}><Store aria-hidden="true" /><span>Dashboard</span></Link>
           <p className="admin-nav-label">Operations</p>
           {navigation.slice(1, 3).map(({ label, icon: Icon, path }) => (
-            <Link className="admin-nav-item" key={label} to={path} onClick={closeSidebar}><Icon aria-hidden="true" /><span>{label}</span>{label === 'Orders' ? <small>—</small> : null}</Link>
+            <Link className="admin-nav-item" key={label} to={path} onClick={closeSidebar}><Icon aria-hidden="true" /><span>{label}</span></Link>
           ))}
           <p className="admin-nav-label">Catalogue</p>
           {navigation.slice(3).map(({ label, icon: Icon, path }) => <Link className="admin-nav-item" key={label} to={path} onClick={closeSidebar}><Icon aria-hidden="true" /><span>{label}</span></Link>)}
@@ -67,7 +66,7 @@ export function BranchLayout({ children, branchName, ownerName, searchPlaceholde
           </form>
           <div className="admin-topbar-actions">
             <ThemeToggle />
-            <span className="admin-profile"><span className="admin-avatar">{ownerName.charAt(0)}</span><span className="admin-profile-copy"><strong>{ownerName}</strong><small>Branch owner</small></span></span>
+            <ProfileMenu fallbackName={ownerName} roleLabel="Branch manager" />
           </div>
         </header>
         {children}

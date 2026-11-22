@@ -3,13 +3,27 @@ import { ArrowRight } from '../components/ui/icons'
 import { CartEmptyState, CartItemRow, CartOrderSummary, CartRecommendations } from '../components/cart'
 import { useStoreProducts } from '../hooks/use-products'
 import { useCart } from '../store/cart-context'
+import { useBranchCatalog } from '../hooks/use-branch-catalog'
+import { useBranchSelection } from '../store/branch-context'
 import { pluralise } from '../lib/utils'
 
 /** Composes reusable cart components with the app's cart state and product feed. */
 export function CartPage() {
   const { items, itemCount, subtotal, addItem, updateQuantity, removeItem } = useCart()
   const { products, isLoading, error } = useStoreProducts(12)
-  const recommendations = products
+  const { selectedBranchId, selectedBranch } = useBranchSelection()
+  const {
+    data: branchCatalog,
+    isLoading: isLoadingBranchCatalog,
+    error: branchCatalogError,
+  } = useBranchCatalog(selectedBranchId)
+  const availableProducts = products.flatMap((product) => {
+    const inventory = branchCatalog?.find((item) => item.productId === product.id)
+    return inventory && inventory.quantity > 0
+      ? [{ ...product, stock: inventory.quantity }]
+      : []
+  })
+  const recommendations = availableProducts
     .filter((product) => !items.some((item) => item.product.id === product.id))
     .slice(0, 3)
 
@@ -22,7 +36,7 @@ export function CartPage() {
               Home <span className="px-1.5 text-muted/60">/</span> Your selection
             </p>
             <p className="mt-5 font-mono text-[8px] uppercase tracking-[0.18em] text-accent">
-              {items.length > 0 ? 'Reserved for 20 minutes' : 'A considered edit'}
+              {items.length > 0 ? 'Selected branch' : 'A considered edit'}
             </p>
             <h1 className="mt-2 font-display text-[clamp(3.2rem,7vw,6.2rem)] leading-[0.88] tracking-[-0.06em]">
               Your <em className="font-light italic text-accent">bag.</em>
@@ -30,7 +44,7 @@ export function CartPage() {
           </div>
           <p className="max-w-[360px] pb-1 text-[11px] leading-relaxed text-muted sm:text-[12px]">
             {items.length > 0
-              ? 'The bag is held against your selection for a short time. Stock is reserved from the room you collect from. Change the branch at checkout if you need to.'
+              ? `Stock is checked at checkout for ${selectedBranch?.name ?? 'your selected branch'}. Changing branches clears your cart so availability can be checked again.`
               : 'A good place to begin. Browse the edit and bring home something worth keeping.'}
           </p>
         </div>
@@ -40,6 +54,9 @@ export function CartPage() {
         ) : (
           <div className="grid gap-8 pt-7 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-6">
             <div>
+              <p className="mb-4 border border-line bg-surface px-3.5 py-3 text-[10px] text-muted">
+                Fulfilment branch: <span className="font-medium text-ink">{selectedBranch?.name ?? 'Loading branch'}</span>
+              </p>
               <div className="flex items-center justify-between border-b border-line pb-3 font-mono text-[8px] uppercase tracking-[0.16em] text-muted">
                 <span>Your selection</span>
                 <span>{pluralise(itemCount, 'piece')}</span>
@@ -75,8 +92,8 @@ export function CartPage() {
 
         <CartRecommendations
           products={recommendations}
-          isLoading={isLoading}
-          error={error}
+          isLoading={isLoading || isLoadingBranchCatalog}
+          error={error ?? branchCatalogError}
           onAdd={addItem}
         />
       </div>

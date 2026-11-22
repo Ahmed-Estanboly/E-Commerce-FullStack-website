@@ -15,9 +15,11 @@ import { BranchInventoryService } from './branch-inventory.service.js';
 import { CreateBranchDto } from './dto/create-branch.dto.js';
 import { UpdateBranchDto } from './dto/update-branch.dto.js';
 import { UpdateBranchInventoryDto } from './dto/update-branch-inventory.dto.js';
+import { CreateBranchProductDto } from './dto/create-branch-product.dto.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
+import { BranchAccessGuard } from '../common/guards/branch-access.guard.js';
 
 @Controller('branches')
 export class BranchesController {
@@ -27,14 +29,19 @@ export class BranchesController {
   ) {}
 
   @Get(':branchId/inventory')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, BranchAccessGuard)
   @Roles('master admin', 'branch owner', 'central owner', 'south owner')
   getInventory(@Param('branchId') branchId: string) {
     return this.branchInventoryService.findAll(branchId);
   }
 
+  @Get(':branchId/catalog')
+  getCatalog(@Param('branchId') branchId: string) {
+    return this.branchInventoryService.findCatalog(branchId);
+  }
+
   @Put(':branchId/inventory/:productId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, BranchAccessGuard)
   @Roles('master admin', 'branch owner', 'central owner', 'south owner')
   updateInventory(
     @Param('branchId') branchId: string,
@@ -44,8 +51,29 @@ export class BranchesController {
     return this.branchInventoryService.update(branchId, productId, dto);
   }
 
+  @Post(':branchId/inventory/:productId')
+  @UseGuards(JwtAuthGuard, RolesGuard, BranchAccessGuard)
+  @Roles('master admin', 'branch owner', 'central owner', 'south owner')
+  addInventoryProduct(
+    @Param('branchId') branchId: string,
+    @Param('productId', ParseIntPipe) productId: number,
+    @Body() dto: UpdateBranchInventoryDto,
+  ) {
+    return this.branchInventoryService.add(branchId, productId, dto);
+  }
+
+  @Post(':branchId/products')
+  @UseGuards(JwtAuthGuard, RolesGuard, BranchAccessGuard)
+  @Roles('master admin', 'branch owner', 'central owner', 'south owner')
+  createBranchProduct(
+    @Param('branchId') branchId: string,
+    @Body() dto: CreateBranchProductDto,
+  ) {
+    return this.branchInventoryService.createProduct(branchId, dto);
+  }
+
   @Delete(':branchId/inventory/:productId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, BranchAccessGuard)
   @Roles('master admin', 'branch owner', 'central owner', 'south owner')
   removeInventory(
     @Param('branchId') branchId: string,

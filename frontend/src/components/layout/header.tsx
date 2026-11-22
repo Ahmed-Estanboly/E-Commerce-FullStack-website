@@ -7,6 +7,39 @@ import { Logo } from '../ui/logo'
 import { SearchOverlay } from './search-overlay'
 import { ThemeToggle } from './theme-toggle'
 import { clearSession, getStoredSession } from '../../lib/auth'
+import { useBranchSelection } from '../../store/branch-context'
+import { useCart } from '../../store'
+
+function BranchSelector() {
+  const { branches, selectedBranchId, isLoadingBranches, branchError, selectBranch } = useBranchSelection()
+  const { items, clearCart } = useCart()
+
+  const handleChange = (branchId: string) => {
+    if (branchId === selectedBranchId) return
+    if (items.length && !window.confirm('Changing branches will clear your cart. Continue?')) return
+    if (items.length) clearCart()
+    selectBranch(branchId)
+  }
+
+  return (
+    <label className="flex items-center gap-2">
+      <span className="sr-only">Store branch</span>
+      <select
+        aria-label="Store branch"
+        value={selectedBranchId ?? ''}
+        onChange={(event) => handleChange(event.target.value)}
+        disabled={isLoadingBranches || branches.filter((branch) => branch.isActive).length === 0}
+        className="max-w-36 border border-line bg-canvas px-2 py-2 text-xs text-ink"
+      >
+        {!selectedBranchId ? <option value="">{isLoadingBranches ? 'Loading stores…' : 'Select a store'}</option> : null}
+        {branches.filter((branch) => branch.isActive).map((branch) => (
+          <option key={branch._id} value={branch._id}>{branch.name}</option>
+        ))}
+      </select>
+      {branchError ? <span className="sr-only" role="status">{branchError}</span> : null}
+    </label>
+  )
+}
 import { HOME_DEPARTMENTS } from '../../data/home'
 import type { Department } from '../../types/home'
 import { cn } from '../../lib/utils'
@@ -191,6 +224,7 @@ export function Header({
                 <Search className="h-[17px] w-[17px]" strokeWidth={1.5} aria-hidden="true" />
               </button>
               <ThemeToggle />
+              <BranchSelector />
               {isSignedIn ? <div className="relative ml-1"><button type="button" onClick={() => setAccountMenuOpen((open) => !open)} className="focus-ring flex h-8 w-8 items-center justify-center rounded-full bg-accent font-mono text-[10px] font-medium text-accent-ink transition-transform hover:scale-105" aria-label="Open account menu" aria-expanded={accountMenuOpen}>{accountInitial}</button>{accountMenuOpen ? <div className="absolute right-0 top-10 z-50 grid min-w-40 border border-line bg-surface p-1 shadow-lg"><Link to={dashboardHref ?? '/account'} onClick={() => setAccountMenuOpen(false)} className="px-3 py-2 text-left text-[11px] text-ink transition-colors hover:bg-canvas-alt">Account dashboard</Link><button type="button" onClick={logout} className="px-3 py-2 text-left text-[11px] text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink">Log out</button></div> : null}</div> : <div className="hidden items-center gap-2 pl-1 lg:flex">
                 <Link
                   to="/login"

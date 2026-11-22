@@ -62,6 +62,19 @@ export const ordersService = {
     const response = await backendClient.get<ApiEnvelope<BackendOrder[]>>('/orders/me', { signal })
     return unwrap(response.data)
   },
+
+  async getBranchOrders(branchId: string, signal?: AbortSignal): Promise<BackendOrder[]> {
+    const response = await backendClient.get<ApiEnvelope<BackendOrder[]>>(
+      `/orders/branch/${branchId}`,
+      { signal },
+    )
+    return unwrap(response.data)
+  },
+
+  async getAllOrders(signal?: AbortSignal): Promise<BackendOrder[]> {
+    const response = await backendClient.get<ApiEnvelope<BackendOrder[]>>('/orders', { signal })
+    return unwrap(response.data)
+  },
 }
 
 export function getOrderRequestError(error: unknown, fallback: string): string {

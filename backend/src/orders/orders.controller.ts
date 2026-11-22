@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
+import { BranchAccessGuard } from '../common/guards/branch-access.guard.js';
 
 @Controller('orders')
 export class OrdersController {
@@ -23,6 +24,13 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard)
   findMine(@Request() req: { user: { sub: number } }) {
     return this.ordersService.findMine(req.user.sub);
+  }
+
+  @Get('branch/:branchId')
+  @UseGuards(JwtAuthGuard, RolesGuard, BranchAccessGuard)
+  @Roles('master admin', 'branch owner', 'central owner', 'south owner')
+  findByBranch(@Param('branchId') branchId: string) {
+    return this.ordersService.findByBranch(branchId);
   }
 
   @Get()

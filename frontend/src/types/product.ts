@@ -27,3 +27,17 @@ export interface GetProductsParams {
   offset?: number
   limit?: number
 }
+
+export interface CreateProductInput {
+  title: string
+  price: number
+  description: string
+  categoryId: number
+  images: string[]
+  stock: number
+  branch?: string
+}
+
+export interface CreateBranchProductInput extends Omit<CreateProductInput, 'branch' | 'stock'> {
+  branchQuantity: number
+}

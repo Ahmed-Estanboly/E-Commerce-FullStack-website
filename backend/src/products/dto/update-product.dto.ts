@@ -19,9 +19,9 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
     @ArrayNotEmpty()
     @IsString({ each: true })
     images?: string[];
-    @IsNumber()
+    @IsInt()
     @IsPositive()
-    stock: number;
+    stock?: number;
     @IsIn(BRANCHES)
     branch?: string;
 }

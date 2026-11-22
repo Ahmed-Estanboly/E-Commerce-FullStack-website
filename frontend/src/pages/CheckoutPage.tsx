@@ -4,7 +4,8 @@ import type { CheckoutFormData, CheckoutStep, ConfirmedOrder, FormErrors } from 
 import { OrderSummaryCard } from '../components/checkout/OrderSummaryCard';
 import { OrderConfirmationView } from '../components/checkout/OrderConfirmationView';
 import { useCart } from '../store/cart-context';
-import { useBranches } from '../hooks/use-branches';
+import { useBranchCatalog } from '../hooks/use-branch-catalog'
+import { useBranchSelection } from '../store/branch-context'
 import { getOrderRequestError, ordersService } from '../lib/api/orders.service';
 import { getStoredSession } from '../lib/auth';
 
@@ -12,11 +13,21 @@ export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
 
   const { items, subtotal, clearCart } = useCart();
-  const { branches, isLoading: isLoadingBranches, error: branchesError } = useBranches();
+  const {
+    selectedBranchId,
+    selectBranch,
+    branches,
+    isLoadingBranches,
+    branchError,
+  } = useBranchSelection();
+  const {
+    data: branchCatalog,
+    isLoading: isLoadingBranchCatalog,
+    error: branchCatalogError,
+  } = useBranchCatalog(selectedBranchId);
   const activeBranches = useMemo(() => branches.filter((branch) => branch.isActive), [branches]);
 
   const [step, setStep] = useState<CheckoutStep>('details');
-  const [selectedBranchId, setSelectedBranchId] = useState('');
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,11 +48,17 @@ export const CheckoutPage: React.FC = () => {
     acceptedTerms: true,
   });
 
-  const activeBranch =
-    activeBranches.find((branch) => branch._id === selectedBranchId) ?? activeBranches[0];
+  const activeBranch = activeBranches.find((branch) => branch._id === selectedBranchId) ?? null;
 
   const shippingFee = formData.fulfilment === 'deliver' ? 6.5 : 0;
   const total = subtotal + shippingFee;
+
+  const handleBranchChange = (branchId: string) => {
+    if (branchId === selectedBranchId) return;
+    if (items.length && !window.confirm('Changing branches will clear your cart. Continue?')) return;
+    if (items.length) clearCart();
+    selectBranch(branchId);
+  };
 
   const formatCardNumber = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 16);
@@ -75,6 +92,20 @@ export const CheckoutPage: React.FC = () => {
 
     if (!activeBranch) {
       nextErrors.branch = 'Select an active branch before placing your order.';
+    } else if (isLoadingBranchCatalog || !branchCatalog) {
+      nextErrors.branch = 'Checking stock for this branch. Please try again shortly.';
+    } else {
+      const unavailableItem = items.find((item) => {
+        const inventory = branchCatalog.find((entry) => entry.productId === item.product.id);
+        return item.branchId !== activeBranch._id
+          || !inventory?.isAssigned
+          || item.quantity > inventory.quantity;
+      });
+      if (unavailableItem) {
+        nextErrors.branch = `${unavailableItem.product.title} is unavailable in the selected quantity at this branch.`;
+      } else if (branchCatalogError) {
+        nextErrors.branch = 'Unable to verify branch stock. Please try again.';
+      }
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
@@ -287,7 +318,7 @@ export const CheckoutPage: React.FC = () => {
             <select
               value={activeBranch?._id ?? ''}
               onChange={(e) => {
-                setSelectedBranchId(e.target.value);
+                handleBranchChange(e.target.value);
                 setErrors((current) => {
                   const next = { ...current };
                   delete next.branch;
@@ -304,7 +335,7 @@ export const CheckoutPage: React.FC = () => {
               ))}
             </select>
             {isLoadingBranches ? <span className="text-[10px] text-muted">Loading branches...</span> : null}
-            {!isLoadingBranches && activeBranches.length === 0 && !branchesError ? (
+            {!isLoadingBranches && activeBranches.length === 0 && !branchError ? (
               <span className="text-[10px] text-muted">No active branches are available.</span>
             ) : null}
           </div>
@@ -314,9 +345,9 @@ export const CheckoutPage: React.FC = () => {
       <div className="container-nova pt-8">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-start">
           <form onSubmit={handleSubmit} noValidate className="space-y-10 lg:col-span-8">
-            {branchesError ? (
+            {branchError ? (
               <div role="alert" className="border border-danger bg-danger-soft px-4 py-3 text-xs text-danger">
-                Could not load store branches: {branchesError}
+                Could not load store branches: {branchError}
               </div>
             ) : null}
             {errors.branch ? <p role="alert" className="text-xs text-danger">{errors.branch}</p> : null}
@@ -540,7 +571,7 @@ export const CheckoutPage: React.FC = () => {
               shippingFee={shippingFee}
               total={total}
               fulfilment={formData.fulfilment}
-              branch={activeBranch}
+              branch={activeBranch ?? undefined}
               mode="checkout"
             />
           </div>

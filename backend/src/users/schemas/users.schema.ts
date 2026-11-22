@@ -1,5 +1,5 @@
 import { Prop, Schema as NestSchema, SchemaFactory } from "@nestjs/mongoose";
-import { HydratedDocument } from "mongoose";
+import type { HydratedDocument } from "mongoose";
 
 @NestSchema({ timestamps: true })
 export class User {
@@ -17,6 +17,9 @@ export class User {
     
     @Prop()
     role: string;
+
+    @Prop({ type: String, index: true })
+    branchId?: string;
 
     @Prop()
     avatar: string;

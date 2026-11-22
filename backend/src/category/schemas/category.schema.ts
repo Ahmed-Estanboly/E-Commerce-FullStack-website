@@ -1,6 +1,6 @@
 import { Prop, SchemaFactory } from "@nestjs/mongoose";
 import { Schema as NestSchema } from "@nestjs/mongoose";
-import { HydratedDocument } from "mongoose";
+import type { HydratedDocument } from "mongoose";
 
 @NestSchema({ timestamps: true })
 export class Category{

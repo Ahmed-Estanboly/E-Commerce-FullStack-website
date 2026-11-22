@@ -1,21 +1,47 @@
 import { useCallback, useState, type FormEvent } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams} from 'react-router-dom'
 import { AdminLayout } from '../components/layout/admin-layout'
+import { BranchLayout } from '../components/layout/branch-layout'
+import { BranchAssignmentPanel } from '../components/branches/BranchAssignmentPanel'
 import { useFetch } from '../hooks/useFetch'
 import { branchesService, getBranchRequestError } from '../lib/api/branches.service'
+import { productsService } from '../lib/api/products.service'
+import { useBranches } from '../hooks/use-branches'
+import { getStoredSession } from '../lib/auth'
 import type { BranchInventoryItem } from '../types/branch'
+import type { ProductCategory } from '../types/product'
 
-export default function BranchInventoryPage() {
-  const { branchId = '' } = useParams<{ branchId: string }>()
+export default function BranchInventoryPage({ branchOwnerView = false }: { branchOwnerView?: boolean }) {
+  const { branchId: routeBranchId, branchName } = useParams<{ branchId?: string; branchName?: string }>()
+  const branchId = routeBranchId ?? branchName ?? ''
+  const { branches } = useBranches()
+  const branch = branches.find((item) => item._id === branchId)
+  const ownerName = getStoredSession()?.user.name ?? branch?.name ?? 'Branch manager'
   const request = useCallback(
     (signal: AbortSignal) => branchesService.getBranchInventory(branchId, signal),
     [branchId],
   )
   const { data, isLoading, error, refetch } = useFetch<BranchInventoryItem[]>(request)
+  const categoriesRequest = useCallback(
+    (signal: AbortSignal) => productsService.getCategories(signal),
+    [],
+  )
+  const categoriesResult = useFetch<ProductCategory[]>(categoriesRequest)
   const [quantities, setQuantities] = useState<Record<number, string>>({})
   const [savedQuantities, setSavedQuantities] = useState<Record<number, number>>({})
   const [savingProductId, setSavingProductId] = useState<number | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [catalogOpen, setCatalogOpen] = useState(false)
+  const [assignmentOpen, setAssignmentOpen] = useState(false)
+  const [newProduct, setNewProduct] = useState({
+    title: '',
+    description: '',
+    price: '',
+    categoryId: '',
+    imageUrl: '',
+    branchQuantity: '1',
+  })
+  const assignedProducts = (data ?? []).filter((product) => product.isAssigned)
 
   const saveQuantity = async (event: FormEvent<HTMLFormElement>, product: BranchInventoryItem) => {
     event.preventDefault()
@@ -43,8 +69,57 @@ export default function BranchInventoryPage() {
     }
   }
 
-  return (
-    <AdminLayout activePage="branches" searchPlaceholder="Search products">
+  const createProduct = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const quantity = Number(newProduct.branchQuantity)
+    if (!Number.isInteger(quantity) || quantity < 0) {
+      setSaveError('Stock quantity must be a non-negative whole number.')
+      return
+    }
+
+    setSaveError(null)
+    setSavingProductId(-1)
+    try {
+      await branchesService.createBranchProduct(branchId, {
+        title: newProduct.title.trim(),
+        description: newProduct.description.trim(),
+        price: Number(newProduct.price),
+        categoryId: Number(newProduct.categoryId),
+        images: [newProduct.imageUrl.trim()],
+        branchQuantity: quantity,
+      })
+      setNewProduct({
+        title: '',
+        description: '',
+        price: '',
+        categoryId: '',
+        imageUrl: '',
+        branchQuantity: '1',
+      })
+      setCatalogOpen(false)
+      await refetch()
+    } catch (requestError) {
+      setSaveError(getBranchRequestError(requestError, 'Unable to create this product for the branch.'))
+    } finally {
+      setSavingProductId(null)
+    }
+  }
+
+  const removeProduct = async (product: BranchInventoryItem) => {
+    if (!window.confirm(`Remove "${product.productName}" from this branch inventory?`)) return
+    setSavingProductId(product.productId)
+    setSaveError(null)
+    try {
+      await branchesService.removeBranchProduct(branchId, product.productId)
+      await refetch()
+    } catch (requestError) {
+      setSaveError(getBranchRequestError(requestError, 'Unable to remove this product from the branch.'))
+    } finally {
+      setSavingProductId(null)
+    }
+  }
+
+  const content = (
       <div className="admin-content">
         <div className="admin-page-intro">
           <div>
@@ -52,10 +127,82 @@ export default function BranchInventoryPage() {
             <h1>Stock,<br /><em>by location.</em></h1>
             <p>Set a separate stock quantity for every product at this branch. Changes here do not affect other branches.</p>
           </div>
-          <Link to="/admin/branches" className="admin-outline-button">Back to branches</Link>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="admin-accent-button" onClick={() => setCatalogOpen((open) => !open)}>
+              {catalogOpen ? 'Close product catalogue' : 'Add products'}
+            </button>
+            <button
+              type="button"
+              className="admin-outline-button"
+              onClick={() => setAssignmentOpen((open) => !open)}
+            >
+              {assignmentOpen ? 'Close assignments' : 'Assign existing products'}
+            </button>
+            <Link to={branchOwnerView ? `/${branchId}/dashboard` : '/admin/branches'} className="admin-outline-button">
+              {branchOwnerView ? 'Back to dashboard' : 'Back to branches'}
+            </Link>
+          </div>
         </div>
 
         {saveError ? <div className="admin-api-error mt-4" role="alert">{saveError}</div> : null}
+        {assignmentOpen ? (
+          <BranchAssignmentPanel
+            branchId={branchId}
+            products={data ?? []}
+            onAssigned={async () => { await refetch() }}
+          />
+        ) : null}
+        {catalogOpen ? (
+          <section className="admin-panel mt-5 p-4" aria-label="Create a product for this branch">
+            <div className="mb-4">
+              <div>
+                <h2 className="font-display text-xl text-ink">Add a new product</h2>
+                <p className="mt-1 text-xs text-muted">Enter the product details and its opening stock for {branch?.name ?? 'this branch'}.</p>
+              </div>
+            </div>
+            {categoriesResult.error ? (
+              <div className="admin-api-error mb-4" role="alert">Could not load product categories: {categoriesResult.error}</div>
+            ) : null}
+            {!categoriesResult.isLoading && !categoriesResult.error && !categoriesResult.data?.length ? (
+              <div className="admin-api-error mb-4" role="alert">Create a product category before adding branch products.</div>
+            ) : null}
+            <form onSubmit={(event) => void createProduct(event)} className="grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className="eyebrow">Product name</span>
+                <input required maxLength={160} value={newProduct.title} onChange={(event) => setNewProduct((current) => ({ ...current, title: event.target.value }))} className="mt-2 h-11 w-full border border-line bg-canvas px-3 text-sm text-ink" />
+              </label>
+              <label className="block">
+                <span className="eyebrow">Category</span>
+                <select required value={newProduct.categoryId} onChange={(event) => setNewProduct((current) => ({ ...current, categoryId: event.target.value }))} className="mt-2 h-11 w-full border border-line bg-canvas px-3 text-sm text-ink">
+                  <option value="">Select a category</option>
+                  {(categoriesResult.data ?? []).map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                </select>
+              </label>
+              <label className="block md:col-span-2">
+                <span className="eyebrow">Description</span>
+                <textarea required maxLength={3000} rows={3} value={newProduct.description} onChange={(event) => setNewProduct((current) => ({ ...current, description: event.target.value }))} className="mt-2 w-full border border-line bg-canvas px-3 py-2 text-sm text-ink" />
+              </label>
+              <label className="block">
+                <span className="eyebrow">Price (EUR)</span>
+                <input required type="number" min="0" step="0.01" value={newProduct.price} onChange={(event) => setNewProduct((current) => ({ ...current, price: event.target.value }))} className="mt-2 h-11 w-full border border-line bg-canvas px-3 text-sm text-ink" />
+              </label>
+              <label className="block">
+                <span className="eyebrow">Opening branch stock</span>
+                <input required type="number" min="0" step="1" value={newProduct.branchQuantity} onChange={(event) => setNewProduct((current) => ({ ...current, branchQuantity: event.target.value }))} className="mt-2 h-11 w-full border border-line bg-canvas px-3 text-sm text-ink" />
+              </label>
+              <label className="block md:col-span-2">
+                <span className="eyebrow">Product image URL</span>
+                <input required type="url" value={newProduct.imageUrl} onChange={(event) => setNewProduct((current) => ({ ...current, imageUrl: event.target.value }))} placeholder="https://example.com/product-image.jpg" className="mt-2 h-11 w-full border border-line bg-canvas px-3 text-sm text-ink" />
+              </label>
+              <div className="flex justify-end gap-2 border-t border-line pt-4 md:col-span-2">
+                <button type="button" className="admin-outline-button" onClick={() => setCatalogOpen(false)}>Cancel</button>
+                <button type="submit" className="admin-accent-button" disabled={savingProductId !== null || categoriesResult.isLoading || !categoriesResult.data?.length}>
+                  {savingProductId === -1 ? 'Adding product...' : 'Add product to branch'}
+                </button>
+              </div>
+            </form>
+          </section>
+        ) : null}
         {isLoading && !data ? (
           <div className="admin-panel mt-5 p-5 text-sm text-muted" role="status">Loading branch inventory...</div>
         ) : error && !data ? (
@@ -63,13 +210,13 @@ export default function BranchInventoryPage() {
             <span>Could not load this branch’s inventory: {error}</span>
             <button type="button" onClick={refetch}>Retry</button>
           </div>
-        ) : data?.length ? (
+        ) : assignedProducts.length ? (
           <section className="admin-panel admin-orders-panel mt-5" aria-label="Branch product inventory">
             <div className="admin-table">
               <div className="admin-table-head branch-inventory-table-head">
-                <span>Product</span><span>Price</span><span>Branch stock</span><span>Update</span>
+                <span>Product</span><span>Price</span><span>Branch stock</span><span>Actions</span>
               </div>
-              {data.map((product) => {
+              {assignedProducts.map((product) => {
                 const quantity = savedQuantities[product.productId] ?? product.quantity
                 const isDirty = quantities[product.productId] !== undefined
                   && Number(quantities[product.productId]) !== quantity
@@ -102,27 +249,36 @@ export default function BranchInventoryPage() {
                         className="h-8 w-24 border border-line bg-canvas px-2 text-sm text-ink"
                       />
                     </label>
-                    <button
-                      type="submit"
-                      className="admin-row-action"
-                      disabled={savingProductId !== null || !isDirty}
-                    >
-                      {savingProductId === product.productId ? 'Saving...' : 'Save'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button type="submit" className="admin-row-action" disabled={savingProductId !== null || !isDirty}>
+                        {savingProductId === product.productId ? 'Saving...' : 'Save'}
+                      </button>
+                      <button type="button" className="admin-row-action text-danger" onClick={() => void removeProduct(product)} disabled={savingProductId !== null}>
+                        Remove
+                      </button>
+                    </div>
                   </form>
                 )
               })}
             </div>
           </section>
         ) : (
-          <div className="admin-panel mt-5 p-6 text-sm text-muted">No products are available in the catalogue yet.</div>
+          <div className="admin-panel mt-5 p-6 text-sm text-muted">No products are assigned to this branch yet. Use “Add products” to enter a new product.</div>
         )}
 
         <footer className="admin-footer mt-5">
           <span>BRANCH INVENTORY · INDEPENDENT STOCK LEVELS</span>
-          <span>{data?.length ?? 0} PRODUCTS</span>
+          <span>{assignedProducts.length} PRODUCTS</span>
         </footer>
       </div>
-    </AdminLayout>
   )
+
+  if (branchOwnerView) {
+    return (
+      <BranchLayout branchId={branchId} branchName={branch?.name ?? 'Branch'} ownerName={ownerName}>
+        {content}
+      </BranchLayout>
+    )
+  }
+  return <AdminLayout activePage="branches" searchPlaceholder="Search products">{content}</AdminLayout>
 }

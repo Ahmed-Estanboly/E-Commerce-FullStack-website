@@ -49,9 +49,12 @@ export function isBranchOwner(user: AuthUser): boolean {
 
 export function getBranchSlug(user: AuthUser): string | null {
   if (!isBranchOwner(user)) return null
+  if (user.branchId) return user.branchId
   const role = user.role.toLowerCase()
   if (role === 'branch owner') return 'north-house'
-  return `${role.split(' ')[0]}-house`
+  if (role === 'central owner') return 'central-house'
+  if (role === 'south owner') return 'south-house'
+  return null
 }
 
 /** Where a signed-in user lands after login / which dashboard link they get. */
