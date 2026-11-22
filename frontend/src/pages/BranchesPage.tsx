@@ -8,17 +8,27 @@ import { useBranches } from '../hooks/use-branches'
 interface BranchFormValues {
   name: string;
   address: string;
+  city: string;
+  description: string;
   phone: string;
   workingHours: string;
   isActive: boolean;
+  ownerName: string;
+  ownerEmail: string;
+  ownerPassword: string;
 }
 
 const EMPTY_FORM: BranchFormValues = {
   name: '',
   address: '',
+  city: '',
+  description: '',
   phone: '',
   workingHours: '09:00 AM - 11:00 PM',
   isActive: true,
+  ownerName: '',
+  ownerEmail: '',
+  ownerPassword: '',
 }
 
 export default function BranchesPage() {
@@ -48,25 +58,37 @@ export default function BranchesPage() {
     setForm({
       name: branch.name,
       address: branch.address,
+      city: branch.city ?? '',
+      description: branch.description ?? '',
       phone: branch.phone,
       workingHours: branch.workingHours,
       isActive: branch.isActive,
+      ownerName: '',
+      ownerEmail: branch.ownerEmail ?? '',
+      ownerPassword: '',
     })
     setDialogOpen(true)
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const input = {
+    const branchDetails = {
       name: form.name.trim(),
       address: form.address.trim(),
+      city: form.city.trim() || undefined,
+      description: form.description.trim() || undefined,
       phone: form.phone.trim(),
       workingHours: form.workingHours.trim(),
       isActive: form.isActive,
     }
     const branch = editingBranchId
-      ? await updateBranch(editingBranchId, input)
-      : await createBranch(input)
+      ? await updateBranch(editingBranchId, branchDetails)
+      : await createBranch({
+          ...branchDetails,
+          ownerName: form.ownerName.trim() || undefined,
+          ownerEmail: form.ownerEmail.trim(),
+          ownerPassword: form.ownerPassword,
+        })
     if (!branch) return
     setForm(EMPTY_FORM)
     setEditingBranchId(null)
@@ -141,6 +163,14 @@ export default function BranchesPage() {
                         <dt className="font-mono text-[8px] uppercase tracking-[0.1em] text-muted">Address</dt>
                         <dd className="mt-1 leading-relaxed text-ink-soft">{branch.address}</dd>
                       </div>
+                      {branch.city ? <div>
+                        <dt className="font-mono text-[8px] uppercase tracking-[0.1em] text-muted">City</dt>
+                        <dd className="mt-1 text-ink-soft">{branch.city}</dd>
+                      </div> : null}
+                      {branch.description ? <div>
+                        <dt className="font-mono text-[8px] uppercase tracking-[0.1em] text-muted">About this branch</dt>
+                        <dd className="mt-1 leading-relaxed text-ink-soft">{branch.description}</dd>
+                      </div> : null}
                       <div>
                         <dt className="font-mono text-[8px] uppercase tracking-[0.1em] text-muted">Phone</dt>
                         <dd className="mt-1 text-ink-soft">
@@ -151,6 +181,10 @@ export default function BranchesPage() {
                         <dt className="font-mono text-[8px] uppercase tracking-[0.1em] text-muted">Working hours</dt>
                         <dd className="mt-1 text-ink-soft">{branch.workingHours}</dd>
                       </div>
+                      {branch.ownerEmail ? <div>
+                        <dt className="font-mono text-[8px] uppercase tracking-[0.1em] text-muted">Branch login</dt>
+                        <dd className="mt-1 text-ink-soft">{branch.ownerEmail}</dd>
+                      </div> : null}
                     </dl>
                     <div className="mt-5 flex flex-wrap gap-2 border-t border-line pt-4">
                       <Link
@@ -210,6 +244,46 @@ export default function BranchesPage() {
               autoComplete="organization"
             />
           </label>
+          {!editingBranchId ? (
+            <>
+              <label className="block">
+                <span className="eyebrow">Manager name (optional)</span>
+                <input
+                  maxLength={120}
+                  value={form.ownerName}
+                  onChange={(event) => setForm((current) => ({ ...current, ownerName: event.target.value }))}
+                  className="mt-2 h-11 w-full border border-line bg-canvas/40 px-3 text-sm text-ink outline-none focus:border-line-strong"
+                  autoComplete="name"
+                />
+              </label>
+              <label className="block">
+                <span className="eyebrow">Branch login email</span>
+                <input
+                  required
+                  type="email"
+                  value={form.ownerEmail}
+                  onChange={(event) => setForm((current) => ({ ...current, ownerEmail: event.target.value }))}
+                  className="mt-2 h-11 w-full border border-line bg-canvas/40 px-3 text-sm text-ink outline-none focus:border-line-strong"
+                  autoComplete="email"
+                />
+              </label>
+              <label className="block">
+                <span className="eyebrow">Branch login password</span>
+                <input
+                  required
+                  type="password"
+                  minLength={8}
+                  value={form.ownerPassword}
+                  onChange={(event) => setForm((current) => ({ ...current, ownerPassword: event.target.value }))}
+                  className="mt-2 h-11 w-full border border-line bg-canvas/40 px-3 text-sm text-ink outline-none focus:border-line-strong"
+                  autoComplete="new-password"
+                />
+                <span className="mt-1 block text-[10px] text-muted">Use at least 8 characters. The password is stored securely and cannot be viewed later.</span>
+              </label>
+            </>
+          ) : (
+            <p className="text-[11px] text-muted">Login email: {form.ownerEmail || 'Not set'} · Passwords are never displayed.</p>
+          )}
           <label className="block">
             <span className="eyebrow">Address</span>
             <input
@@ -219,6 +293,25 @@ export default function BranchesPage() {
               onChange={(event) => setForm((current) => ({ ...current, address: event.target.value }))}
               className="mt-2 h-11 w-full border border-line bg-canvas/40 px-3 text-sm text-ink outline-none focus:border-line-strong"
               autoComplete="street-address"
+            />
+          </label>
+          <label className="block">
+            <span className="eyebrow">City</span>
+            <input
+              maxLength={100}
+              value={form.city}
+              onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))}
+              className="mt-2 h-11 w-full border border-line bg-canvas/40 px-3 text-sm text-ink outline-none focus:border-line-strong"
+              autoComplete="address-level2"
+            />
+          </label>
+          <label className="block">
+            <span className="eyebrow">Description</span>
+            <textarea
+              maxLength={500}
+              value={form.description}
+              onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+              className="mt-2 min-h-20 w-full border border-line bg-canvas/40 px-3 py-2 text-sm text-ink outline-none focus:border-line-strong"
             />
           </label>
           <label className="block">

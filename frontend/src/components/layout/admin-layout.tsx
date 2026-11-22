@@ -4,17 +4,18 @@ import { ArrowUpRight, Menu, Package, Search, Shirt, ShoppingBag, Store, Users, 
 import { Logo } from '../ui/logo'
 import { useStoreProducts } from '../../hooks/use-products'
 import { ThemeToggle } from './theme-toggle'
+import { ProfileMenu } from './profile-menu'
 
-type AdminPage = 'dashboard' | 'analytics' | 'branches'
+type AdminPage = 'dashboard' | 'analytics' | 'branches' | 'orders' | 'products'
 
 const navigation = [
   { label: 'Dashboard', icon: Store, path: '/admin/dashboard', page: 'dashboard' as AdminPage },
   { label: 'Analytics', icon: ArrowUpRight, path: '/admin/analytics', page: 'analytics' as AdminPage },
   { label: 'Branches', icon: Store, path: '/admin/branches', page: 'branches' as AdminPage },
-  { label: 'Orders', icon: ShoppingBag, path: '/admin/dashboard' },
-  { label: 'Inventory', icon: Package, path: '/admin/dashboard' },
+  { label: 'Orders', icon: ShoppingBag, path: '/admin/orders', page: 'orders' as AdminPage },
+  { label: 'Inventory', icon: Package, path: '/admin/branches', page: 'branches' as AdminPage },
   { label: 'Customers', icon: Users, path: '/admin/dashboard' },
-  { label: 'Products', icon: Shirt, path: '/shop' },
+  { label: 'Products', icon: Shirt, path: '/admin/products', page: 'products' as AdminPage },
   { label: 'Categories', icon: Store, path: '/#universes' },
 ]
 
@@ -51,11 +52,11 @@ export function AdminLayout({ children, activePage, searchPlaceholder = 'Search 
             </Link>
           ))}
           <p className="admin-nav-label">Operations</p>
-          {navigation.slice(3, 6).map(({ label, icon: Icon, path }) => (
-            <Link className="admin-nav-item" key={label} to={path} onClick={closeSidebar}><Icon aria-hidden="true" /><span>{label}</span>{label === 'Orders' ? <small>84</small> : null}</Link>
+          {navigation.slice(3, 6).map(({ label, icon: Icon, path, page }) => (
+            <Link className={`admin-nav-item${page === activePage ? ' is-active' : ''}`} key={label} to={path} onClick={closeSidebar}><Icon aria-hidden="true" /><span>{label}</span></Link>
           ))}
           <p className="admin-nav-label">Catalogue</p>
-          {navigation.slice(6).map(({ label, icon: Icon, path }) => <Link className="admin-nav-item" key={label} to={path} onClick={closeSidebar}><Icon aria-hidden="true" /><span>{label}</span></Link>)}
+          {navigation.slice(6).map(({ label, icon: Icon, path, page }) => <Link className={`admin-nav-item${page === activePage ? ' is-active' : ''}`} key={label} to={path} onClick={closeSidebar}><Icon aria-hidden="true" /><span>{label}</span></Link>)}
         </nav>
         <div className="admin-sidebar-bottom">
           <Link className="admin-store-link" to="/"><ArrowUpRight aria-hidden="true" /><span>View storefront</span></Link>
@@ -74,9 +75,8 @@ export function AdminLayout({ children, activePage, searchPlaceholder = 'Search 
             </div> : null}
           </form>
           <div className="admin-topbar-actions">
-
             <ThemeToggle />
-            <span className="admin-profile"><span className="admin-avatar">A</span><span className="admin-profile-copy"><strong>Admin</strong><small>Owner</small></span></span>
+            <ProfileMenu fallbackName="Admin" roleLabel="Store administrator" />
           </div>
         </header>
         {children}

@@ -103,7 +103,7 @@ const AdminBranches = () => {
   )
 
   return routeBranch
-    ? <BranchLayout branchName={branch.name} ownerName={branch.manager} searchPlaceholder="Search branch products">{dashboardContent}</BranchLayout>
+    ? <BranchLayout branchId={branch.slug} branchName={branch.name} ownerName={branch.manager} searchPlaceholder="Search branch products">{dashboardContent}</BranchLayout>
     : <AdminLayout activePage="branches" searchPlaceholder="Search branch products">{dashboardContent}</AdminLayout>
 }
 
