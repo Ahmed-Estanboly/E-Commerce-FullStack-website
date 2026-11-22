@@ -1,14 +1,18 @@
-import { Injectable, NotFoundException, OnApplicationBootstrap } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, OnApplicationBootstrap } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
 import { InjectModel } from '@nestjs/mongoose';
 import { Product, ProductDocument } from './schemas/products.schema.js';
+import { Category, CategoryDocument } from '../category/schemas/category.schema.js';
 import { initialProducts } from './productsSeed.js';
-import { Model } from 'mongoose';
+import type { Model } from 'mongoose';
 
 @Injectable()
 export class ProductsService implements OnApplicationBootstrap {
-  constructor(@InjectModel(Product.name) private productModel: Model<ProductDocument>) {}
+  constructor(
+    @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    @InjectModel(Category.name) private categoryModel: Model<CategoryDocument>,
+  ) {}
   
    // Runs automatically once when NestJS finishes initializing
   async onApplicationBootstrap() {
@@ -37,7 +41,15 @@ export class ProductsService implements OnApplicationBootstrap {
     return (lastProduct?.id ?? 0) + 1;
   }
 
+  private async ensureCategoryExists(categoryId: number) {
+    const categoryExists = await this.categoryModel.exists({ id: categoryId });
+    if (!categoryExists) {
+      throw new BadRequestException(`Category with ID ${categoryId} does not exist.`);
+    }
+  }
+
   async create(createProductDto: CreateProductDto) {
+    await this.ensureCategoryExists(createProductDto.categoryId);
     const id = await this.getNextId();
     const plainDto = {
       title: createProductDto.title,
@@ -67,6 +79,9 @@ export class ProductsService implements OnApplicationBootstrap {
   }
 
   async update(id: number, updateProductDto: UpdateProductDto) {
+    if (updateProductDto.categoryId !== undefined) {
+      await this.ensureCategoryExists(updateProductDto.categoryId);
+    }
     const product = await this.productModel.findOneAndUpdate({ id }, updateProductDto, { new: true }).exec();
     if (!product) {
       throw new NotFoundException('Product not found');
