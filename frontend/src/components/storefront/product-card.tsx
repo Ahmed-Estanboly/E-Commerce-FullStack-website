@@ -85,6 +85,12 @@ export function ProductCard({
           )}>
             {product.stock > 0 ? `${product.stock} available at this branch` : 'Unavailable at this branch'}
           </p>
+          {product.ratingCount ? (
+            <p className="mt-1 font-mono text-[8px] uppercase tracking-[0.1em] text-muted">
+              <span className="text-accent">★</span> {product.ratingAverage?.toFixed(1)} · {product.ratingCount}{' '}
+              {product.ratingCount === 1 ? 'review' : 'reviews'}
+            </p>
+          ) : null}
         </div>
       </Link>
     </article>

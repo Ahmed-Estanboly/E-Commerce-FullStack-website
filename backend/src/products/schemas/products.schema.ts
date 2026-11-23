@@ -29,6 +29,12 @@ export class Product {
 
     @Prop({ enum: ['north', 'center', 'south'] })
     branch: string;
+
+    @Prop({ default: 0, min: 0, max: 5 })
+    ratingAverage: number;
+
+    @Prop({ default: 0, min: 0 })
+    ratingCount: number;
 }
 export type ProductDocument = HydratedDocument<Product>;
 export const ProductSchema = SchemaFactory.createForClass(Product);

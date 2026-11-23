@@ -6,26 +6,35 @@ import {
 } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { randomUUID } from 'node:crypto';
-import { isValidObjectId, Types } from 'mongoose';
-import type { ClientSession, Connection, Model } from 'mongoose';
+import { isValidObjectId, type ClientSession, type Connection, type Model, Types } from 'mongoose';
 import { Product, ProductDocument } from '../products/schemas/products.schema.js';
 import { CreateOrderDto } from './dto/create-order.dto.js';
-import { Order, OrderDocument } from './schemas/order.schema.js';
-import { OrderStatus } from './dto/update-order-status.dto.js';
-import { Branch, BranchDocument } from '../branches/schemas/branch.schema.js';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto.js';
 import {
-  BranchInventory,
-  BranchInventoryDocument,
-} from '../branches/schemas/branch-inventory.schema.js';
+  Order,
+  OrderDocument,
+  ORDER_STATUS_TRANSITIONS,
+  type OrderStatus,
+} from './schemas/order.schema.js';
+import { Branch, BranchDocument } from '../branches/schemas/branch.schema.js';
+import { BranchInventory, BranchInventoryDocument } from '../branches/schemas/branch-inventory.schema.js';
+import {
+  resolvePagination,
+  toPaginatedResult,
+  type PaginatedResult,
+  type PaginationQueryDto,
+} from '../common/dto/pagination.dto.js';
 
+export interface OrderActor {
+  id?: number;
+  role?: string;
+  branchId?: string;
+  label?: string;
+}
+
+const ADMIN_ROLE = 'master admin';
+const BRANCH_OWNER_ROLES = ['branch owner', 'central owner', 'south owner'];
 const DELIVERY_SHIPPING_FEE = 6.5;
-
-export const ORDER_MANAGER_ROLES = [
-  'master admin',
-  'branch owner',
-  'central owner',
-  'south owner',
-];
 
 @Injectable()
 export class OrdersService {
@@ -127,7 +136,15 @@ export class OrdersService {
           deliveryAddress: createOrderDto.deliveryAddress,
           paymentMethod: createOrderDto.paymentMethod,
           cardLast4: createOrderDto.cardLast4,
-          status: 'confirmed',
+          status: 'confirmed' as OrderStatus,
+          statusHistory: [
+            {
+              status: 'confirmed' as OrderStatus,
+              at: new Date(),
+              by: userId ? `user:${userId}` : 'guest',
+              note: 'Order placed',
+            },
+          ],
         };
 
         createdOrder = await this.createWithUniqueOrderNumber(orderData, session);
@@ -142,62 +159,125 @@ export class OrdersService {
     }
   }
 
-  async findAll(): Promise<Order[]> {
-    return this.orderModel.find().sort({ createdAt: -1 }).lean().exec();
+  async findAll(query: PaginationQueryDto = {}): Promise<Order[] | PaginatedResult<Order>> {
+    return this.paginatedFind(this.orderModel.find().sort({ createdAt: -1 }), query);
   }
 
-  async findByBranch(branchId: string): Promise<Order[]> {
-    return this.orderModel
-      .find({ 'branch._id': branchId })
-      .sort({ createdAt: -1 })
-      .lean()
-      .exec();
+  async findByBranch(branchId: string, query: PaginationQueryDto = {}): Promise<Order[] | PaginatedResult<Order>> {
+    if (!isValidObjectId(branchId)) {
+      throw new NotFoundException('Branch not found');
+    }
+    return this.paginatedFind(
+      this.orderModel.find({ 'branch._id': branchId }).sort({ createdAt: -1 }),
+      query,
+    );
   }
 
-  async findMine(userId: number, email?: string): Promise<Order[]> {
-    const filter: Record<string, unknown> = email
+  async findMine(
+    userId: number,
+    email?: string,
+    query: PaginationQueryDto = {},
+  ): Promise<Order[] | PaginatedResult<Order>> {
+    const filter = email
       ? { $or: [{ userId }, { email: email.toLowerCase() }] }
       : { userId };
-    return this.orderModel
-      .find(filter)
-      .sort({ createdAt: -1 })
-      .lean()
-      .exec();
+    return this.paginatedFind(
+      this.orderModel.find(filter).sort({ createdAt: -1 }),
+      query,
+    );
   }
 
-  async findOne(id: string): Promise<Order | null> {
+  async findOne(id: string): Promise<(Order & { allowedTransitions: OrderStatus[] }) | null> {
     if (!isValidObjectId(id)) {
-      throw new NotFoundException('Order not found');
+      return null;
     }
-    return this.orderModel.findById(id).lean().exec();
+    const order = await this.orderModel.findById(id).lean().exec();
+    return order ? this.withTransitions(order) : null;
   }
 
-  async updateStatus(
+  /** Order lookup for the customer who placed it (JWT `sub` must match `userId`). */
+  async findOneForCustomer(
     id: string,
-    status: OrderStatus,
-    user: { role?: string; branchId?: string },
-  ): Promise<Order> {
+    userId: number,
+  ): Promise<(Order & { allowedTransitions: OrderStatus[] }) | null> {
     if (!isValidObjectId(id)) {
       throw new NotFoundException('Order not found');
     }
-    return this.runInTransaction(async (session) => {
-      const order = await this.orderModel.findById(id).session(session).exec();
-      if (!order) {
+    const order = await this.orderModel.findOne({ _id: id, userId }).lean().exec();
+    return order ? this.withTransitions(order) : null;
+  }
+
+  /**
+   * Moves an order to a new status, recording history. Cancelling returns the
+   * reserved branch stock. Branch owners may only update orders belonging to
+   * their own branch; master admin may update any order.
+   */
+  async updateStatus(id: string, dto: UpdateOrderStatusDto, actor: OrderActor) {
+    if (!isValidObjectId(id)) {
+      throw new NotFoundException('Order not found');
+    }
+    const order = await this.orderModel.findById(id).exec();
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    this.assertCanManage(actor, order);
+
+    const current = order.status as OrderStatus;
+    const next = dto.status;
+    if (next === current) {
+      throw new BadRequestException(`Order is already ${next}.`);
+    }
+    const allowed = ORDER_STATUS_TRANSITIONS[current] ?? [];
+    if (!allowed.includes(next)) {
+      throw new BadRequestException(
+        `Cannot move an order from "${current}" to "${next}".`,
+      );
+    }
+
+    const session = await this.connection.startSession();
+    try {
+      const result: { order?: OrderDocument | null } = {};
+      await session.withTransaction(async () => {
+        if (next === 'cancelled') {
+          await this.restockOrderItems(order, session);
+        }
+        result.order = await this.orderModel.findByIdAndUpdate(
+          order._id,
+          {
+            $set: { status: next },
+            $push: {
+              statusHistory: {
+                status: next,
+                at: new Date(),
+                by: actor.label ?? (actor.id ? `user:${actor.id}` : actor.role ?? 'system'),
+                ...(dto.note ? { note: dto.note } : {}),
+              },
+            },
+          },
+          { new: true, session },
+        ).exec();
+      });
+      if (!result.order) {
         throw new NotFoundException('Order not found');
       }
-      if (user.role !== 'master admin' && order.branch?._id !== user.branchId) {
-        throw new ForbiddenException('This order belongs to another branch.');
-      }
-      if (status === 'cancelled' && order.status !== 'cancelled') {
-        await this.restoreBranchInventory(order, session);
-      }
-      order.status = status;
-      await order.save({ session });
-      return order.toObject();
-    });
+      return this.withTransitions(result.order.toObject());
+    } finally {
+      await session.endSession();
+    }
   }
 
-  private async restoreBranchInventory(order: OrderDocument, session: ClientSession) {
+  private assertCanManage(actor: OrderActor, order: OrderDocument) {
+    if (actor.role === ADMIN_ROLE) return;
+    if (BRANCH_OWNER_ROLES.includes(actor.role ?? '') && actor.branchId) {
+      const orderBranchId = order.branch?._id;
+      if (orderBranchId && orderBranchId === actor.branchId) return;
+    }
+    throw new ForbiddenException('You can only update orders for your own branch.');
+  }
+
+  /** Returns reserved stock to the order's branch when an order is cancelled. */
+  private async restockOrderItems(order: OrderDocument, session: ClientSession) {
     const productIds = order.items.map((item) => item.productId);
     const products = await this.productModel
       .find({ id: { $in: productIds } })
@@ -205,40 +285,44 @@ export class OrdersService {
       .session(session)
       .exec();
     const objectIdByProductId = new Map(products.map((product) => [product.id, product._id]));
-    const branchId = new Types.ObjectId(order.branch._id);
+    const branchObjectId = new Types.ObjectId(order.branch._id);
 
     for (const item of order.items) {
       const productObjectId = objectIdByProductId.get(item.productId);
-      if (!productObjectId) {
-        continue;
-      }
-      await this.branchInventoryModel.updateOne(
-        { branch: branchId, product: productObjectId },
+      if (!productObjectId) continue;
+      await this.branchInventoryModel.findOneAndUpdate(
+        { branch: branchObjectId, product: productObjectId },
         { $inc: { quantity: item.quantity } },
-        { session },
-      );
+        { upsert: true, session, setDefaultsOnInsert: true },
+      ).exec();
     }
   }
 
-  private async createWithUniqueOrderNumber(
-    orderData: Record<string, unknown>,
-    session: ClientSession,
-  ) {
+  private withTransitions<T extends { status: string }>(order: T) {
+    return {
+      ...order,
+      allowedTransitions: ORDER_STATUS_TRANSITIONS[order.status as OrderStatus] ?? [],
+    };
+  }
+
+  private async paginatedFind(
+    query: ReturnType<Model<OrderDocument>['find']>,
+    pagination: PaginationQueryDto,
+  ): Promise<Order[] | PaginatedResult<Order>> {
+    const params = resolvePagination(pagination);
+    if (!params) {
+      return query.lean().exec();
+    }
+    const [items, total] = await Promise.all([
+      query.clone().skip(params.skip).limit(params.limit).lean().exec(),
+      this.orderModel.countDocuments(query.getFilter()).exec(),
+    ]);
+    return toPaginatedResult(items as Order[], total, params);
+  }
+
+  private async createWithUniqueOrderNumber(orderData: Record<string, unknown>, session: ClientSession) {
     const orderNumber = `NOVA-${randomUUID().replaceAll('-', '').slice(0, 12).toUpperCase()}`;
     const [created] = await this.orderModel.create([{ ...orderData, orderNumber }], { session });
     return created;
-  }
-
-  private async runInTransaction<T>(fn: (session: ClientSession) => Promise<T>): Promise<T> {
-    const session = await this.connection.startSession();
-    try {
-      let result!: T;
-      await session.withTransaction(async () => {
-        result = await fn(session);
-      });
-      return result;
-    } finally {
-      await session.endSession();
-    }
   }
 }

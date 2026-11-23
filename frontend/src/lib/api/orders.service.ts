@@ -1,6 +1,23 @@
 import axios from 'axios'
 import type { FulfilmentMethod, PaymentMethod } from '../../types/checkout'
+import type { PaginatedResult } from '../../types/product'
 import { backendClient, unwrap, type ApiEnvelope } from './client'
+
+export type OrderStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'preparing'
+  | 'ready'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled'
+
+export interface OrderStatusHistoryEntry {
+  status: OrderStatus
+  at: string
+  by?: string
+  note?: string
+}
 
 export interface OrderItemPayload {
   productId: number
@@ -47,12 +64,27 @@ export interface BackendOrder {
   deliveryAddress?: string
   paymentMethod: PaymentMethod
   cardLast4?: string
-  status: 'pending' | 'confirmed' | 'delivered' | 'cancelled'
+  status: OrderStatus
+  statusHistory?: OrderStatusHistoryEntry[]
+  allowedTransitions?: OrderStatus[]
   createdAt: string
   updatedAt: string
 }
 
-export type OrderStatus = BackendOrder['status']
+export type OrdersResponse = BackendOrder[] | PaginatedResult<BackendOrder>
+
+export interface OrderQueryParams {
+  page?: number
+  limit?: number
+}
+
+function isPaginated(data: OrdersResponse): data is PaginatedResult<BackendOrder> {
+  return !Array.isArray(data)
+}
+
+function normalizeOrders(data: OrdersResponse): BackendOrder[] {
+  return isPaginated(data) ? data.items : data
+}
 
 export const ordersService = {
   async createOrder(payload: CreateOrderPayload, signal?: AbortSignal): Promise<BackendOrder> {
@@ -60,29 +92,50 @@ export const ordersService = {
     return unwrap(response.data)
   },
 
-  async getMyOrders(signal?: AbortSignal): Promise<BackendOrder[]> {
-    const response = await backendClient.get<ApiEnvelope<BackendOrder[]>>('/orders/me', { signal })
+  async getMyOrders(params?: OrderQueryParams, signal?: AbortSignal): Promise<OrdersResponse> {
+    const response = await backendClient.get<ApiEnvelope<OrdersResponse>>('/orders/me', {
+      params,
+      signal,
+    })
     return unwrap(response.data)
   },
 
-  async getBranchOrders(branchId: string, signal?: AbortSignal): Promise<BackendOrder[]> {
-    const response = await backendClient.get<ApiEnvelope<BackendOrder[]>>(
+  async getMyOrder(id: string, signal?: AbortSignal): Promise<BackendOrder> {
+    const response = await backendClient.get<ApiEnvelope<BackendOrder>>(`/orders/me/${id}`, { signal })
+    return unwrap(response.data)
+  },
+
+  async getBranchOrders(branchId: string, params?: OrderQueryParams, signal?: AbortSignal): Promise<OrdersResponse> {
+    const response = await backendClient.get<ApiEnvelope<OrdersResponse>>(
       `/orders/branch/${branchId}`,
-      { signal },
+      { params, signal },
     )
     return unwrap(response.data)
   },
 
-  async getAllOrders(signal?: AbortSignal): Promise<BackendOrder[]> {
-    const response = await backendClient.get<ApiEnvelope<BackendOrder[]>>('/orders', { signal })
+  async getAllOrders(params?: OrderQueryParams, signal?: AbortSignal): Promise<OrdersResponse> {
+    const response = await backendClient.get<ApiEnvelope<OrdersResponse>>('/orders', {
+      params,
+      signal,
+    })
     return unwrap(response.data)
   },
 
-  async updateOrderStatus(id: string, status: OrderStatus): Promise<BackendOrder> {
-    const response = await backendClient.patch<ApiEnvelope<BackendOrder>>(`/orders/${id}/status`, { status })
+  async getOrder(id: string, signal?: AbortSignal): Promise<BackendOrder> {
+    const response = await backendClient.get<ApiEnvelope<BackendOrder>>(`/orders/${id}`, { signal })
+    return unwrap(response.data)
+  },
+
+  async updateOrderStatus(id: string, status: OrderStatus, note?: string): Promise<BackendOrder> {
+    const response = await backendClient.patch<ApiEnvelope<BackendOrder>>(
+      `/orders/${id}/status`,
+      { status, ...(note ? { note } : {}) },
+    )
     return unwrap(response.data)
   },
 }
+
+export { normalizeOrders }
 
 export function getOrderRequestError(error: unknown, fallback: string): string {
   if (!axios.isAxiosError(error)) return fallback

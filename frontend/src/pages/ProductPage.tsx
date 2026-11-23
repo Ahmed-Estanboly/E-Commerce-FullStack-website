@@ -16,6 +16,7 @@ import { SmartImage } from '../components/ui/smart-image'
 import { SectionHeading } from '../components/ui/section-heading'
 import { EmptyState, Skeleton } from '../components/ui/feedback'
 import { ProductCard } from '../components/storefront/product-card'
+import { ProductReviews } from '../components/products/ProductReviews'
 import {
   departmentForCategory,
   presentationForCategory,
@@ -445,9 +446,17 @@ function ProductDetail({
             </h1>
 
             <div className="mt-6 flex flex-wrap items-baseline justify-between gap-3 border-b border-line pb-5">
-              <p className="font-display text-[clamp(1.8rem,2.7vw,2.5rem)] leading-none tabular tracking-[-0.03em]">
-                {formatPrice(currentProduct.price)}
-              </p>
+              <div>
+                <p className="font-display text-[clamp(1.8rem,2.7vw,2.5rem)] leading-none tabular tracking-[-0.03em]">
+                  {formatPrice(currentProduct.price)}
+                </p>
+                {currentProduct.ratingCount ? (
+                  <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-muted">
+                    <span className="text-accent">★</span> {currentProduct.ratingAverage?.toFixed(1)} ·{' '}
+                    {currentProduct.ratingCount} {currentProduct.ratingCount === 1 ? 'review' : 'reviews'}
+                  </p>
+                ) : null}
+              </div>
               <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-muted">
                 Catalogue ref. NOVA-{String(currentProduct.id).padStart(4, '0')}
               </p>
@@ -628,6 +637,10 @@ function ProductDetail({
           </div>
         </section>
       ) : null}
+
+      <section className="container-nova pb-16 lg:pb-20">
+        <ProductReviews productId={currentProduct.id} />
+      </section>
 
       <section className="container-nova pb-16">
         <div className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">

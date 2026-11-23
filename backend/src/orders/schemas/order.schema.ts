@@ -1,6 +1,45 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import type { HydratedDocument } from 'mongoose';
 
+export const ORDER_STATUSES = [
+  'pending',
+  'confirmed',
+  'preparing',
+  'ready',
+  'shipped',
+  'delivered',
+  'cancelled',
+] as const;
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+/** Allowed forward transitions; cancelled and delivered are terminal. */
+export const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['preparing', 'ready', 'cancelled'],
+  preparing: ['ready', 'cancelled'],
+  ready: ['shipped', 'delivered'],
+  shipped: ['delivered'],
+  delivered: [],
+  cancelled: [],
+};
+
+@Schema({ timestamps: true })
+export class OrderStatusHistoryEntry {
+  @Prop({ required: true, type: String, enum: ORDER_STATUSES })
+  status: OrderStatus;
+
+  @Prop({ required: true, type: Date, default: Date.now })
+  at: Date;
+
+  @Prop()
+  by?: string;
+
+  @Prop()
+  note?: string;
+}
+
+export const OrderStatusHistorySchema = SchemaFactory.createForClass(OrderStatusHistoryEntry);
+
 @Schema({ timestamps: true })
 export class Order {
   @Prop({ required: true, unique: true })
@@ -77,8 +116,11 @@ export class Order {
   @Prop()
   cardLast4?: string;
 
-  @Prop({ default: 'pending', enum: ['pending', 'confirmed', 'delivered', 'cancelled'] })
-  status: string;
+  @Prop({ default: 'confirmed', type: String, enum: ORDER_STATUSES })
+  status: OrderStatus;
+
+  @Prop({ type: [OrderStatusHistorySchema], default: [] })
+  statusHistory: OrderStatusHistoryEntry[];
 }
 
 export type OrderDocument = HydratedDocument<Order>;

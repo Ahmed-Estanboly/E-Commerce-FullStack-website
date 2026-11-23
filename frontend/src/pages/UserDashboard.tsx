@@ -7,7 +7,7 @@ import { Skeleton } from '../components/ui/feedback'
 import { useCart } from '../store/cart-context'
 import { formatPrice } from '../lib/utils'
 import { authService } from '../lib/api/auth.service'
-import { ordersService, type BackendOrder } from '../lib/api/orders.service'
+import { ordersService, normalizeOrders, type BackendOrder } from '../lib/api/orders.service'
 import { getStoredSession, updateSessionUser } from '../lib/auth'
 
 type Profile = {
@@ -19,6 +19,7 @@ type Profile = {
 
 type Order = {
   id: string
+  orderId: string
   date: string
   status: string
   total: number
@@ -48,6 +49,7 @@ function loadProfile(): Profile {
 function toOrderView(order: BackendOrder): Order {
   return {
     id: order.orderNumber,
+    orderId: order._id,
     date: new Date(order.createdAt).toLocaleDateString(),
     status: order.status,
     total: order.total,
@@ -87,7 +89,7 @@ const UserDashboard = () => {
     ordersService
       .getMyOrders()
       .then((list) => {
-        if (!cancelled) setOrders(list.map(toOrderView))
+        if (!cancelled) setOrders(normalizeOrders(list).map(toOrderView))
       })
       .catch(() => {
         if (!cancelled) setOrders([])
@@ -148,7 +150,7 @@ const UserDashboard = () => {
           {orders === null ? (
             <div className="space-y-4 py-8"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-2/3" /></div>
           ) : orders.length ? (
-            <div className="divide-y divide-line">{orders.map((order) => <div key={order.id} className="flex flex-wrap items-center justify-between gap-4 py-4"><div><p className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted">{order.id} · {order.date}</p><p className="mt-1 text-[13px] text-ink">{order.items} {order.items === 1 ? 'item' : 'items'} · {order.branchName}</p></div><div className="text-right"><p className="font-mono text-[11px] tabular text-ink">{formatPrice(order.total)}</p><p className="mt-1 text-[9px] uppercase tracking-[0.1em] text-success">{order.status}</p></div></div>)}</div>
+            <div className="divide-y divide-line">{orders.map((order) => <Link key={order.id} to={`/account/orders/${order.orderId}`} className="flex flex-wrap items-center justify-between gap-4 py-4 transition-colors hover:bg-canvas/60"><div><p className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted">{order.id} · {order.date}</p><p className="mt-1 text-[13px] text-ink">{order.items} {order.items === 1 ? 'item' : 'items'} · {order.branchName}</p></div><div className="text-right"><p className="font-mono text-[11px] tabular text-ink">{formatPrice(order.total)}</p><p className="mt-1 text-[9px] uppercase tracking-[0.1em] text-success">{order.status} · details</p></div></Link>)}</div>
           ) : (
             <div className="py-16 text-center"><ShoppingBag className="mx-auto h-7 w-7 text-muted" strokeWidth={1.25} aria-hidden="true" /><h3 className="mt-4 font-display text-2xl">No orders yet.</h3><p className="mx-auto mt-2 max-w-xs text-[12px] leading-relaxed text-muted">Your completed purchases will appear here once you place your first order.</p><Link to="/shop" className="mt-5 inline-flex font-mono text-[9px] uppercase tracking-[0.12em] text-ink underline underline-offset-4">Explore the edit</Link></div>
           )}

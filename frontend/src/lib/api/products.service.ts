@@ -1,4 +1,4 @@
-import type { Product, ProductCategory, GetProductsParams, CreateProductInput } from '../../types/product'
+import type { PaginatedResult, Product, ProductCategory, ProductQueryParams, GetProductsParams, CreateProductInput } from '../../types/product'
 import { backendClient, unwrap, type ApiEnvelope } from './client'
 
 export const productsService = {
@@ -18,6 +18,27 @@ export const productsService = {
     }
 
     return products.slice(offset)
+  },
+
+  /**
+   * Server-side catalogue search. Without `page`/`limit` the backend returns a
+   * plain array; with them it returns a paginated envelope.
+   */
+  async queryProducts(
+    params?: ProductQueryParams,
+    signal?: AbortSignal,
+  ): Promise<Product[] | PaginatedResult<Product>> {
+    const { categoryIds, ...rest } = params ?? {}
+    const response = await backendClient.get<
+      ApiEnvelope<Product[] | PaginatedResult<Product>>
+    >('/products', {
+      params: {
+        ...rest,
+        ...(categoryIds?.length ? { categoryIds: categoryIds.join(',') } : {}),
+      },
+      signal,
+    })
+    return unwrap(response.data)
   },
 
   /** Fetches a single product without downloading the whole catalogue. */

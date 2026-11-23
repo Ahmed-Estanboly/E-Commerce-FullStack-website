@@ -3,6 +3,8 @@ import { getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
+import { Branch } from '../branches/schemas/branch.schema.js';
+import { BranchInventory } from '../branches/schemas/branch-inventory.schema.js';
 import { Category } from '../category/schemas/category.schema.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
@@ -26,6 +28,8 @@ describe('ProductsService validation', () => {
         ProductsService,
         { provide: getModelToken(Product.name), useValue: productModel },
         { provide: getModelToken(Category.name), useValue: categoryModel },
+        { provide: getModelToken(BranchInventory.name), useValue: {} },
+        { provide: getModelToken(Branch.name), useValue: {} },
       ],
     }).compile();
     service = module.get(ProductsService);
