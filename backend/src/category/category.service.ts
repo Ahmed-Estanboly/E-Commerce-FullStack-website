@@ -6,6 +6,12 @@ import type { Model } from 'mongoose';
 import { Category, CategoryDocument } from './schemas/category.schema.js';
 import { categorySeed } from './category.seed.js';
 import { ProductsService } from '../products/products.service.js';
+import {
+  resolvePagination,
+  toPaginatedResult,
+  type PaginatedResult,
+  type PaginationQueryDto,
+} from '../common/dto/pagination.dto.js';
 
 @Injectable()
 export class CategoryService {
@@ -49,8 +55,21 @@ export class CategoryService {
     return this.categoryModel.create(newData);
   }
 
-  findAll() {
-    return this.categoryModel.find().exec();
+  async findAll(query: PaginationQueryDto = {}): Promise<CategoryDocument[] | PaginatedResult<CategoryDocument>> {
+    const pagination = resolvePagination(query);
+    if (!pagination) {
+      return this.categoryModel.find().sort({ name: 1 }).exec();
+    }
+    const [items, total] = await Promise.all([
+      this.categoryModel
+        .find()
+        .sort({ name: 1 })
+        .skip(pagination.skip)
+        .limit(pagination.limit)
+        .exec(),
+      this.categoryModel.countDocuments().exec(),
+    ]);
+    return toPaginatedResult(items, total, pagination);
   }
 
   async findOne(id: number) {
