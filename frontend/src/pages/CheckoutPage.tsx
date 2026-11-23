@@ -15,6 +15,7 @@ export const CheckoutPage: React.FC = () => {
   const { items, subtotal, clearCart } = useCart();
   const {
     selectedBranchId,
+    selectBranch,
     branches,
     isLoadingBranches,
     branchError,
@@ -32,28 +33,32 @@ export const CheckoutPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState<CheckoutFormData>(() => {
-    const session = getStoredSession()?.user
-    return {
-    email: session?.email ?? '',
-    phone: session?.phone ?? '',
+  const [formData, setFormData] = useState<CheckoutFormData>({
+    email: 'hello@nova.demo',
+    phone: '+32 470 55 01 18',
     fulfilment: 'collect',
     deliveryAddress: '',
     deliveryCity: '',
     deliveryPostalCode: '',
     paymentMethod: 'card',
-    cardNumber: '',
-    expiry: '',
-    cvc: '',
-    nameOnCard: session?.name ?? '',
-    acceptedTerms: false,
-    }
+    cardNumber: '4242 4242 4242 4242',
+    expiry: '04 / 29',
+    cvc: '123',
+    nameOnCard: 'Elin Marchetti',
+    acceptedTerms: true,
   });
 
   const activeBranch = activeBranches.find((branch) => branch._id === selectedBranchId) ?? null;
 
   const shippingFee = formData.fulfilment === 'deliver' ? 6.5 : 0;
   const total = subtotal + shippingFee;
+
+  const handleBranchChange = (branchId: string) => {
+    if (branchId === selectedBranchId) return;
+    if (items.length && !window.confirm('Changing branches will clear your cart. Continue?')) return;
+    if (items.length) clearCart();
+    selectBranch(branchId);
+  };
 
   const formatCardNumber = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 16);
@@ -87,8 +92,6 @@ export const CheckoutPage: React.FC = () => {
 
     if (!activeBranch) {
       nextErrors.branch = 'Select an active branch before placing your order.';
-    } else if (branchCatalogError) {
-      nextErrors.branch = 'Unable to verify branch stock. Please try again.';
     } else if (isLoadingBranchCatalog || !branchCatalog) {
       nextErrors.branch = 'Checking stock for this branch. Please try again shortly.';
     } else {
@@ -100,6 +103,8 @@ export const CheckoutPage: React.FC = () => {
       });
       if (unavailableItem) {
         nextErrors.branch = `${unavailableItem.product.title} is unavailable in the selected quantity at this branch.`;
+      } else if (branchCatalogError) {
+        nextErrors.branch = 'Unable to verify branch stock. Please try again.';
       }
     }
 
@@ -281,7 +286,7 @@ export const CheckoutPage: React.FC = () => {
 
           <div className="mt-2 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <h1 className="display-title text-ink">
-              Checkout<span className="text-accent">.</span>
+              Checkout<span className="text-[#9ec200] dark:text-accent">.</span>
             </h1>
 
             <p className="max-w-xs text-xs leading-relaxed text-muted">
@@ -310,13 +315,28 @@ export const CheckoutPage: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <span className="eyebrow">BRANCH:</span>
-            <span className="border border-line-strong bg-surface px-2.5 py-1 font-mono text-[10px] uppercase text-ink">
-              {isLoadingBranches
-                ? 'Loading…'
-                : activeBranch?.name ?? 'No store selected'}
-            </span>
-            {!activeBranch && !isLoadingBranches ? (
-              <span className="text-[10px] text-muted">Pick a store from the header first.</span>
+            <select
+              value={activeBranch?._id ?? ''}
+              onChange={(e) => {
+                handleBranchChange(e.target.value);
+                setErrors((current) => {
+                  const next = { ...current };
+                  delete next.branch;
+                  return next;
+                });
+              }}
+              disabled={isLoadingBranches || activeBranches.length === 0}
+              className="border border-line-strong bg-surface px-2.5 py-1 font-mono text-[10px] uppercase text-ink"
+            >
+              {activeBranches.map((branch) => (
+                <option key={branch._id} value={branch._id}>
+                  {branch.name}
+                </option>
+              ))}
+            </select>
+            {isLoadingBranches ? <span className="text-[10px] text-muted">Loading branches...</span> : null}
+            {!isLoadingBranches && activeBranches.length === 0 && !branchError ? (
+              <span className="text-[10px] text-muted">No active branches are available.</span>
             ) : null}
           </div>
         </div>
@@ -401,7 +421,7 @@ export const CheckoutPage: React.FC = () => {
                   onClick={() => handleFieldChange('fulfilment', 'deliver')}
                   className={`h-10 border-l border-line font-mono text-[10px] uppercase transition ${formData.fulfilment === 'deliver' ? 'bg-inverse text-inverse-ink' : 'text-muted'}`}
                 >
-                  DELIVER · €6.50
+                  DELIVER
                 </button>
               </div>
 
@@ -426,7 +446,6 @@ export const CheckoutPage: React.FC = () => {
                       onChange={(e) => handleFieldChange('deliveryAddress', e.target.value)}
                       className="mt-2 h-11 w-full border border-line bg-canvas/40 px-3.5 text-sm text-ink"
                     />
-                    {errors.deliveryAddress && <p className="mt-1.5 text-xs text-danger">{errors.deliveryAddress}</p>}
                   </div>
                   <div>
                     <label className="eyebrow block">CITY</label>
@@ -436,7 +455,6 @@ export const CheckoutPage: React.FC = () => {
                       onChange={(e) => handleFieldChange('deliveryCity', e.target.value)}
                       className="mt-2 h-11 w-full border border-line bg-canvas/40 px-3.5 text-sm text-ink"
                     />
-                    {errors.deliveryCity && <p className="mt-1.5 text-xs text-danger">{errors.deliveryCity}</p>}
                   </div>
                   <div>
                     <label className="eyebrow block">POSTAL CODE</label>
@@ -446,7 +464,6 @@ export const CheckoutPage: React.FC = () => {
                       onChange={(e) => handleFieldChange('deliveryPostalCode', e.target.value)}
                       className="mt-2 h-11 w-full border border-line bg-canvas/40 px-3.5 text-sm text-ink"
                     />
-                    {errors.deliveryPostalCode && <p className="mt-1.5 text-xs text-danger">{errors.deliveryPostalCode}</p>}
                   </div>
                 </div>
               )}
@@ -478,9 +495,8 @@ export const CheckoutPage: React.FC = () => {
                       type="text"
                       value={formData.cardNumber}
                       onChange={(e) => handleFieldChange('cardNumber', formatCardNumber(e.target.value))}
-                      className={`tabular mt-2 h-11 w-full border bg-surface px-3.5 text-sm text-ink ${errors.cardNumber ? 'border-danger' : 'border-line'}`}
+                      className="tabular mt-2 h-11 w-full border border-line bg-surface px-3.5 text-sm text-ink"
                     />
-                    {errors.cardNumber && <p className="mt-1.5 text-xs text-danger">{errors.cardNumber}</p>}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -489,9 +505,8 @@ export const CheckoutPage: React.FC = () => {
                         type="text"
                         value={formData.expiry}
                         onChange={(e) => handleFieldChange('expiry', formatExpiry(e.target.value))}
-                        className={`tabular mt-2 h-11 w-full border bg-surface px-3.5 text-sm text-ink ${errors.expiry ? 'border-danger' : 'border-line'}`}
+                        className="tabular mt-2 h-11 w-full border border-line bg-surface px-3.5 text-sm text-ink"
                       />
-                      {errors.expiry && <p className="mt-1.5 text-xs text-danger">{errors.expiry}</p>}
                     </div>
                     <div>
                       <label className="eyebrow block">CVC</label>
@@ -500,9 +515,8 @@ export const CheckoutPage: React.FC = () => {
                         maxLength={4}
                         value={formData.cvc}
                         onChange={(e) => handleFieldChange('cvc', e.target.value.replace(/\D/g, ''))}
-                        className={`tabular mt-2 h-11 w-full border bg-surface px-3.5 text-sm text-ink ${errors.cvc ? 'border-danger' : 'border-line'}`}
+                        className="tabular mt-2 h-11 w-full border border-line bg-surface px-3.5 text-sm text-ink"
                       />
-                      {errors.cvc && <p className="mt-1.5 text-xs text-danger">{errors.cvc}</p>}
                     </div>
                   </div>
                   <div>
@@ -511,9 +525,8 @@ export const CheckoutPage: React.FC = () => {
                       type="text"
                       value={formData.nameOnCard}
                       onChange={(e) => handleFieldChange('nameOnCard', e.target.value)}
-                      className={`mt-2 h-11 w-full border bg-surface px-3.5 text-sm text-ink ${errors.nameOnCard ? 'border-danger' : 'border-line'}`}
+                      className="mt-2 h-11 w-full border border-line bg-surface px-3.5 text-sm text-ink"
                     />
-                    {errors.nameOnCard && <p className="mt-1.5 text-xs text-danger">{errors.nameOnCard}</p>}
                   </div>
                 </div>
               )}
@@ -535,19 +548,16 @@ export const CheckoutPage: React.FC = () => {
                   I understand this order is recorded by the store backend and no real payment will be taken.
                 </span>
               </label>
-              {errors.acceptedTerms && <p className="mt-1.5 text-xs text-danger">{errors.acceptedTerms}</p>}
 
               <button
                 type="submit"
-                disabled={isSubmitting || isLoadingBranches || isLoadingBranchCatalog || activeBranches.length === 0}
+                disabled={isSubmitting || isLoadingBranches || activeBranches.length === 0}
                 className="tabular mt-6 flex h-12 w-full items-center justify-center gap-2 bg-accent font-mono text-[10px] font-medium tracking-[0.2em] text-accent-ink uppercase transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <span>
                   {isSubmitting
                     ? 'PLACING ORDER…'
-                    : isLoadingBranchCatalog
-                      ? 'CHECKING STOCK…'
-                      : `PLACE ORDER · €${total.toFixed(2)}`}
+                    : `PLACE ORDER · €${total.toFixed(2)}`}
                 </span>
                 <span>→</span>
               </button>

@@ -3,7 +3,9 @@ import { Link, useParams } from 'react-router-dom'
 import { BranchLayout } from '../components/layout/branch-layout'
 import { useFetch } from '../hooks/useFetch'
 import { branchesService } from '../lib/api/branches.service'
+import { ordersService } from '../lib/api/orders.service'
 import { getStoredSession } from '../lib/auth'
+import type { BackendOrder } from '../lib/api/orders.service'
 import type { Branch, BranchInventoryItem } from '../types/branch'
 
 const currency = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })
@@ -18,11 +20,16 @@ export default function BranchDashboard() {
     (signal: AbortSignal) => branchesService.getBranchInventory(branchId, signal),
     [branchId],
   )
+  const ordersRequest = useCallback(
+    (signal: AbortSignal) => ordersService.getBranchOrders(branchId, signal),
+    [branchId],
+  )
   const branchResult = useFetch<Branch>(branchRequest)
   const inventoryResult = useFetch<BranchInventoryItem[]>(inventoryRequest)
-
+  const ordersResult = useFetch<BackendOrder[]>(ordersRequest)
   const branch = branchResult.data
   const inventory = (inventoryResult.data ?? []).filter((item) => item.isAssigned)
+  const orders = ordersResult.data ?? []
   const totalUnits = inventory.reduce((sum, item) => sum + item.quantity, 0)
   const lowStock = inventory.filter((item) => item.quantity > 0 && item.quantity < 5)
   const stockValue = inventory.reduce((sum, item) => sum + item.price * item.quantity, 0)
@@ -47,7 +54,6 @@ export default function BranchDashboard() {
             </div>
             <div className="admin-intro-actions">
               <Link to={`/${branchId}/inventory`} className="admin-accent-button">Manage inventory</Link>
-              <Link to={`/${branchId}/orders`} className="admin-outline-button">View orders</Link>
             </div>
           </div>
 
@@ -62,6 +68,12 @@ export default function BranchDashboard() {
             <div className="admin-api-error" role="alert">
               <span>Could not load branch stock: {inventoryResult.error}</span>
               <button type="button" onClick={inventoryResult.refetch}>Retry</button>
+            </div>
+          ) : null}
+          {ordersResult.error ? (
+            <div className="admin-api-error" role="alert">
+              <span>Could not load branch orders: {ordersResult.error}</span>
+              <button type="button" onClick={ordersResult.refetch}>Retry</button>
             </div>
           ) : null}
 
@@ -87,9 +99,32 @@ export default function BranchDashboard() {
               </div>
             )}
           </section>
+
+          <section id="orders" className="admin-panel admin-orders-panel mt-4 scroll-mt-6">
+            <div className="admin-panel-heading">
+              <span>Recent branch orders</span>
+              <span>{orders.length} total</span>
+            </div>
+            {ordersResult.isLoading && !ordersResult.data ? (
+              <div className="p-5 text-xs text-muted" role="status">Loading orders...</div>
+            ) : (
+              <div className="admin-table analytics-products-table">
+                <div className="admin-table-head"><span>Order</span><span>Customer</span><span>Status</span><span>Total</span></div>
+                {orders.slice(0, 8).map((order) => (
+                  <div className="admin-table-row" key={order._id}>
+                    <span>{order.orderNumber}</span>
+                    <span className="truncate">{order.customerName}</span>
+                    <span><em className="order-status status-complete">{order.status}</em></span>
+                    <span>{currency.format(order.total)}</span>
+                  </div>
+                ))}
+                {!orders.length ? <div className="p-5 text-xs text-muted">No orders have been placed for this branch yet.</div> : null}
+              </div>
+            )}
+          </section>
           <footer className="admin-footer mt-5">
             <span>{branch.name.toUpperCase()} · BRANCH OPERATIONS</span>
-            <span>{inventoryResult.isLoading ? 'SYNCING STOCK' : `${inventory.length} PRODUCTS`}</span>
+            <span>{ordersResult.isLoading ? 'SYNCING ORDERS' : `${orders.length} ORDERS`}</span>
           </footer>
         </>
       )}

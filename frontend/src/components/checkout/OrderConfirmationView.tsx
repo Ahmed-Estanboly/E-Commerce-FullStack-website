@@ -23,10 +23,10 @@ export const OrderConfirmationView: React.FC<OrderConfirmationViewProps> = ({
 
           <div className="mt-3 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <h1 className="display-title text-ink">
-              Thank you, <span className="text-accent capitalize">
+              Thank you, <span className="text-[#9ec200] capitalize dark:text-accent">
                             {order.customerFirstName}.
                         </span>
-              <span className="text-accent">.</span>
+              <span className="text-[#9ec200] dark:text-accent">.</span>
             </h1>
 
             <p className="max-w-xs text-xs leading-relaxed text-muted">
