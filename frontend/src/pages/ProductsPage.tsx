@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { useFetch } from "../hooks/useFetch";
@@ -10,9 +10,25 @@ import ProductList from "../components/products/ProductList";
 import Pagination from "../components/products/Pagination";
 import { Skeleton } from "../components/ui/feedback";
 
-import type { Product, ProductCategory } from "../types/product";
+import type { Product, ProductCategory, ProductSort } from "../types/product";
 
 const PAGE_SIZE = 9;
+
+const SORT_PARAM: Record<string, ProductSort> = {
+  default: "newest",
+  "price-low": "price_asc",
+  "price-high": "price_desc",
+  name: "name",
+};
+
+interface CatalogPage {
+  items: Product[];
+  total: number;
+  page: number;
+  totalPages: number;
+  /** True when the backend returned the full filtered set (department views paginate locally). */
+  clientSide: boolean;
+}
 
 /**
  * Homepage department slugs → catalogue categories.
@@ -122,27 +138,18 @@ function ProductsPage() {
   const departmentParam =
     categoryParam !== "all" && DEPARTMENT_SLUGS.has(categoryParam) ? categoryParam : null;
 
-  // جلب كل المنتجات مرة واحدة
-  const fetchProducts = useCallback(
-    (signal: AbortSignal) =>
-      productsService.getProducts(undefined, signal),
-    []
-  );
-
-  const { data, isLoading, error } = useFetch<Product[]>(fetchProducts);
+  const isDepartmentView = Boolean(departmentParam);
   const { selectedBranchId } = useBranchSelection();
   const { data: branchCatalog } = useBranchCatalog(selectedBranchId);
-  const branchProducts = useMemo(() => {
-    const assignedItems = new Map(
-      (branchCatalog ?? []).map((item) => [item.productId, item]),
-    );
-    return (data ?? []).flatMap((product) => {
-      const inventory = assignedItems.get(product.id);
-      return inventory
-        ? [{ ...product, stock: inventory.quantity }]
-        : [];
-    });
-  }, [branchCatalog, data]);
+
+  // حالات الفلاتر المحلية
+  const [searchTerm, setSearchTerm] = useState(searchParam);
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [sortBy, setSortBy] = useState("default");
+
+  // الصفحة الحالية
+  const [currentPage, setCurrentPage] = useState(1);
 
   // جلب الفئات
   const fetchCategories = useCallback(
@@ -156,7 +163,6 @@ function ProductsPage() {
     error: categoriesError,
   } = useFetch<ProductCategory[]>(fetchCategories);
 
-  const products = useMemo(() => data ?? [], [data]);
   const categories = useMemo(() => categoriesData ?? [], [categoriesData]);
 
   // معاملات الفئة في الرابط: id رقمي أو slug أو slug القسم (department)
@@ -169,15 +175,10 @@ function ProductsPage() {
   }, [categoryParam, departmentParam, categories]);
 
   const effectiveSelectedCategory = departmentParam ?? urlCategoryId ?? "all";
-
-  // حالات الفلاتر المحلية
-  const [searchTerm, setSearchTerm] = useState(searchParam);
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [sortBy, setSortBy] = useState("default");
-
-  // الصفحة الحالية
-  const [currentPage, setCurrentPage] = useState(1);
+  const numericCategoryId = useMemo(() => {
+    const value = Number(urlCategoryId);
+    return urlCategoryId && Number.isInteger(value) && value > 0 ? value : undefined;
+  }, [urlCategoryId]);
 
   // مزامنة حقل البحث مع معامل ?q والعودة للصفحة الأولى عند تغيّر الفلاتر
   const urlKey = `${searchParam}|${categoryParam}`;
@@ -195,6 +196,64 @@ function ProductsPage() {
     setCurrentPage(1);
   }
 
+  // بحث مؤجل — يرسل الاستعلام للخادم بعد توقف قصير عن الكتابة
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParam);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(searchTerm.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [searchTerm]);
+
+  // منتجات القسم (department) تُفلتر محلياً بالكلمات المفتاحية؛
+  // باقي العرض يفلتر ويُرتّب ويُصفّح على الخادم.
+  const catalogRequest = useCallback(
+    async (signal: AbortSignal): Promise<CatalogPage> => {
+      const base = { branchId: selectedBranchId };
+      if (isDepartmentView) {
+        const result = await productsService.queryProducts(base, signal);
+        const items = Array.isArray(result) ? result : result.items;
+        return { items, total: items.length, page: 1, totalPages: 1, clientSide: true };
+      }
+      const result = await productsService.queryProducts(
+        {
+          ...base,
+          q: debouncedSearch || undefined,
+          categoryIds: numericCategoryId ? [numericCategoryId] : undefined,
+          minPrice: minPrice === "" ? undefined : Number(minPrice),
+          maxPrice: maxPrice === "" ? undefined : Number(maxPrice),
+          sort: SORT_PARAM[sortBy] ?? "newest",
+          page: currentPage,
+          limit: PAGE_SIZE,
+        },
+        signal,
+      );
+      if (Array.isArray(result)) {
+        return { items: result, total: result.length, page: 1, totalPages: 1, clientSide: true };
+      }
+      return { ...result, clientSide: false };
+    },
+    [isDepartmentView, selectedBranchId, debouncedSearch, numericCategoryId, minPrice, maxPrice, sortBy, currentPage],
+  );
+
+  const { data: catalog, isLoading, error } = useFetch<CatalogPage>(catalogRequest);
+
+  const catalogItems = useMemo(() => catalog?.items ?? [], [catalog]);
+  const productsTotal = catalog
+    ? catalog.clientSide
+      ? catalogItems.length
+      : catalog.total
+    : 0;
+
+  // دمج مخزون الفرع المحدد مع منتجات الصفحة الحالية
+  const branchProducts = useMemo(() => {
+    const assignedItems = new Map(
+      (branchCatalog ?? []).map((item) => [item.productId, item]),
+    );
+    return catalogItems.map((product) => {
+      const inventory = assignedItems.get(product.id);
+      return inventory ? { ...product, stock: inventory.quantity } : product;
+    });
+  }, [branchCatalog, catalogItems]);
+
   const goToCategory = (categoryId: string | null) => {
     const params = new URLSearchParams();
     if (searchParam) params.set("q", searchParam);
@@ -211,8 +270,12 @@ function ProductsPage() {
     setSearchParams({}, { replace: true });
   };
 
-  // البحث والفلترة والترتيب
+  // البحث والفلترة والترتيب — للعرض المحلي فقط (أقسام department)؛
+  // العرض العادي يفلتر على الخادم مسبقاً.
+  const clientSide = catalog?.clientSide ?? true;
   const filteredProducts = useMemo(() => {
+    if (!clientSide) return branchProducts;
+
     const result = branchProducts.filter((product) => {
       const searchValue = searchTerm.trim().toLowerCase();
 
@@ -255,6 +318,7 @@ function ProductsPage() {
     return result;
   }, [
     branchProducts,
+    clientSide,
     searchTerm,
     effectiveSelectedCategory,
     minPrice,
@@ -262,21 +326,26 @@ function ProductsPage() {
     sortBy,
   ]);
 
-  // عدد صفحات النتائج
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
-  const effectivePage = Math.min(currentPage, totalPages);
+  // عدد صفحات النتائج: محلي لأقسام department، من الخادم لباقي العرض
+  const totalPages = clientSide
+    ? Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE))
+    : Math.max(1, catalog?.totalPages ?? 1);
+  const effectivePage = clientSide
+    ? Math.min(currentPage, totalPages)
+    : currentPage;
 
   // المنتجات التي ستظهر في الصفحة الحالية فقط
   const currentProducts = useMemo(() => {
+    if (!clientSide) return filteredProducts;
     const startIndex = (effectivePage - 1) * PAGE_SIZE;
     const endIndex = startIndex + PAGE_SIZE;
 
     return filteredProducts.slice(startIndex, endIndex);
-  }, [filteredProducts, effectivePage]);
+  }, [filteredProducts, effectivePage, clientSide]);
 
-  // حالات التحميل والخطأ
-  if (isLoading) return <ProductsPageSkeleton />;
-  if (error) return <p>Error: {error}</p>;
+  // حالات التحميل والخطأ — لا نمسح النتائج أثناء إعادة الجلب (تصفّح الصفحات)
+  if (isLoading && !catalog) return <ProductsPageSkeleton />;
+  if (error && !catalog) return <p>Error: {error}</p>;
 
   const activeDepartment = departmentParam ? DEPARTMENT_NAMES[departmentParam] : null;
 
@@ -301,7 +370,7 @@ function ProductsPage() {
             </h1>
   
             <p className="eyebrow mt-4">
-              {filteredProducts.length} Pieces — {categories.length} Departments
+              {clientSide ? filteredProducts.length : productsTotal} Pieces — {categories.length} Departments
             </p>
           </div>
   
@@ -424,7 +493,7 @@ function ProductsPage() {
         <div className="mb-6 flex flex-col justify-between gap-4 border-b border-line pb-4 sm:flex-row sm:items-center">
   
           <p className="eyebrow">
-            Showing {filteredProducts.length} of {products.length} pieces
+            Showing {filteredProducts.length} of {productsTotal} pieces
           </p>
   
           <div className="flex flex-col gap-3 sm:flex-row">

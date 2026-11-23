@@ -18,9 +18,34 @@ export interface Product {
   images: string[]
   stock: number
   branch?: 'north' | 'center' | 'south' | string
+  ratingAverage?: number
+  ratingCount?: number
   createdAt: string
   updatedAt: string
   category: ProductCategory
+}
+
+export interface PaginatedResult<T> {
+  items: T[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+export type ProductSort = 'newest' | 'price_asc' | 'price_desc' | 'name'
+
+export interface ProductQueryParams {
+  q?: string
+  categoryId?: number
+  categoryIds?: number[]
+  minPrice?: number
+  maxPrice?: number
+  sort?: ProductSort
+  inStock?: boolean
+  branchId?: string | null
+  page?: number
+  limit?: number
 }
 
 export interface GetProductsParams {

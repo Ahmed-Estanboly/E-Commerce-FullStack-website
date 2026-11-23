@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { getConnectionToken, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Branch } from '../branches/schemas/branch.schema.js';
@@ -26,7 +26,7 @@ describe('OrdersService branch inventory', () => {
   const branchModel = { findById: vi.fn() };
   const productModel = { find: vi.fn() };
   const branchInventoryModel = { findOneAndUpdate: vi.fn() };
-  const orderModel = { create: vi.fn() };
+  const orderModel = { create: vi.fn(), findById: vi.fn(), findByIdAndUpdate: vi.fn() };
   const session = {
     withTransaction: vi.fn(async (work: () => Promise<void>) => work()),
     endSession: vi.fn(),
@@ -127,5 +127,109 @@ describe('OrdersService branch inventory', () => {
       { $inc: { quantity: -5 } },
       expect.objectContaining({ session }),
     );
+  });
+});
+
+describe('OrdersService status lifecycle', () => {
+  const branchId = '507f1f77bcf86cd799439011';
+  const existingOrder = {
+    _id: '507f1f77bcf86cd799439012',
+    status: 'confirmed',
+    branch: { _id: branchId, name: 'Latakia Central' },
+    items: [{ productId: 21, title: 'Demo product', price: 25, quantity: 2 }],
+    toObject() {
+      return { ...this, status: 'preparing' };
+    },
+  };
+  const orderModel = { findById: vi.fn(), findByIdAndUpdate: vi.fn() };
+  const productModel = { find: vi.fn() };
+  const branchInventoryModel = { findOneAndUpdate: vi.fn() };
+  const session = {
+    withTransaction: vi.fn(async (work: () => Promise<void>) => work()),
+    endSession: vi.fn(),
+  };
+  const connection = { startSession: vi.fn(async () => session) };
+  let service: OrdersService;
+
+  const adminActor = { id: 1, role: 'master admin', label: 'master admin:1' };
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    orderModel.findById.mockReturnValue({ exec: async () => existingOrder });
+    orderModel.findByIdAndUpdate.mockReturnValue({
+      exec: async () => ({ toObject: () => ({ _id: existingOrder._id, status: 'preparing' }) }),
+    });
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        OrdersService,
+        { provide: getModelToken(Order.name), useValue: orderModel },
+        { provide: getModelToken(Product.name), useValue: productModel },
+        { provide: getModelToken(Branch.name), useValue: {} },
+        { provide: getModelToken(BranchInventory.name), useValue: branchInventoryModel },
+        { provide: getConnectionToken(), useValue: connection },
+      ],
+    }).compile();
+    service = module.get(OrdersService);
+  });
+
+  it('moves an order to an allowed next status and records history', async () => {
+    const result = await service.updateStatus(
+      existingOrder._id,
+      { status: 'preparing' },
+      adminActor,
+    );
+
+    expect(result.status).toBe('preparing');
+    expect(orderModel.findByIdAndUpdate).toHaveBeenCalledWith(
+      existingOrder._id,
+      expect.objectContaining({
+        $set: { status: 'preparing' },
+        $push: expect.objectContaining({
+          statusHistory: expect.objectContaining({ status: 'preparing' }),
+        }),
+      }),
+      expect.objectContaining({ new: true, session }),
+    );
+  });
+
+  it('rejects illegal transitions', async () => {
+    await expect(
+      service.updateStatus(existingOrder._id, { status: 'delivered' }, adminActor),
+    ).rejects.toThrow(BadRequestException);
+    expect(orderModel.findByIdAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('rejects updates from branch owners of another branch', async () => {
+    await expect(
+      service.updateStatus(existingOrder._id, { status: 'preparing' }, {
+        id: 9,
+        role: 'branch owner',
+        branchId: 'different-branch',
+      }),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('restocks branch inventory when an order is cancelled', async () => {
+    productModel.find.mockReturnValue({
+      select: () => ({ session: () => ({ exec: async () => [{ _id: 'product-object-id', id: 21 }] }) }),
+    });
+    branchInventoryModel.findOneAndUpdate.mockReturnValue({ exec: async () => ({}) });
+
+    await service.updateStatus(existingOrder._id, { status: 'cancelled' }, adminActor);
+
+    // confirmed -> cancelled is allowed; restock happens inside the transaction
+    expect(branchInventoryModel.findOneAndUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ product: 'product-object-id' }),
+      { $inc: { quantity: 2 } },
+      expect.objectContaining({ upsert: true, session }),
+    );
+  });
+
+  it('returns 404-style NotFound for missing orders', async () => {
+    orderModel.findById.mockReturnValue({ exec: async () => null });
+    await expect(
+      service.updateStatus('507f1f77bcf86cd799439099', { status: 'preparing' }, adminActor),
+    ).rejects.toThrow(NotFoundException);
   });
 });

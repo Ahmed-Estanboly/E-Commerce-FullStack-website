@@ -1,5 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { ProductsModule } from './products/products.module.js';
@@ -15,6 +16,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware.js';
 import { OrdersModule } from './orders/orders.module.js';
 import { BranchesModule } from './branches/branches.module.js';
+import { ReviewsModule } from './reviews/reviews.module.js';
 
 @Module({
   imports: [
@@ -23,6 +25,13 @@ import { BranchesModule } from './branches/branches.module.js';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60_000,
+        limit: 100,
+      },
+    ]),
     // Asynchronously connect to MongoDB Atlas
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
@@ -36,10 +45,12 @@ import { BranchesModule } from './branches/branches.module.js';
     UsersModule,
     AuthModule,
     OrdersModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
     { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },

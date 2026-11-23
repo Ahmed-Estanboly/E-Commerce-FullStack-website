@@ -3,9 +3,10 @@ import { Link, useParams } from 'react-router-dom'
 import { BranchLayout } from '../components/layout/branch-layout'
 import { useFetch } from '../hooks/useFetch'
 import { branchesService } from '../lib/api/branches.service'
-import { ordersService } from '../lib/api/orders.service'
+import { ordersService, normalizeOrders } from '../lib/api/orders.service'
 import { getStoredSession } from '../lib/auth'
 import type { BackendOrder } from '../lib/api/orders.service'
+import { OrderStatusSelect } from '../components/orders/OrderStatusSelect'
 import type { Branch, BranchInventoryItem } from '../types/branch'
 
 const currency = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })
@@ -21,7 +22,7 @@ export default function BranchDashboard() {
     [branchId],
   )
   const ordersRequest = useCallback(
-    (signal: AbortSignal) => ordersService.getBranchOrders(branchId, signal),
+    async (signal: AbortSignal) => normalizeOrders(await ordersService.getBranchOrders(branchId, undefined, signal)),
     [branchId],
   )
   const branchResult = useFetch<Branch>(branchRequest)
@@ -114,7 +115,7 @@ export default function BranchDashboard() {
                   <div className="admin-table-row" key={order._id}>
                     <span>{order.orderNumber}</span>
                     <span className="truncate">{order.customerName}</span>
-                    <span><em className="order-status status-complete">{order.status}</em></span>
+                    <span><OrderStatusSelect order={order} onUpdated={ordersResult.refetch} /></span>
                     <span>{currency.format(order.total)}</span>
                   </div>
                 ))}

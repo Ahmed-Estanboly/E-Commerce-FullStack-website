@@ -9,8 +9,11 @@ an admin panel, and a multi-branch inventory backend.
 - **Authentication** — Register / login with JWT access tokens, session persistence (local or session storage), protected routes per role.
 - **Roles** — `master admin` (admin dashboard, analytics, branches & inventory), `branch owner` / `central owner` / `south owner` (per-branch dashboards), and `customer` (account dashboard).
 - **Branch inventory** — Per-branch stock levels for products, managed by branch owners.
-- **Orders** — Order creation and lookup.
-- **Catalog** — Products, categories, and related-product recommendations.
+- **Orders** — Order creation and lookup with a full lifecycle (`pending → confirmed → preparing → ready → shipped → delivered`, plus `cancelled`), status history, stock restocking on cancellation, and admin/branch-owner status management.
+- **Reviews** — Customers can review products (one review per user per product, upsert on re-submit); products expose `ratingAverage`/`ratingCount`.
+- **Catalog** — Products, categories, and related-product recommendations. `GET /products` supports server-side search (`q`), category, price-range, sort, stock and branch-inventory filters, plus opt-in pagination.
+- **Rate limiting** — `@nestjs/throttler` guards every route (100 req/min default); auth endpoints are limited to 5 req/min.
+- **CI** — GitHub Actions runs backend lint/tests/build and frontend lint/build on push and PRs.
 
 ## Project Structure
 
@@ -123,7 +126,7 @@ All routes are prefixed with `/api/v1`. Successful responses are wrapped as
 | Method | Path | Description |
 |---|---|---|
 | POST | `/users` | Create user |
-| GET | `/users` | List users |
+| GET | `/users` | List users (`page` + optional `limit` for pagination) |
 | GET | `/users/:id` | Get user |
 | PATCH | `/users/:id` | Update user |
 | DELETE | `/users/:id` | Delete user |
@@ -134,7 +137,7 @@ All routes are prefixed with `/api/v1`. Successful responses are wrapped as
 | Method | Path | Description |
 |---|---|---|
 | POST | `/products` | Create product |
-| GET | `/products` | List products (category is populated onto each product) |
+| GET | `/products` | List products. Query params: `q` (title/description search), `categoryId`, `categoryIds` (csv), `minPrice`, `maxPrice`, `sort` (`newest`, `price_asc`, `price_desc`, `name`), `inStock`, `branchId` (restrict to a branch's inventory), `page`, `limit`. With `page` returns `{ items, total, page, limit, totalPages }`; otherwise a plain array. Category is populated onto each product. |
 | GET | `/products/:id` | Get product by id |
 | PATCH | `/products/:id` | Update product |
 | DELETE | `/products/:id` | Delete product |
@@ -142,12 +145,20 @@ All routes are prefixed with `/api/v1`. Successful responses are wrapped as
 | GET | `/products/slug/:slug` | Get product by slug |
 | GET | `/products/slug/:slug/related` | Related products by slug |
 
+### Reviews — `products/:productId/reviews`
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/products/:productId/reviews` | List reviews with `{ items, average, count, myReview }` (JWT optional — `myReview` populated when signed in) |
+| POST | `/products/:productId/reviews` | Create or update the caller's review `{ rating: 1-5, title?, comment }` (JWT required) |
+| DELETE | `/products/:productId/reviews/:reviewId` | Delete a review (master admin) |
+
 ### Category — `category`
 
 | Method | Path | Description |
 |---|---|---|
 | POST | `/category` | Create category |
-| GET | `/category` | List categories |
+| GET | `/category` | List categories (`page` + optional `limit` for pagination) |
 | GET | `/category/:id` | Get category |
 | GET | `/category/slug/:slug` | Get category by slug |
 | GET | `/category/:id/products` | Products in a category |
@@ -172,8 +183,14 @@ All routes are prefixed with `/api/v1`. Successful responses are wrapped as
 | Method | Path | Description |
 |---|---|---|
 | POST | `/orders` | Create order |
-| GET | `/orders` | List orders |
-| GET | `/orders/:id` | Get order |
+| GET | `/orders/me` | Current user's orders (`page` + optional `limit` for pagination) |
+| GET | `/orders/me/:id` | One of the current user's orders (JWT required) |
+| GET | `/orders/branch/:branchId` | Branch orders (master admin or that branch's owner) |
+| PATCH | `/orders/:id/status` | Move an order to an allowed next status `{ status, note? }`; cancelling restocks the branch. Master admin or the order's branch owner. |
+| GET | `/orders` | List all orders (master admin; `page` + optional `limit` for pagination) |
+| GET | `/orders/:id` | Get order (master admin) |
+
+Order statuses: `pending`, `confirmed`, `preparing`, `ready`, `shipped`, `delivered`, `cancelled`. Each order keeps a `statusHistory` timeline and single-order responses include `allowedTransitions`.
 
 ## Backend Architecture
 

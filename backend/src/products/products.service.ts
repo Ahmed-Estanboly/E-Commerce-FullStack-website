@@ -1,10 +1,15 @@
 import { BadRequestException, Injectable, NotFoundException, OnApplicationBootstrap } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
+import { ProductQueryDto, productSortOrder } from './dto/product-query.dto.js';
 import { InjectModel } from '@nestjs/mongoose';
 import { Product, ProductDocument } from './schemas/products.schema.js';
 import { Category, CategoryDocument } from '../category/schemas/category.schema.js';
+import { BranchInventory, BranchInventoryDocument } from '../branches/schemas/branch-inventory.schema.js';
+import { Branch, BranchDocument } from '../branches/schemas/branch.schema.js';
 import { initialProducts } from './productsSeed.js';
+import { resolvePagination, toPaginatedResult, type PaginatedResult } from '../common/dto/pagination.dto.js';
+import { isValidObjectId, Types } from 'mongoose';
 import type { Model } from 'mongoose';
 
 @Injectable()
@@ -12,6 +17,9 @@ export class ProductsService implements OnApplicationBootstrap {
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
     @InjectModel(Category.name) private categoryModel: Model<CategoryDocument>,
+    @InjectModel(BranchInventory.name)
+    private branchInventoryModel: Model<BranchInventoryDocument>,
+    @InjectModel(Branch.name) private branchModel: Model<BranchDocument>,
   ) {}
   
    // Runs automatically once when NestJS finishes initializing
@@ -65,9 +73,78 @@ export class ProductsService implements OnApplicationBootstrap {
     return this.productModel.create(plainDto);
   }
 
-  findAll(categoryId?: number) {
-    const filter = categoryId === undefined ? {} : { categoryId };
-    return this.productModel.find(filter).exec();
+  async findAll(query: ProductQueryDto = {}): Promise<ProductDocument[] | PaginatedResult<ProductDocument>> {
+    const filter: Record<string, unknown> = {};
+
+    const categoryIds = [...new Set([...(query.categoryIds ?? []), ...(query.categoryId ? [query.categoryId] : [])])];
+    if (categoryIds.length === 1) {
+      filter.categoryId = categoryIds[0];
+    } else if (categoryIds.length > 1) {
+      filter.categoryId = { $in: categoryIds };
+    }
+
+    if (query.minPrice !== undefined || query.maxPrice !== undefined) {
+      filter.price = {
+        ...(query.minPrice !== undefined ? { $gte: query.minPrice } : {}),
+        ...(query.maxPrice !== undefined ? { $lte: query.maxPrice } : {}),
+      };
+    }
+
+    if (query.q?.trim()) {
+      const escaped = query.q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.$or = [
+        { title: { $regex: escaped, $options: 'i' } },
+        { description: { $regex: escaped, $options: 'i' } },
+      ];
+    }
+
+    if (query.inStock) {
+      filter.stock = { $gt: 0 };
+    }
+
+    const branchProductIds = await this.productIdsForBranch(query.branchId);
+    if (branchProductIds) {
+      filter._id = { $in: branchProductIds };
+    }
+
+    const sort = productSortOrder(query.sort);
+    const pagination = resolvePagination(query);
+
+    if (!pagination) {
+      return this.productModel.find(filter).sort(sort).exec();
+    }
+
+    const [items, total] = await Promise.all([
+      this.productModel
+        .find(filter)
+        .sort(sort)
+        .skip(pagination.skip)
+        .limit(pagination.limit)
+        .exec(),
+      this.productModel.countDocuments(filter).exec(),
+    ]);
+    return toPaginatedResult(items, total, pagination);
+  }
+
+  /**
+   * Returns the product document ids assigned to a branch's inventory, or
+   * null when no branch filter was requested. Validates the branch exists.
+   */
+  private async productIdsForBranch(branchId?: string): Promise<Types.ObjectId[] | null> {
+    if (!branchId) return null;
+    if (!isValidObjectId(branchId)) {
+      throw new BadRequestException('branchId must be a valid branch id.');
+    }
+    const branch = await this.branchModel.exists({ _id: new Types.ObjectId(branchId) }).exec();
+    if (!branch) {
+      throw new BadRequestException('The selected branch was not found.');
+    }
+    const inventory = await this.branchInventoryModel
+      .find({ branch: new Types.ObjectId(branchId) })
+      .select('product')
+      .lean()
+      .exec();
+    return inventory.map((item) => item.product as Types.ObjectId);
   }
 
   async findOne(id: number) {

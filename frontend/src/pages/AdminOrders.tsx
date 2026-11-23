@@ -1,15 +1,15 @@
-import { useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { AdminLayout } from '../components/layout/admin-layout'
 import { useFetch } from '../hooks/useFetch'
-import { ordersService } from '../lib/api/orders.service'
+import { ordersService, normalizeOrders } from '../lib/api/orders.service'
 import type { BackendOrder } from '../lib/api/orders.service'
 
 const currency = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })
 
 export default function AdminOrders() {
-  const request = useCallback((signal: AbortSignal) => ordersService.getAllOrders(signal), [])
-  const { data, isLoading, error, refetch } = useFetch<BackendOrder[]>(request)
+  const { data, isLoading, error, refetch } = useFetch<BackendOrder[]>(async (signal) =>
+    normalizeOrders(await ordersService.getAllOrders(undefined, signal)),
+  )
   const orders = data ?? []
 
   return (
@@ -48,12 +48,15 @@ export default function AdminOrders() {
               </div>
               {orders.map((order) => (
                 <div className="admin-table-row admin-all-orders-row" key={order._id}>
-                  <span>{order.orderNumber}</span>
+                  <Link to={`/admin/orders/${order._id}`} className="text-ink hover:underline">{order.orderNumber}</Link>
                   <span className="truncate">{order.customerName}<small className="block text-muted">{order.email}</small></span>
                   <span className="truncate">{order.branch.name}</span>
                   <span>{order.fulfilment}</span>
                   <span><em className={`order-status ${order.status === 'cancelled' ? 'status-cancelled' : order.status === 'delivered' ? 'status-complete' : 'status-pending'}`}>{order.status}</em></span>
-                  <span>{currency.format(order.total)}</span>
+                  <span className="flex items-center justify-between gap-2">
+                    {currency.format(order.total)}
+                    <Link to={`/admin/orders/${order._id}`} className="admin-row-action">Manage</Link>
+                  </span>
                 </div>
               ))}
               {!orders.length && !error ? <div className="p-5 text-xs text-muted">No orders have been placed yet.</div> : null}

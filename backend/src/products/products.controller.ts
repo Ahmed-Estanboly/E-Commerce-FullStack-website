@@ -4,6 +4,8 @@ import mongoose from 'mongoose';
 import { ProductsService } from './products.service.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
+import { ProductQueryDto } from './dto/product-query.dto.js';
+import { PaginatedResult } from '../common/dto/pagination.dto.js';
 import { withCategory } from '../common/with-category.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
@@ -29,9 +31,16 @@ export class ProductsController {
   }
 
   @Get()
-  async findAll(@Query('categoryId', new ParseIntPipe({ optional: true })) categoryId?: number) {
-    const data = await this.withCategory(await this.productsService.findAll(categoryId));
-    return data;
+  async findAll(@Query() query: ProductQueryDto) {
+    const result = await this.productsService.findAll(query);
+    if (Array.isArray(result)) {
+      return this.withCategory(result);
+    }
+    const paginated = result as PaginatedResult<unknown>;
+    return {
+      ...paginated,
+      items: await this.withCategory(paginated.items),
+    };
   }
 
   @Get(':id')

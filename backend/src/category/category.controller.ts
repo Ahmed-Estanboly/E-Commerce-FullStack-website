@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { CategoryService } from './category.service.js';
@@ -6,6 +6,7 @@ import { CreateCategoryDto } from './dto/create-category.dto.js';
 import { UpdateCategoryDto } from './dto/update-category.dto.js';
 import { withCategory } from '../common/with-category.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
+import { PaginationQueryDto } from '../common/dto/pagination.dto.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 
@@ -25,8 +26,8 @@ export class CategoryController {
   }
 
   @Get()
-  async findAll() {
-    const data = await this.categoryService.findAll();
+  async findAll(@Query() query: PaginationQueryDto) {
+    const data = await this.categoryService.findAll(query);
     return data;
   }
 

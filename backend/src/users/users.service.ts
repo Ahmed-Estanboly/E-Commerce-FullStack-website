@@ -5,6 +5,12 @@ import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/users.schema.js';
 import { initialUsers } from './userSeed.js';
+import {
+  resolvePagination,
+  toPaginatedResult,
+  type PaginatedResult,
+  type PaginationQueryDto,
+} from '../common/dto/pagination.dto.js';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -97,14 +103,36 @@ export class UsersService {
     await this.userModel.deleteMany({ branchId }).exec();
   }
 
-  async findAll() {
-    return this.userModel.find().exec().then((users) => {
-      return users.map((user) => {
+  async findAll(query: PaginationQueryDto = {}): Promise<User[] | PaginatedResult<User>> {
+    const pagination = resolvePagination(query);
+    if (!pagination) {
+      return this.userModel.find().exec().then((users) => {
+        return users.map((user) => {
+          const userObj = user.toObject();
+          delete (userObj as Partial<User>).password;
+          return userObj;
+        });
+      });
+    }
+
+    const [users, total] = await Promise.all([
+      this.userModel
+        .find()
+        .sort({ id: 1 })
+        .skip(pagination.skip)
+        .limit(pagination.limit)
+        .exec(),
+      this.userModel.countDocuments().exec(),
+    ]);
+    return toPaginatedResult(
+      users.map((user) => {
         const userObj = user.toObject();
         delete (userObj as Partial<User>).password;
         return userObj;
-      });
-    });
+      }),
+      total,
+      pagination,
+    );
   }
 
   async findOne(id: number) {
