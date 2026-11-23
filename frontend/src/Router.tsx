@@ -10,7 +10,9 @@ import AdminAnalytics from './pages/AdminAnalytics'
 import BranchesPage from './pages/BranchesPage'
 import BranchInventoryPage from './pages/BranchInventoryPage'
 import BranchDashboard from './pages/BranchDashboard'
+import BranchOrders from './pages/BranchOrders'
 import AdminOrders from './pages/AdminOrders'
+import AdminCustomers from './pages/AdminCustomers'
 import AdminProductsPage from './pages/AdminProductsPage'
 import { buttonStyles } from './components/ui/button-styles'
 import { CartPage } from './pages/CartPage'
@@ -88,11 +90,13 @@ export function AppRouter() {
         <Route path="admin/dashboard" element={<RoleRoute role="admin"><AdminDashboard /></RoleRoute>} />
         <Route path="admin/analytics" element={<RoleRoute role="admin"><AdminAnalytics /></RoleRoute>} />
         <Route path="admin/orders" element={<RoleRoute role="admin"><AdminOrders /></RoleRoute>} />
+        <Route path="admin/customers" element={<RoleRoute role="admin"><AdminCustomers /></RoleRoute>} />
         <Route path="admin/products" element={<RoleRoute role="admin"><AdminProductsPage /></RoleRoute>} />
         <Route path="admin/branches/:branchId/inventory" element={<RoleRoute role="admin"><BranchInventoryPage /></RoleRoute>} />
         <Route path=":branchName/inventory" element={<RoleRoute role="branch-owner"><BranchInventoryPage branchOwnerView /></RoleRoute>} />
         <Route path="admin/branches" element={<RoleRoute role="admin"><BranchesPage /></RoleRoute>} />
         <Route path=":branchName/dashboard" element={<RoleRoute role="branch-owner"><BranchDashboard /></RoleRoute>} />
+        <Route path=":branchName/orders" element={<RoleRoute role="branch-owner"><BranchOrders /></RoleRoute>} />
 
         <Route element={<StorefrontLayout />}>
           <Route index element={<HomePage />} />

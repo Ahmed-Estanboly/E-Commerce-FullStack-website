@@ -66,11 +66,6 @@ export class CreateOrderDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
-  shippingFee?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
   total?: number;
 
   @IsEnum(['collect', 'deliver'])

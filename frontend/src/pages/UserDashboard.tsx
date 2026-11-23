@@ -17,14 +17,7 @@ type Profile = {
   phone: string
 }
 
-type Order = {
-  id: string
-  date: string
-  status: string
-  total: number
-  items: number
-  branchName: string
-}
+type Order = BackendOrder
 
 const defaultProfile: Profile = {
   firstName: '',
@@ -45,15 +38,11 @@ function loadProfile(): Profile {
   }
 }
 
-function toOrderView(order: BackendOrder): Order {
-  return {
-    id: order.orderNumber,
-    date: new Date(order.createdAt).toLocaleDateString(),
-    status: order.status,
-    total: order.total,
-    items: order.items.reduce((sum, item) => sum + item.quantity, 0),
-    branchName: order.branch.name,
-  }
+const STATUS_STYLES: Record<string, string> = {
+  pending: 'text-warning',
+  confirmed: 'text-accent',
+  delivered: 'text-success',
+  cancelled: 'text-danger',
 }
 
 function UserDashboardSkeleton() {
@@ -73,6 +62,7 @@ const UserDashboard = () => {
   const { items, itemCount, subtotal, updateQuantity, removeItem } = useCart()
   const [profile, setProfile] = useState<Profile>(loadProfile)
   const [orders, setOrders] = useState<Order[] | null>(null)
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -87,7 +77,7 @@ const UserDashboard = () => {
     ordersService
       .getMyOrders()
       .then((list) => {
-        if (!cancelled) setOrders(list.map(toOrderView))
+        if (!cancelled) setOrders(list)
       })
       .catch(() => {
         if (!cancelled) setOrders([])
@@ -148,7 +138,57 @@ const UserDashboard = () => {
           {orders === null ? (
             <div className="space-y-4 py-8"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-2/3" /></div>
           ) : orders.length ? (
-            <div className="divide-y divide-line">{orders.map((order) => <div key={order.id} className="flex flex-wrap items-center justify-between gap-4 py-4"><div><p className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted">{order.id} · {order.date}</p><p className="mt-1 text-[13px] text-ink">{order.items} {order.items === 1 ? 'item' : 'items'} · {order.branchName}</p></div><div className="text-right"><p className="font-mono text-[11px] tabular text-ink">{formatPrice(order.total)}</p><p className="mt-1 text-[9px] uppercase tracking-[0.1em] text-success">{order.status}</p></div></div>)}</div>
+            <div className="divide-y divide-line">{orders.map((order) => {
+              const isExpanded = expandedOrderId === order._id
+              const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0)
+              return (
+                <div key={order._id}>
+                  <button
+                    type="button"
+                    onClick={() => setExpandedOrderId(isExpanded ? null : order._id)}
+                    className="flex w-full flex-wrap items-center justify-between gap-4 py-4 text-left"
+                  >
+                    <div>
+                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted">
+                        {order.orderNumber} · {new Date(order.createdAt).toLocaleDateString()}
+                      </p>
+                      <p className="mt-1 text-[13px] text-ink">
+                        {itemCount} {itemCount === 1 ? 'item' : 'items'} · {order.branch.name}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4 text-right">
+                      <div>
+                        <p className="font-mono text-[11px] tabular text-ink">{formatPrice(order.total)}</p>
+                        <p className={`mt-1 text-[9px] uppercase tracking-[0.1em] ${STATUS_STYLES[order.status] ?? 'text-muted'}`}>{order.status}</p>
+                      </div>
+                      <span className={`font-mono text-xs text-muted transition-transform ${isExpanded ? 'rotate-180' : ''}`}>⌄</span>
+                    </div>
+                  </button>
+                  {isExpanded ? (
+                    <div className="mb-5 border border-line bg-canvas/50 p-4">
+                      <ul className="divide-y divide-line">
+                        {order.items.map((item, idx) => (
+                          <li key={idx} className="flex items-center justify-between gap-3 py-2.5 text-[12px]">
+                            <span className="text-ink">{item.title} <span className="text-muted">× {item.quantity}</span></span>
+                            <span className="tabular text-ink">{formatPrice(item.price * item.quantity)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="mt-3 space-y-1.5 border-t border-line pt-3 text-[11px]">
+                        <div className="flex justify-between"><span className="text-muted">Subtotal</span><span className="tabular text-ink">{formatPrice(order.subtotal)}</span></div>
+                        <div className="flex justify-between"><span className="text-muted">Shipping</span><span className="tabular text-ink">{order.shippingFee === 0 ? 'Free' : formatPrice(order.shippingFee)}</span></div>
+                        <div className="flex justify-between font-medium"><span className="text-ink">Total</span><span className="tabular text-ink">{formatPrice(order.total)}</span></div>
+                      </div>
+                      <div className="mt-3 space-y-1 border-t border-line pt-3 text-[11px] text-muted">
+                        <p>Pickup: {order.branch.name} — {order.branch.address}</p>
+                        {order.branch.phone ? <p>Branch phone: {order.branch.phone}</p> : null}
+                        <p>Payment: {order.paymentMethod === 'card' ? `Card •••• ${order.cardLast4 ?? '----'}` : order.paymentMethod.replace('_', ' ')}</p>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              )
+            })}</div>
           ) : (
             <div className="py-16 text-center"><ShoppingBag className="mx-auto h-7 w-7 text-muted" strokeWidth={1.25} aria-hidden="true" /><h3 className="mt-4 font-display text-2xl">No orders yet.</h3><p className="mx-auto mt-2 max-w-xs text-[12px] leading-relaxed text-muted">Your completed purchases will appear here once you place your first order.</p><Link to="/shop" className="mt-5 inline-flex font-mono text-[9px] uppercase tracking-[0.12em] text-ink underline underline-offset-4">Explore the edit</Link></div>
           )}
