@@ -15,6 +15,8 @@ import AdminOrderDetail from './pages/AdminOrderDetail'
 import AdminCustomers from './pages/AdminCustomers'
 import BranchOrders from './pages/BranchOrders'
 import OrderDetailPage from './pages/OrderDetailPage'
+import AccountOrders from './pages/AccountOrders'
+import WishlistPage from './pages/WishlistPage'
 import AdminProductsPage from './pages/AdminProductsPage'
 import { buttonStyles } from './components/ui/button-styles'
 import { CartPage } from './pages/CartPage'
@@ -87,7 +89,9 @@ export function AppRouter() {
         <Route path="register" element={<Signup />} />
         <Route path="account" element={<RoleRoute role="customer"><StoreLayout header={{ dashboardHref: '/account' }} /></RoleRoute>}>
           <Route index element={<UserDashboard />} />
+          <Route path="orders" element={<AccountOrders />} />
           <Route path="orders/:id" element={<OrderDetailPage />} />
+          <Route path="wishlist" element={<WishlistPage />} />
         </Route>
 
         <Route path="admin/dashboard" element={<RoleRoute role="admin"><AdminDashboard /></RoleRoute>} />

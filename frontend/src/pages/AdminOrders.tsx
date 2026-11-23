@@ -2,7 +2,9 @@ import { useCallback, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AdminLayout } from '../components/layout/admin-layout'
 import { useFetch } from '../hooks/useFetch'
+import { Skeleton } from '../components/ui/feedback'
 import { normalizeOrders, ordersService } from '../lib/api/orders.service'
+import { downloadCsv } from '../lib/api/client'
 import type { BackendOrder } from '../lib/api/orders.service'
 import { branchesService } from '../lib/api/branches.service'
 import type { Branch } from '../types/branch'
@@ -37,7 +39,16 @@ export default function AdminOrders() {
             <h1>Every order,<br /><em>in one place.</em></h1>
             <p>Review orders across all store branches, their fulfilment details, and current status.</p>
           </div>
-          <Link to="/admin/dashboard" className="admin-outline-button">Back to dashboard</Link>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="admin-outline-button"
+              onClick={() => void downloadCsv('/orders/export', 'orders.csv').catch(() => undefined)}
+            >
+              Export CSV
+            </button>
+            <Link to="/admin/dashboard" className="admin-outline-button">Back to dashboard</Link>
+          </div>
         </div>
 
         <section className="admin-metrics" aria-label="Order summary">
@@ -72,7 +83,19 @@ export default function AdminOrders() {
             </span>
           </div>
           {isLoading && !data ? (
-            <div className="p-5 text-xs text-muted" role="status">Loading orders...</div>
+            <div className="p-5" role="status" aria-label="Loading orders">
+              <div className="admin-table">
+                <div className="admin-table-head"><span>Order</span><span>Customer</span><span>Status</span><span>Total</span></div>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div className="admin-table-row" key={index}>
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
             <div className="admin-table">
               <div className="admin-table-head admin-all-orders-head">

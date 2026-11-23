@@ -9,6 +9,7 @@ import { ThemeToggle } from './theme-toggle'
 import { clearSession, getStoredSession } from '../../lib/auth'
 import { useBranchSelection } from '../../store/branch-context'
 import { useCart } from '../../store'
+import { NotificationBell } from './NotificationBell'
 
 function BranchSelector() {
   const { branches, selectedBranchId, isLoadingBranches, branchError, selectBranch } = useBranchSelection()
@@ -225,6 +226,7 @@ export function Header({
               </button>
               <ThemeToggle />
               <BranchSelector />
+              {isSignedIn ? <NotificationBell /> : null}
               {isSignedIn ? <div className="relative ml-1"><button type="button" onClick={() => setAccountMenuOpen((open) => !open)} className="focus-ring flex h-8 w-8 items-center justify-center rounded-full bg-accent font-mono text-[10px] font-medium text-accent-ink transition-transform hover:scale-105" aria-label="Open account menu" aria-expanded={accountMenuOpen}>{accountInitial}</button>{accountMenuOpen ? <div className="absolute right-0 top-10 z-50 grid min-w-40 border border-line bg-surface p-1 shadow-lg"><Link to={dashboardHref ?? '/account'} onClick={() => setAccountMenuOpen(false)} className="px-3 py-2 text-left text-[11px] text-ink transition-colors hover:bg-canvas-alt">Account dashboard</Link><button type="button" onClick={logout} className="px-3 py-2 text-left text-[11px] text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink">Log out</button></div> : null}</div> : <div className="hidden items-center gap-2 pl-1 lg:flex">
                 <Link
                   to="/login"

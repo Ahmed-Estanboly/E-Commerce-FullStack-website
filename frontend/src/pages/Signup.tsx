@@ -41,12 +41,12 @@ const Signup = () => {
     setIsSubmitting(true)
 
     try {
-      const { access_token, user } = await authService.register({
+      const { access_token, refresh_token, user } = await authService.register({
         name: name.trim(),
         email: email.trim(),
         password,
       })
-      saveSession({ token: access_token, user }, true)
+      saveSession({ token: access_token, refreshToken: refresh_token, user }, true)
       navigate(getDashboardDestination(user))
     } catch (requestError) {
       const status = axios.isAxiosError(requestError) ? requestError.response?.status : undefined

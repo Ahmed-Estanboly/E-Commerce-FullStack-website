@@ -121,6 +121,12 @@ export class Order {
 
   @Prop({ type: [OrderStatusHistorySchema], default: [] })
   statusHistory: OrderStatusHistoryEntry[];
+
+  @Prop()
+  couponCode?: string;
+
+  @Prop({ default: 0, min: 0 })
+  discount: number;
 }
 
 export type OrderDocument = HydratedDocument<Order>;

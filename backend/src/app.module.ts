@@ -17,6 +17,13 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware.j
 import { OrdersModule } from './orders/orders.module.js';
 import { BranchesModule } from './branches/branches.module.js';
 import { ReviewsModule } from './reviews/reviews.module.js';
+import { WishlistModule } from './wishlist/wishlist.module.js';
+import { CouponsModule } from './coupons/coupons.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
+import { AnalyticsModule } from './analytics/analytics.module.js';
+import { UploadsModule } from './uploads/uploads.module.js';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'node:path';
 
 @Module({
   imports: [
@@ -46,6 +53,16 @@ import { ReviewsModule } from './reviews/reviews.module.js';
     AuthModule,
     OrdersModule,
     ReviewsModule,
+    WishlistModule,
+    CouponsModule,
+    NotificationsModule,
+    AnalyticsModule,
+    UploadsModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+      exclude: ['/api/(.*)'],
+    }),
   ],
   controllers: [AppController],
   providers: [

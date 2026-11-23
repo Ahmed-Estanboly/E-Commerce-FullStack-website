@@ -1,10 +1,13 @@
-import { useCallback, useState, type FormEvent } from 'react'
+import { useCallback, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link, useParams} from 'react-router-dom'
 import { AdminLayout } from '../components/layout/admin-layout'
 import { BranchLayout } from '../components/layout/branch-layout'
 import { BranchAssignmentPanel } from '../components/branches/BranchAssignmentPanel'
 import { useFetch } from '../hooks/useFetch'
 import { branchesService, getBranchRequestError } from '../lib/api/branches.service'
+import { downloadCsv } from '../lib/api/client'
+import { uploadService } from '../lib/api/upload.service'
+import { Skeleton } from '../components/ui/feedback'
 import { productsService } from '../lib/api/products.service'
 import { useBranches } from '../hooks/use-branches'
 import { getStoredSession } from '../lib/auth'
@@ -41,6 +44,24 @@ export default function BranchInventoryPage({ branchOwnerView = false }: { branc
     imageUrl: '',
     branchQuantity: '1',
   })
+  const [uploadingImage, setUploadingImage] = useState(false)
+
+  const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setUploadingImage(true)
+    setSaveError(null)
+    try {
+      const url = await uploadService.uploadImage(file)
+      setNewProduct((current) => ({ ...current, imageUrl: url }))
+    } catch (requestError) {
+      setSaveError(getBranchRequestError(requestError, 'Image upload failed.'))
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   const assignedProducts = (data ?? []).filter((product) => product.isAssigned)
 
   const saveQuantity = async (event: FormEvent<HTMLFormElement>, product: BranchInventoryItem) => {
@@ -138,6 +159,13 @@ export default function BranchInventoryPage({ branchOwnerView = false }: { branc
             >
               {assignmentOpen ? 'Close assignments' : 'Assign existing products'}
             </button>
+            <button
+              type="button"
+              className="admin-outline-button"
+              onClick={() => void downloadCsv(`/branches/${branchId}/inventory/export`, `inventory-${branchId}.csv`).catch(() => undefined)}
+            >
+              Export CSV
+            </button>
             <Link to={branchOwnerView ? `/${branchId}/dashboard` : '/admin/branches'} className="admin-outline-button">
               {branchOwnerView ? 'Back to dashboard' : 'Back to branches'}
             </Link>
@@ -191,8 +219,15 @@ export default function BranchInventoryPage({ branchOwnerView = false }: { branc
                 <input required type="number" min="0" step="1" value={newProduct.branchQuantity} onChange={(event) => setNewProduct((current) => ({ ...current, branchQuantity: event.target.value }))} className="mt-2 h-11 w-full border border-line bg-canvas px-3 text-sm text-ink" />
               </label>
               <label className="block md:col-span-2">
-                <span className="eyebrow">Product image URL</span>
-                <input required type="url" value={newProduct.imageUrl} onChange={(event) => setNewProduct((current) => ({ ...current, imageUrl: event.target.value }))} placeholder="https://example.com/product-image.jpg" className="mt-2 h-11 w-full border border-line bg-canvas px-3 text-sm text-ink" />
+                <span className="eyebrow">Product image</span>
+                <input required type="text" value={newProduct.imageUrl} onChange={(event) => setNewProduct((current) => ({ ...current, imageUrl: event.target.value }))} placeholder="https://example.com/product-image.jpg or /uploads/image.png" className="mt-2 h-11 w-full border border-line bg-canvas px-3 text-sm text-ink" />
+                <span className="mt-2 flex items-center gap-3">
+                  <input type="file" accept="image/*" onChange={(event) => void handleImageUpload(event)} className="hidden" id="branch-product-image-upload" disabled={uploadingImage} />
+                  <label htmlFor="branch-product-image-upload" className={`inline-flex h-9 cursor-pointer items-center border border-line px-3 font-mono text-[9px] uppercase tracking-[0.1em] text-ink-soft transition-colors hover:border-ink hover:text-ink ${uploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
+                    {uploadingImage ? 'Uploading…' : 'Upload image'}
+                  </label>
+                  <span className="text-[10px] text-muted">Or paste an image URL above (max 5 MB).</span>
+                </span>
               </label>
               <div className="flex justify-end gap-2 border-t border-line pt-4 md:col-span-2">
                 <button type="button" className="admin-outline-button" onClick={() => setCatalogOpen(false)}>Cancel</button>
@@ -204,7 +239,18 @@ export default function BranchInventoryPage({ branchOwnerView = false }: { branc
           </section>
         ) : null}
         {isLoading && !data ? (
-          <div className="admin-panel mt-5 p-5 text-sm text-muted" role="status">Loading branch inventory...</div>
+          <div className="admin-panel admin-orders-panel mt-5" role="status" aria-label="Loading branch inventory">
+            <div className="admin-table">
+              <div className="admin-table-head branch-inventory-table-head">
+                {Array.from({ length: 5 }).map((_, index) => <span key={index}><Skeleton className="h-3 w-20" /></span>)}
+              </div>
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div className="admin-table-row" key={index}>
+                  {Array.from({ length: 5 }).map((__, cell) => <Skeleton key={cell} className="h-4 w-full max-w-28" />)}
+                </div>
+              ))}
+            </div>
+          </div>
         ) : error && !data ? (
           <div className="admin-api-error mt-5" role="alert">
             <span>Could not load this branch’s inventory: {error}</span>

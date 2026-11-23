@@ -520,9 +520,11 @@ function ProductsPage() {
   
         {/* Loading Categories */}
         {isLoadingCategories && (
-          <p className="mb-4 text-xs text-muted">
-            Loading categories...
-          </p>
+          <div className="mb-4 flex flex-wrap gap-2" role="status" aria-label="Loading categories">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <Skeleton key={index} className="h-7 w-24" />
+            ))}
+          </div>
         )}
   
         {categoriesError && (

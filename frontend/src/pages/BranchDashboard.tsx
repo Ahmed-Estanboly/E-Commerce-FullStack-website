@@ -7,6 +7,7 @@ import { ordersService, normalizeOrders } from '../lib/api/orders.service'
 import { getStoredSession } from '../lib/auth'
 import type { BackendOrder } from '../lib/api/orders.service'
 import { OrderStatusSelect } from '../components/orders/OrderStatusSelect'
+import { Skeleton } from '../components/ui/feedback'
 import type { Branch, BranchInventoryItem } from '../types/branch'
 
 const currency = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })
@@ -39,7 +40,14 @@ export default function BranchDashboard() {
   const content = (
     <div className="admin-content">
       {!branch && branchResult.isLoading ? (
-        <div className="admin-panel p-6 text-sm text-muted" role="status">Loading branch dashboard...</div>
+        <div className="admin-panel p-6" role="status" aria-label="Loading branch dashboard">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="mt-3 h-4 w-80" />
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-24 w-full" />)}
+          </div>
+          <Skeleton className="mt-6 h-64 w-full" />
+        </div>
       ) : !branch || branchResult.error ? (
         <div className="admin-api-error" role="alert">
           <span>{branchResult.error ?? 'This branch could not be found.'}</span>
@@ -84,7 +92,9 @@ export default function BranchDashboard() {
               <Link to={`/${branchId}/inventory`} className="admin-row-action">Open inventory</Link>
             </div>
             {inventoryResult.isLoading && !inventoryResult.data ? (
-              <div className="p-5 text-xs text-muted" role="status">Loading stock...</div>
+              <div className="p-5" role="status" aria-label="Loading stock">
+                {Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="mb-3 h-10 w-full" />)}
+              </div>
             ) : (
               <div className="admin-table analytics-products-table">
                 <div className="admin-table-head"><span>Product</span><span>Category ID</span><span>Price</span><span>Stock</span></div>
@@ -107,7 +117,9 @@ export default function BranchDashboard() {
               <span>{orders.length} total</span>
             </div>
             {ordersResult.isLoading && !ordersResult.data ? (
-              <div className="p-5 text-xs text-muted" role="status">Loading orders...</div>
+              <div className="p-5" role="status" aria-label="Loading orders">
+                {Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="mb-3 h-10 w-full" />)}
+              </div>
             ) : (
               <div className="admin-table analytics-products-table">
                 <div className="admin-table-head"><span>Order</span><span>Customer</span><span>Status</span><span>Total</span></div>

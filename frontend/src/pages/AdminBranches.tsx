@@ -4,6 +4,7 @@ import { ChevronDown } from '../components/ui/icons'
 import { AdminLayout } from '../components/layout/admin-layout'
 import { BranchLayout } from '../components/layout/branch-layout'
 import { useStoreProducts } from '../hooks/use-products'
+import { Skeleton } from '../components/ui/feedback'
 import type { Product } from '../types/product'
 
 const currency = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
@@ -64,7 +65,7 @@ const AdminBranches = () => {
           </div> : null}
         </div>
 
-        {isLoading && products.length === 0 ? <div className="admin-panel" style={{ padding: '22px', marginTop: '14px' }}>Loading branch catalogue...</div> : <>
+        {isLoading && products.length === 0 ? <div className="admin-panel" style={{ padding: '22px', marginTop: '14px' }} role="status" aria-label="Loading branch catalogue"><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{Array.from({ length: 6 }).map((_, index) => <div key={index} className="border border-line p-4"><Skeleton className="aspect-[4/3] w-full" /><Skeleton className="mt-3 h-4 w-2/3" /><Skeleton className="mt-2 h-3 w-1/2" /></div>)}</div></div> : <>
           <section className="admin-metrics" aria-label={`${branch.name} product metrics`}>
             <article><span>Products</span><strong>{branchProducts.length}</strong><small className="positive">Temporary branch allocation</small></article>
             <article><span>Categories</span><strong>{categoryStats.length}</strong><small className="positive">Represented here</small></article>

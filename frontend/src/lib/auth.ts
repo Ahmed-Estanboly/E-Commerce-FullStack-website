@@ -3,7 +3,16 @@ import { AUTH_STORAGE_KEY } from './api/client'
 
 export interface AuthSession {
   token: string
+  refreshToken?: string
   user: AuthUser
+}
+
+export function updateSessionTokens(token: string, refreshToken?: string) {
+  const session = getStoredSession()
+  if (!session) return
+  const next = { ...session, token, ...(refreshToken ? { refreshToken } : {}) }
+  const rememberMe = Boolean(window.localStorage.getItem(AUTH_STORAGE_KEY))
+  saveSession(next, rememberMe)
 }
 
 export function saveSession(session: AuthSession, rememberMe: boolean) {

@@ -98,7 +98,15 @@ const AdminDashboard = () => {
                 <button type="button" onClick={refetchBranches}>Retry</button>
               </div>
             ) : branchesLoading && branches.length === 0 ? (
-              <div className="p-5 text-xs text-muted" role="status">Loading branches...</div>
+              <div className="grid gap-px bg-line sm:grid-cols-2 xl:grid-cols-3" role="status" aria-label="Loading branches">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <article key={index} className="bg-surface p-4">
+                    <Skeleton className="h-5 w-2/3" />
+                    <Skeleton className="mt-2 h-3 w-1/2" />
+                    <Skeleton className="mt-3 h-8 w-full" />
+                  </article>
+                ))}
+              </div>
             ) : (
               <div className="grid gap-px bg-line sm:grid-cols-2 xl:grid-cols-3">
                 {branches.map((branch) => (

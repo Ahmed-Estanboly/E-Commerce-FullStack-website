@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AdminLayout } from '../components/layout/admin-layout'
 import { useFetch } from '../hooks/useFetch'
+import { Skeleton } from '../components/ui/feedback'
 import { usersService, type BackendUser } from '../lib/api/users.service'
 import { normalizeOrders, ordersService, type BackendOrder, type OrderStatus } from '../lib/api/orders.service'
 import { ORDER_STATUS_LABELS } from '../lib/order-status'
@@ -18,8 +19,15 @@ const STATUS_STYLES: Record<OrderStatus, string> = {
   cancelled: 'text-danger',
 }
 
+const USER_ROLES = ['customer', 'branch owner', 'central owner', 'south owner', 'master admin'] as const
+
 export default function AdminCustomers() {
   const [expandedUserId, setExpandedUserId] = useState<number | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [busyUserId, setBusyUserId] = useState<number | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
+  const [createForm, setCreateForm] = useState({ name: '', email: '', password: '', role: 'customer' })
+  const [createBusy, setCreateBusy] = useState(false)
   const usersRequest = useCallback((signal: AbortSignal) => usersService.getUsers(signal), [])
   const ordersRequest = useCallback(
     async (signal: AbortSignal) =>
@@ -68,6 +76,49 @@ export default function AdminCustomers() {
     return { count: orders.length, total: orders.reduce((sum, order) => sum + order.total, 0) }
   }
 
+  const handleRoleChange = async (user: BackendUser, role: string) => {
+    setBusyUserId(user.id)
+    setActionError(null)
+    try {
+      await usersService.updateUser(user.id, { role })
+      usersResult.refetch()
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not update user')
+    } finally {
+      setBusyUserId(null)
+    }
+  }
+
+  const handleDelete = async (user: BackendUser) => {
+    if (!window.confirm(`Delete ${user.name} (${user.email})? This cannot be undone.`)) return
+    setBusyUserId(user.id)
+    setActionError(null)
+    try {
+      await usersService.deleteUser(user.id)
+      usersResult.refetch()
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not delete user')
+    } finally {
+      setBusyUserId(null)
+    }
+  }
+
+  const handleCreate = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setCreateBusy(true)
+    setActionError(null)
+    try {
+      await usersService.createUser(createForm)
+      setCreateForm({ name: '', email: '', password: '', role: 'customer' })
+      setShowCreate(false)
+      usersResult.refetch()
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not create user')
+    } finally {
+      setCreateBusy(false)
+    }
+  }
+
   const totalOrderValue = customers.reduce((sum, user) => sum + statsFor(user).total, 0)
 
   return (
@@ -79,8 +130,29 @@ export default function AdminCustomers() {
             <h1>Your shoppers,<br /><em>up close.</em></h1>
             <p>Every registered customer account and their order activity. Click a row to inspect their orders.</p>
           </div>
-          <Link to="/admin/dashboard" className="admin-outline-button">Back to dashboard</Link>
+          <div className="admin-intro-actions">
+            <button type="button" onClick={() => setShowCreate((v) => !v)} className="admin-accent-button">
+              {showCreate ? 'Close' : 'New user'}
+            </button>
+            <Link to="/admin/dashboard" className="admin-outline-button">Back to dashboard</Link>
+          </div>
         </div>
+
+        {actionError ? (
+          <div className="admin-api-error mb-4" role="alert"><span>{actionError}</span></div>
+        ) : null}
+
+        {showCreate ? (
+          <form onSubmit={(e) => void handleCreate(e)} className="admin-panel mb-4 grid gap-3 p-5 sm:grid-cols-5">
+            <input required placeholder="Name" value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} className="h-10 border border-line bg-canvas/40 px-3 text-xs text-ink outline-none focus:border-line-strong" />
+            <input required type="email" placeholder="Email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} className="h-10 border border-line bg-canvas/40 px-3 text-xs text-ink outline-none focus:border-line-strong" />
+            <input required type="password" minLength={6} placeholder="Password" value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })} className="h-10 border border-line bg-canvas/40 px-3 text-xs text-ink outline-none focus:border-line-strong" />
+            <select value={createForm.role} onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })} className="h-10 border border-line bg-canvas/40 px-3 font-mono text-[10px] uppercase text-ink outline-none focus:border-line-strong">
+              {USER_ROLES.map((role) => <option key={role} value={role}>{role}</option>)}
+            </select>
+            <button type="submit" disabled={createBusy} className="admin-accent-button h-10 disabled:opacity-50">{createBusy ? 'Creating…' : 'Create user'}</button>
+          </form>
+        ) : null}
 
         <section className="admin-metrics" aria-label="Customer summary">
           <article><span>Customers</span><strong>{isLoading ? '—' : customers.length}</strong><small>Registered accounts</small></article>
@@ -99,7 +171,21 @@ export default function AdminCustomers() {
         <section className="admin-panel admin-orders-panel" aria-label="All customers">
           <div className="admin-panel-heading"><span>All customers</span><span>{customers.length} records</span></div>
           {isLoading && !usersResult.data ? (
-            <div className="p-5 text-xs text-muted" role="status">Loading customers...</div>
+            <div className="p-5" role="status" aria-label="Loading customers">
+              <div className="admin-table">
+                <div className="admin-table-head admin-all-orders-head">
+                  <span>Customer</span><span>Orders</span><span>Spent</span><span>Joined</span>
+                </div>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div className="admin-table-row admin-all-orders-row" key={index}>
+                    <Skeleton className="h-4 w-44" />
+                    <Skeleton className="h-4 w-10" />
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
             <div className="admin-table">
               <div className="admin-table-head admin-all-orders-head">
@@ -126,6 +212,25 @@ export default function AdminCustomers() {
                     </button>
                     {isExpanded ? (
                       <div className="border-b border-line bg-canvas/50 px-5 py-4">
+                        <div className="mb-3 flex flex-wrap items-center gap-2">
+                          <select
+                            value={user.role}
+                            disabled={busyUserId === user.id}
+                            onChange={(e) => void handleRoleChange(user, e.target.value)}
+                            className="h-8 border border-line bg-canvas/40 px-2 font-mono text-[9px] uppercase tracking-[0.08em] text-ink outline-none focus:border-line-strong disabled:opacity-50"
+                            aria-label={`Role for ${user.name}`}
+                          >
+                            {USER_ROLES.map((role) => <option key={role} value={role}>{role}</option>)}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => void handleDelete(user)}
+                            disabled={busyUserId === user.id}
+                            className="h-8 border border-danger/50 px-3 font-mono text-[9px] uppercase tracking-[0.08em] text-danger transition-colors hover:bg-danger hover:text-white disabled:opacity-50"
+                          >
+                            {busyUserId === user.id ? 'Working…' : 'Delete user'}
+                          </button>
+                        </div>
                         {userOrders.length ? (
                           <ul className="space-y-3">
                             {userOrders.map((order) => (

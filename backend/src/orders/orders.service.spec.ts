@@ -4,6 +4,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Branch } from '../branches/schemas/branch.schema.js';
 import { BranchInventory } from '../branches/schemas/branch-inventory.schema.js';
 import { Product } from '../products/schemas/products.schema.js';
+import { CouponsService } from '../coupons/coupons.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { Order } from './schemas/order.schema.js';
 import { OrdersService } from './orders.service.js';
 
@@ -66,6 +68,8 @@ describe('OrdersService branch inventory', () => {
         { provide: getModelToken(Branch.name), useValue: branchModel },
         { provide: getModelToken(BranchInventory.name), useValue: branchInventoryModel },
         { provide: getConnectionToken(), useValue: connection },
+        { provide: CouponsService, useValue: { applyForOrder: vi.fn() } },
+        { provide: NotificationsService, useValue: { create: vi.fn().mockResolvedValue({}) } },
       ],
     }).compile();
     service = module.get(OrdersService);
@@ -168,6 +172,8 @@ describe('OrdersService status lifecycle', () => {
         { provide: getModelToken(Branch.name), useValue: {} },
         { provide: getModelToken(BranchInventory.name), useValue: branchInventoryModel },
         { provide: getConnectionToken(), useValue: connection },
+        { provide: CouponsService, useValue: { applyForOrder: vi.fn() } },
+        { provide: NotificationsService, useValue: { create: vi.fn().mockResolvedValue({}) } },
       ],
     }).compile();
     service = module.get(OrdersService);

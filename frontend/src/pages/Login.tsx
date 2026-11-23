@@ -30,11 +30,11 @@ const Login = () => {
     setIsSubmitting(true)
 
     try {
-      const { access_token, user } = await authService.login({
+      const { access_token, refresh_token, user } = await authService.login({
         email: email.trim(),
         password,
       })
-      saveSession({ token: access_token, user }, rememberMe)
+      saveSession({ token: access_token, refreshToken: refresh_token, user }, rememberMe)
       navigate(getDashboardDestination(user))
     } catch (requestError) {
       setError(

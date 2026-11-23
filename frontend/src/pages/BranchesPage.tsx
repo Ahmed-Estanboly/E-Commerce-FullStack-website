@@ -4,6 +4,7 @@ import { AdminLayout } from '../components/layout/admin-layout'
 import { Dialog } from '../components/ui/dialog'
 import { Plus } from '../components/ui/icons'
 import { useBranches } from '../hooks/use-branches'
+import { Skeleton } from '../components/ui/feedback'
 
 interface BranchFormValues {
   name: string;
@@ -128,7 +129,17 @@ export default function BranchesPage() {
           </div>
 
           {isLoading && branches.length === 0 ? (
-            <div className="admin-panel p-5 text-sm text-muted" role="status">Loading branches...</div>
+            <div className="admin-panel p-5" role="status" aria-label="Loading branches">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div key={index} className="border border-line p-4">
+                    <Skeleton className="h-5 w-2/3" />
+                    <Skeleton className="mt-2 h-3 w-1/2" />
+                    <Skeleton className="mt-3 h-8 w-full" />
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : error && branches.length === 0 ? (
             <div className="admin-api-error" role="alert">
               <span>Could not load branches: {error}</span>

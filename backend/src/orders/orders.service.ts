@@ -24,6 +24,8 @@ import {
   type PaginatedResult,
   type PaginationQueryDto,
 } from '../common/dto/pagination.dto.js';
+import { CouponsService } from '../coupons/coupons.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 export interface OrderActor {
   id?: number;
@@ -45,6 +47,8 @@ export class OrdersService {
     @InjectModel(BranchInventory.name)
     private readonly branchInventoryModel: Model<BranchInventoryDocument>,
     @InjectConnection() private readonly connection: Connection,
+    private readonly couponsService: CouponsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, userId?: number) {
@@ -112,6 +116,18 @@ export class OrdersService {
         const subtotal = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
         const shippingFee =
           createOrderDto.fulfilment === 'deliver' ? DELIVERY_SHIPPING_FEE : 0;
+
+        let discount = 0;
+        let couponCode: string | undefined;
+        if (createOrderDto.couponCode) {
+          const coupon = await this.couponsService.applyForOrder(
+            createOrderDto.couponCode,
+            subtotal,
+          );
+          discount = coupon.discount;
+          couponCode = coupon.code;
+        }
+
         const branchSnapshot = {
           _id: branch._id.toString(),
           name: branch.name,
@@ -130,7 +146,9 @@ export class OrdersService {
           items: orderItems,
           subtotal,
           shippingFee,
-          total: subtotal + shippingFee,
+          total: Math.max(0, subtotal + shippingFee - discount),
+          discount,
+          couponCode,
           fulfilment: createOrderDto.fulfilment,
           branch: branchSnapshot,
           deliveryAddress: createOrderDto.deliveryAddress,
@@ -261,7 +279,20 @@ export class OrdersService {
       if (!result.order) {
         throw new NotFoundException('Order not found');
       }
-      return this.withTransitions(result.order.toObject());
+      const updated = this.withTransitions(result.order.toObject());
+      if (typeof order.userId === 'number' && next !== 'cancelled') {
+        void this.notificationsService
+          .create({
+            userId: order.userId,
+            type: 'order_status',
+            title: `Order ${order.orderNumber} is now ${next}`,
+            body: `Your order at ${order.branch?.name ?? 'the store'} moved to "${next}".`,
+            link: `/account/orders/${order._id.toString()}`,
+            meta: { orderId: order._id.toString(), status: next },
+          })
+          .catch(() => undefined);
+      }
+      return updated;
     } finally {
       await session.endSession();
     }
@@ -318,6 +349,38 @@ export class OrdersService {
       this.orderModel.countDocuments(query.getFilter()).exec(),
     ]);
     return toPaginatedResult(items as Order[], total, params);
+  }
+
+  /** CSV export of all orders (admin reporting). */
+  async exportCsv(): Promise<string> {
+    const orders = await this.orderModel.find().sort({ createdAt: -1 }).lean().exec();
+    const escape = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+    const header = [
+      'orderNumber', 'createdAt', 'customerName', 'email', 'phone',
+      'branch', 'fulfilment', 'status', 'subtotal', 'shippingFee', 'discount', 'total', 'paymentMethod', 'couponCode',
+    ];
+    const rows = orders.map((order) => {
+      const createdAt = (order as { createdAt?: Date | string }).createdAt;
+      return [
+        order.orderNumber,
+        createdAt instanceof Date ? createdAt.toISOString() : createdAt,
+        order.customerName,
+        order.email,
+        order.phone,
+        order.branch?.name,
+        order.fulfilment,
+        order.status,
+        order.subtotal,
+        order.shippingFee,
+        order.discount ?? 0,
+        order.total,
+        order.paymentMethod,
+        order.couponCode,
+      ]
+        .map(escape)
+        .join(',');
+    });
+    return [header.join(','), ...rows].join('\n');
   }
 
   private async createWithUniqueOrderNumber(orderData: Record<string, unknown>, session: ClientSession) {

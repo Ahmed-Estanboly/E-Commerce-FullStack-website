@@ -6,12 +6,17 @@ an admin panel, and a multi-branch inventory backend.
 ## Features
 
 - **Storefront** — Home page, product catalog (`/shop`), product detail pages, search overlay, theme toggle (light/dark), cart, and checkout flow.
-- **Authentication** — Register / login with JWT access tokens, session persistence (local or session storage), protected routes per role.
-- **Roles** — `master admin` (admin dashboard, analytics, branches & inventory), `branch owner` / `central owner` / `south owner` (per-branch dashboards), and `customer` (account dashboard).
-- **Branch inventory** — Per-branch stock levels for products, managed by branch owners.
-- **Orders** — Order creation and lookup with a full lifecycle (`pending → confirmed → preparing → ready → shipped → delivered`, plus `cancelled`), status history, stock restocking on cancellation, and admin/branch-owner status management.
+- **Authentication** — Register / login with JWT access tokens **and rotating refresh tokens** (`POST /auth/refresh`, `POST /auth/logout`); the frontend silently refreshes expired access tokens. Session persistence (local or session storage), protected routes per role.
+- **Roles** — `master admin` (admin dashboard, analytics, branches & inventory, user management), `branch owner` / `central owner` / `south owner` (per-branch dashboards), and `customer` (account dashboard, order history, wishlist).
+- **Branch inventory** — Per-branch stock levels for products, managed by branch owners, with low-stock/out-of-stock alerts (`GET /branches/:branchId/inventory/alerts`) and CSV export.
+- **Orders** — Order creation and lookup with a full lifecycle (`pending → confirmed → preparing → ready → shipped → delivered`, plus `cancelled`), status history, stock restocking on cancellation, admin/branch-owner status management, coupon discounts, CSV export, and customer order-history pages.
 - **Reviews** — Customers can review products (one review per user per product, upsert on re-submit); products expose `ratingAverage`/`ratingCount`.
-- **Catalog** — Products, categories, and related-product recommendations. `GET /products` supports server-side search (`q`), category, price-range, sort, stock and branch-inventory filters, plus opt-in pagination.
+- **Wishlist** — Signed-in customers can save products (`/wishlist` endpoints + heart button on product cards, `/account/wishlist` page).
+- **Coupons** — Admin-managed discount codes (`percent`/`fixed`, min subtotal, expiry, usage limits) validated at checkout via `POST /coupons/validate` and applied server-side during order creation.
+- **Notifications** — In-app notifications for customers (e.g. order status changes) with an unread badge in the storefront header.
+- **Analytics** — `GET /analytics/sales` powers the admin analytics page: revenue, average order value, orders by status, daily revenue, top products, per-branch sales and inventory alerts.
+- **Catalog** — Products, categories, and related-product recommendations. `GET /products` supports server-side search (`q`), category, price-range, sort, stock and branch-inventory filters, plus opt-in pagination. The storefront runs entirely on this API.
+- **Uploads** — Admins/branch owners can upload product images via `POST /upload/image` (max 5 MB, jpg/png/webp/gif/avif), served from `/uploads`.
 - **Rate limiting** — `@nestjs/throttler` guards every route (100 req/min default); auth endpoints are limited to 5 req/min.
 - **CI** — GitHub Actions runs backend lint/tests/build and frontend lint/build on push and PRs.
 
@@ -116,8 +121,10 @@ All routes are prefixed with `/api/v1`. Successful responses are wrapped as
 
 | Method | Path | Description |
 |---|---|---|
-| POST | `/auth/register` | Register a customer → returns `{ access_token, user }` |
-| POST | `/auth/login` | Login → returns `{ access_token, user }` |
+| POST | `/auth/register` | Register a customer → returns `{ access_token, refresh_token, user }` |
+| POST | `/auth/login` | Login → returns `{ access_token, refresh_token, user }` |
+| POST | `/auth/refresh` | Exchange a refresh token for a new access + refresh token pair |
+| POST | `/auth/logout` | Invalidate the caller's refresh token (JWT required) |
 | GET | `/auth/me` | Current user profile (JWT required) |
 | PATCH | `/auth/profile` | Update own profile (JWT required) |
 
@@ -175,6 +182,8 @@ All routes are prefixed with `/api/v1`. Successful responses are wrapped as
 | PATCH | `/branches/:id` | Update branch |
 | DELETE | `/branches/:id` | Delete branch |
 | GET | `/branches/:branchId/inventory` | Branch inventory |
+| GET | `/branches/:branchId/inventory/alerts?threshold=5` | Low-stock (`0 < qty <= threshold`) and out-of-stock items for the branch |
+| GET | `/branches/:branchId/inventory/export` | Download branch inventory as CSV |
 | PUT | `/branches/:branchId/inventory/:productId` | Update stock for a product |
 | DELETE | `/branches/:branchId/inventory/:productId` | Remove product from inventory |
 
@@ -182,13 +191,53 @@ All routes are prefixed with `/api/v1`. Successful responses are wrapped as
 
 | Method | Path | Description |
 |---|---|---|
-| POST | `/orders` | Create order |
+| POST | `/orders` | Create order (accepts optional `couponCode`; response includes `discount`) |
+| GET | `/orders/export` | Download all orders as CSV (master admin) |
 | GET | `/orders/me` | Current user's orders (`page` + optional `limit` for pagination) |
 | GET | `/orders/me/:id` | One of the current user's orders (JWT required) |
 | GET | `/orders/branch/:branchId` | Branch orders (master admin or that branch's owner) |
 | PATCH | `/orders/:id/status` | Move an order to an allowed next status `{ status, note? }`; cancelling restocks the branch. Master admin or the order's branch owner. |
 | GET | `/orders` | List all orders (master admin; `page` + optional `limit` for pagination) |
 | GET | `/orders/:id` | Get order (master admin) |
+
+### Wishlist — `wishlist` (JWT required)
+
+| Method | Path | Description |
+| ------ | ---- | ----------- |
+| GET | `/wishlist` | List the caller's saved products (hydrated with product data) |
+| POST | `/wishlist` | Save a product `{ productId }` (idempotent upsert) |
+| DELETE | `/wishlist/:productId` | Remove a product from the wishlist |
+
+### Coupons — `coupons`
+
+| Method | Path | Description |
+| ------ | ---- | ----------- |
+| POST | `/coupons/validate` | Validate a code against a subtotal → `{ code, kind, value, discount }` (public) |
+| GET | `/coupons` | List coupons (master admin) |
+| POST | `/coupons` | Create coupon `{ code, kind: percent\|fixed, value, minSubtotal?, expiresAt?, usageLimit? }` (master admin) |
+| PATCH | `/coupons/:id` | Update coupon (master admin) |
+| DELETE | `/coupons/:id` | Delete coupon (master admin) |
+
+### Notifications — `notifications` (JWT required)
+
+| Method | Path | Description |
+| ------ | ---- | ----------- |
+| GET | `/notifications` | List the caller's latest notifications |
+| GET | `/notifications/unread-count` | Unread count for the header badge |
+| PATCH | `/notifications/:id/read` | Mark one notification read |
+| POST | `/notifications/read-all` | Mark all notifications read |
+
+### Analytics — `analytics` (master admin)
+
+| Method | Path | Description |
+| ------ | ---- | ----------- |
+| GET | `/analytics/sales?days=30` | Revenue, order counts, status mix, daily revenue, top products, per-branch sales, inventory alerts |
+
+### Uploads — `upload` (admin / branch owner)
+
+| Method | Path | Description |
+| ------ | ---- | ----------- |
+| POST | `/upload/image` | Multipart `file` field → `{ url: "/uploads/<name>" }` (max 5 MB, images only) |
 
 Order statuses: `pending`, `confirmed`, `preparing`, `ready`, `shipped`, `delivered`, `cancelled`. Each order keeps a `statusHistory` timeline and single-order responses include `allowedTransitions`.
 

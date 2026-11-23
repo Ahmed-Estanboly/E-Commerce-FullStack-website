@@ -10,6 +10,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   Min,
   ValidateIf,
   ValidateNested,
@@ -86,4 +87,9 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   cardLast4?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^[A-Za-z0-9_-]{3,32}$/)
+  couponCode?: string;
 }

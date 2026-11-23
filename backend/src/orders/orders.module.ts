@@ -7,10 +7,14 @@ import { BranchInventory, BranchInventorySchema } from '../branches/schemas/bran
 import { OrdersService } from './orders.service.js';
 import { OrdersController } from './orders.controller.js';
 import { BranchesModule } from '../branches/branches.module.js';
+import { CouponsModule } from '../coupons/coupons.module.js';
+import { NotificationsModule } from '../notifications/notifications.module.js';
 
 @Module({
   imports: [
     BranchesModule,
+    CouponsModule,
+    NotificationsModule,
     MongooseModule.forFeature([
       { name: Order.name, schema: OrderSchema },
       { name: Product.name, schema: ProductSchema },

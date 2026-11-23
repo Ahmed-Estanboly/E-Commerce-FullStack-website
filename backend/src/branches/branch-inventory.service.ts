@@ -54,6 +54,29 @@ export class BranchInventoryService {
     return (await this.findAll(branchId)).filter((item) => item.isAssigned);
   }
 
+  /** Assigned products at or below the low-stock threshold (default 5). */
+  async findAlerts(branchId: string, threshold = 5) {
+    const items = await this.findCatalog(branchId);
+    return {
+      threshold,
+      lowStock: items.filter((item) => item.quantity > 0 && item.quantity <= threshold),
+      outOfStock: items.filter((item) => item.quantity === 0),
+    };
+  }
+
+  /** CSV export of a branch's inventory. */
+  async exportCsv(branchId: string) {
+    const items = await this.findAll(branchId);
+    const escape = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+    const header = ['productId', 'productName', 'categoryId', 'price', 'quantity', 'isAssigned'];
+    const rows = items.map((item) =>
+      [item.productId, item.productName, item.categoryId, item.price, item.quantity, item.isAssigned]
+        .map(escape)
+        .join(','),
+    );
+    return [header.join(','), ...rows].join('\n');
+  }
+
   async seedDemoInventory() {
     const [branches, products] = await Promise.all([
       this.branchModel.find({ isActive: true }).sort({ name: 1 }).lean().exec(),

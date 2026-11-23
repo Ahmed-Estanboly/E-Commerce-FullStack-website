@@ -1,4 +1,4 @@
-import { useCallback, useState, type FormEvent } from 'react'
+import { useCallback, useState, type ChangeEvent, type FormEvent } from 'react'
 import axios from 'axios'
 import { Link } from 'react-router-dom'
 import { AdminLayout } from '../components/layout/admin-layout'
@@ -6,6 +6,8 @@ import { useFetch } from '../hooks/useFetch'
 import { useBranches } from '../hooks/use-branches'
 import { branchesService, getBranchRequestError } from '../lib/api/branches.service'
 import { productsService } from '../lib/api/products.service'
+import { uploadService } from '../lib/api/upload.service'
+import { Skeleton } from '../components/ui/feedback'
 import type { Product, ProductCategory } from '../types/product'
 
 interface ProductForm {
@@ -48,6 +50,26 @@ export default function AdminProductsPage() {
   const { branches, error: branchesError } = useBranches()
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+
+  const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setUploading(true)
+    setError(null)
+    try {
+      const url = await uploadService.uploadImage(file)
+      setForm((current) => ({
+        ...current,
+        images: current.images.trim() ? `${current.images.trim()}\n${url}` : url,
+      }))
+    } catch (err) {
+      setError(getErrorMessage(err, 'Image upload failed.'))
+    } finally {
+      setUploading(false)
+    }
+  }
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -122,7 +144,7 @@ export default function AdminProductsPage() {
           <div className="admin-panel-heading">
             <span id="create-product-heading">Add a catalogue product</span>
           </div>
-          {categoriesResult.isLoading ? <p className="p-4 text-sm text-muted" role="status">Loading categories...</p> : !categories.length ? (
+          {categoriesResult.isLoading ? <div className="space-y-2 p-4" role="status" aria-label="Loading categories">{Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-8 w-full" />)}</div> : !categories.length ? (
             <p className="p-4 text-sm text-muted">Create a category before adding products.</p>
           ) : (
             <form onSubmit={(event) => void handleSubmit(event)} className="grid gap-4 p-4 md:grid-cols-2">
@@ -152,6 +174,13 @@ export default function AdminProductsPage() {
               <label className="block md:col-span-2">
                 <span className="eyebrow">Image URLs · one per line</span>
                 <textarea required rows={2} value={form.images} onChange={(event) => setForm((current) => ({ ...current, images: event.target.value }))} className="mt-2 w-full border border-line bg-canvas px-3 py-2 text-sm text-ink" placeholder="https://example.com/product-image.jpg" />
+                <span className="mt-2 flex items-center gap-3">
+                  <input type="file" accept="image/*" onChange={(event) => void handleImageUpload(event)} className="hidden" id="product-image-upload" disabled={uploading} />
+                  <label htmlFor="product-image-upload" className={`inline-flex h-9 cursor-pointer items-center border border-line px-3 font-mono text-[9px] uppercase tracking-[0.1em] text-ink-soft transition-colors hover:border-ink hover:text-ink ${uploading ? 'pointer-events-none opacity-50' : ''}`}>
+                    {uploading ? 'Uploading…' : 'Upload image'}
+                  </label>
+                  <span className="text-[10px] text-muted">Saved to /uploads and appended above (max 5 MB).</span>
+                </span>
               </label>
               <div className="border-t border-line pt-4 md:col-span-2">
                 <p className="eyebrow">Optional branch opening stock</p>
@@ -180,7 +209,9 @@ export default function AdminProductsPage() {
         <section className="admin-panel admin-orders-panel mt-5" aria-label="Product catalogue">
           <div className="admin-panel-heading"><span>Shared product catalogue</span><span>{products.length} PRODUCTS</span></div>
           {productsResult.isLoading && !products.length ? (
-            <p className="p-5 text-sm text-muted" role="status">Loading products...</p>
+            <div className="p-5" role="status" aria-label="Loading products">
+              {Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="mb-3 h-12 w-full" />)}
+            </div>
           ) : (
             <div className="admin-table">
               <div className="admin-table-head"><span>ID</span><span>Product</span><span>Category</span><span>Catalogue stock</span><span>Price</span><span /></div>

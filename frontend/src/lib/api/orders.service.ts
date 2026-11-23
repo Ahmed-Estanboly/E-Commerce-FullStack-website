@@ -39,6 +39,7 @@ export interface CreateOrderPayload {
   deliveryAddress?: string
   paymentMethod: PaymentMethod
   cardLast4?: string
+  couponCode?: string
 }
 
 export interface BackendOrder {
@@ -67,6 +68,8 @@ export interface BackendOrder {
   status: OrderStatus
   statusHistory?: OrderStatusHistoryEntry[]
   allowedTransitions?: OrderStatus[]
+  discount?: number
+  couponCode?: string
   createdAt: string
   updatedAt: string
 }

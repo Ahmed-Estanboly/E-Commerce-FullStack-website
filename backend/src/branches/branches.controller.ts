@@ -8,8 +8,11 @@ import {
   Patch,
   Post,
   Put,
+  Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { BranchesService } from './branches.service.js';
 import { BranchInventoryService } from './branch-inventory.service.js';
 import { CreateBranchDto } from './dto/create-branch.dto.js';
@@ -38,6 +41,27 @@ export class BranchesController {
   @Get(':branchId/catalog')
   getCatalog(@Param('branchId') branchId: string) {
     return this.branchInventoryService.findCatalog(branchId);
+  }
+
+  @Get(':branchId/inventory/alerts')
+  @UseGuards(JwtAuthGuard, RolesGuard, BranchAccessGuard)
+  @Roles('master admin', 'branch owner', 'central owner', 'south owner')
+  getInventoryAlerts(@Param('branchId') branchId: string, @Query('threshold') threshold?: string) {
+    const parsed = threshold ? Number.parseInt(threshold, 10) : undefined;
+    return this.branchInventoryService.findAlerts(
+      branchId,
+      parsed !== undefined && Number.isFinite(parsed) && parsed >= 0 ? parsed : 5,
+    );
+  }
+
+  @Get(':branchId/inventory/export')
+  @UseGuards(JwtAuthGuard, RolesGuard, BranchAccessGuard)
+  @Roles('master admin', 'branch owner', 'central owner', 'south owner')
+  async exportInventory(@Param('branchId') branchId: string, @Res() res: Response) {
+    const csv = await this.branchInventoryService.exportCsv(branchId);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="inventory-${branchId}.csv"`);
+    res.send(csv);
   }
 
   @Put(':branchId/inventory/:productId')

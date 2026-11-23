@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { CheckoutFormData, CheckoutStep, ConfirmedOrder, FormErrors } from '../types/checkout';
 import { OrderSummaryCard } from '../components/checkout/OrderSummaryCard';
+import { couponsService } from '../lib/api/coupons.service';
 import { OrderConfirmationView } from '../components/checkout/OrderConfirmationView';
 import { useCart } from '../store/cart-context';
 import { useBranchCatalog } from '../hooks/use-branch-catalog'
@@ -53,7 +54,12 @@ export const CheckoutPage: React.FC = () => {
   const activeBranch = activeBranches.find((branch) => branch._id === selectedBranchId) ?? null;
 
   const shippingFee = formData.fulfilment === 'deliver' ? 6.5 : 0;
-  const total = subtotal + shippingFee;
+  const [couponInput, setCouponInput] = useState('');
+  const [coupon, setCoupon] = useState<{ code: string; discount: number } | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
+  const discount = coupon?.discount ?? 0;
+  const total = Math.max(0, subtotal + shippingFee - discount);
 
   const formatCardNumber = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 16);
@@ -207,6 +213,7 @@ export const CheckoutPage: React.FC = () => {
         deliveryAddress,
         paymentMethod: formData.paymentMethod,
         cardLast4: digits.slice(-4) || undefined,
+        couponCode: coupon?.code,
       });
 
       const order: ConfirmedOrder = {
@@ -536,6 +543,57 @@ export const CheckoutPage: React.FC = () => {
                 </span>
               </label>
               {errors.acceptedTerms && <p className="mt-1.5 text-xs text-danger">{errors.acceptedTerms}</p>}
+
+              <div className="mt-6 border border-line p-4">
+                <label htmlFor="coupon-code" className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted">Coupon code</label>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    id="coupon-code"
+                    type="text"
+                    value={couponInput}
+                    onChange={(e) => { setCouponInput(e.target.value); setCouponError(null) }}
+                    placeholder="e.g. WELCOME10"
+                    className="h-10 flex-1 border border-line bg-canvas/40 px-3 font-mono text-[11px] uppercase tracking-[0.08em] text-ink outline-none focus:border-line-strong"
+                    disabled={couponBusy}
+                  />
+                  {coupon ? (
+                    <button
+                      type="button"
+                      onClick={() => { setCoupon(null); setCouponInput(''); setCouponError(null) }}
+                      className="h-10 border border-line px-4 font-mono text-[9px] uppercase tracking-[0.1em] text-muted transition-colors hover:border-danger hover:text-danger"
+                    >
+                      Remove
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={couponBusy || !couponInput.trim()}
+                      onClick={async () => {
+                        setCouponBusy(true)
+                        setCouponError(null)
+                        try {
+                          const result = await couponsService.validate(couponInput.trim(), subtotal)
+                          setCoupon({ code: result.code, discount: result.discount })
+                          setCouponInput('')
+                        } catch (err) {
+                          setCouponError(err instanceof Error ? err.message : 'Invalid coupon')
+                        } finally {
+                          setCouponBusy(false)
+                        }
+                      }}
+                      className="h-10 border border-ink px-4 font-mono text-[9px] uppercase tracking-[0.1em] text-ink transition-colors hover:bg-ink hover:text-white disabled:opacity-40"
+                    >
+                      {couponBusy ? 'Checking…' : 'Apply'}
+                    </button>
+                  )}
+                </div>
+                {coupon ? (
+                  <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.08em] text-success">
+                    {coupon.code} applied — you save €{coupon.discount.toFixed(2)}
+                  </p>
+                ) : null}
+                {couponError ? <p className="mt-2 text-xs text-danger">{couponError}</p> : null}
+              </div>
 
               <button
                 type="submit"

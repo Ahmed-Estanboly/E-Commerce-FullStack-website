@@ -506,11 +506,20 @@ function ProductDetail({
               </div>
             </dl>
 
+            {maxQuantity === 0 ? (
+              <div className="mt-7 border border-danger/40 bg-danger/5 px-4 py-3" role="status">
+                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-danger">Out of stock</p>
+                <p className="mt-1 text-[12px] leading-relaxed text-ink-soft">
+                  This piece is currently unavailable at this branch. Check another branch or browse similar pieces below.
+                </p>
+              </div>
+            ) : null}
+
             <div className="mt-7">
               <div className="flex items-end justify-between gap-4">
                 <p className="eyebrow">Quantity</p>
                 <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-muted">
-                  Maximum {maxQuantity}
+                  {maxQuantity === 0 ? 'Unavailable' : `Maximum ${maxQuantity}`}
                 </p>
               </div>
 
@@ -561,7 +570,9 @@ function ProductDetail({
                   className="min-w-[190px] flex-1"
                   leftIcon={<ShoppingBag className="h-4 w-4" aria-hidden="true" />}
                 >
-                  Add to bag · {formatPrice(currentProduct.price * quantity)}
+                  {maxQuantity === 0
+                    ? 'Out of stock'
+                    : `Add to bag · ${formatPrice(currentProduct.price * quantity)}`}
                 </Button>
               </div>
 

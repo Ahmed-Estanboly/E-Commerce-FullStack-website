@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { ArrowUpRight } from '../ui/icons'
 import { SmartImage } from '../ui/smart-image'
 import {
@@ -7,6 +8,8 @@ import {
 } from '../../data/home'
 import type { Product } from '../../types/product'
 import { cn, formatPrice } from '../../lib/utils'
+import { getStoredSession } from '../../lib/auth'
+import { wishlistService } from '../../lib/api/wishlist.service'
 
 export interface ProductCardProps {
   product: Product
@@ -32,6 +35,31 @@ export function ProductCard({
   const department = departmentForCategory(product.category?.name)
   const label =
     eyebrow ?? product.category?.name ?? department?.name ?? 'The edit'
+  const navigate = useNavigate()
+  const [wishlisted, setWishlisted] = useState(false)
+  const [wishBusy, setWishBusy] = useState(false)
+  const canWishlist = Boolean(getStoredSession()?.user)
+
+  const toggleWishlist = async (event: React.MouseEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (!canWishlist) {
+      navigate('/login')
+      return
+    }
+    setWishBusy(true)
+    try {
+      if (wishlisted) {
+        await wishlistService.remove(product.id)
+        setWishlisted(false)
+      } else {
+        await wishlistService.add(product.id)
+        setWishlisted(true)
+      }
+    } finally {
+      setWishBusy(false)
+    }
+  }
 
   return (
     <article className={cn('product-media group min-w-0', className)}>
@@ -62,6 +90,24 @@ export function ProductCard({
               Out of stock
             </span>
           ) : null}
+          <button
+            type="button"
+            onClick={(event) => void toggleWishlist(event)}
+            disabled={wishBusy}
+            aria-label={wishlisted ? `Remove ${product.title} from wishlist` : `Save ${product.title} to wishlist`}
+            aria-pressed={wishlisted}
+            className={cn(
+              'absolute right-3 top-3 flex h-9 w-9 items-center justify-center border backdrop-blur-sm transition-colors disabled:opacity-40',
+              product.stock <= 0 ? 'top-14' : '',
+              wishlisted
+                ? 'border-accent bg-accent text-accent-ink'
+                : 'border-cream/40 bg-charcoal/65 text-cream/80 hover:border-accent hover:text-accent',
+            )}
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill={wishlisted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+              <path d="M12 20.5C7 16.5 3 13.3 3 9.3 3 6.4 5.2 4.5 7.7 4.5c1.7 0 3.3.9 4.3 2.4 1-1.5 2.6-2.4 4.3-2.4 2.5 0 4.7 1.9 4.7 4.8 0 4-4 7.2-9 11.2Z" />
+            </svg>
+          </button>
           <span className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center border border-cream/40 bg-charcoal/65 text-cream/80 backdrop-blur-sm transition-colors group-hover:border-accent group-hover:bg-accent group-hover:text-accent-ink">
             <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
           </span>

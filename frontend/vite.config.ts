@@ -14,6 +14,11 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3000', // Change to your backend port
         changeOrigin: true,
+      },
+      // Uploaded product images are served by the backend at /uploads
+      '/uploads': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
       }
     }
   }

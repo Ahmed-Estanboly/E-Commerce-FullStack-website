@@ -1,8 +1,13 @@
+import { useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowUpRight, ChevronDown } from '../components/ui/icons'
 import { AdminLayout } from '../components/layout/admin-layout'
 import { useStoreProducts } from '../hooks/use-products'
+import { useFetch } from '../hooks/useFetch'
+import { analyticsService, type SalesAnalytics } from '../lib/api/analytics.service'
 import type { Product } from '../types/product'
+
+const currencyFull = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })
 
 const currency = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 
@@ -24,6 +29,9 @@ function getPriceBand(price: number) {
 
 const AdminAnalytics = () => {
   const { products, isLoading, error, refetch } = useStoreProducts()
+  const salesRequest = useCallback((signal: AbortSignal) => analyticsService.sales(30, signal), [])
+  const salesResult = useFetch<SalesAnalytics>(salesRequest)
+  const sales = salesResult.data
   const categories = getCategoryStats(products)
   const totalValue = products.reduce((sum, product) => sum + product.price, 0)
   const averagePrice = products.length ? totalValue / products.length : 0
@@ -52,6 +60,25 @@ const AdminAnalytics = () => {
           </div>
 
           <section className="admin-panel admin-orders-panel"><div className="admin-panel-heading"><span>Recently updated products</span><span>Latest API response <ChevronDown aria-hidden="true" /></span></div><div className="admin-table analytics-products-table"><div className="admin-table-head"><span>Product</span><span>Category</span><span>Updated</span><span>Price</span></div>{recentlyUpdated.map((product) => <div className="admin-table-row" key={product.id}><span className="product-name"><img className="product-thumb" src={product.images[0]} alt="" />{product.title}</span><span>{product.category.name}</span><span>{new Date(product.updatedAt).toLocaleDateString()}</span><span>{currency.format(product.price)}</span></div>)}</div></section>
+          {sales ? (
+            <>
+              <section className="admin-metrics" aria-label="Sales summary">
+                <article><span>Revenue · 30d</span><strong>{currencyFull.format(sales.revenue)}</strong><small>{sales.orders} orders</small></article>
+                <article><span>Avg order value</span><strong>{currencyFull.format(sales.averageOrderValue)}</strong><small>Last {sales.periodDays} days</small></article>
+                <article><span>Top product</span><strong className="truncate">{sales.topProducts[0]?.title ?? '—'}</strong><small>{sales.topProducts[0] ? `${sales.topProducts[0].quantity} sold` : 'No sales yet'}</small></article>
+                <article><span>Inventory alerts</span><strong>{sales.inventoryAlerts.reduce((sum, b) => sum + b.lowStock + b.outOfStock, 0)}</strong><small>Low / out of stock SKUs</small></article>
+              </section>
+              <div className="admin-secondary-grid analytics-grid">
+                <section className="admin-panel"><div className="admin-panel-heading"><span>Revenue by branch</span><span>30 days</span></div><div className="analytics-bars">{sales.byBranch.map((branch, index) => <div className="analytics-bar-row" key={branch.branchId}><div><span>{branch.name}</span><small>{branch.orders} orders · {currencyFull.format(branch.revenue)}</small></div><div className="analytics-bar-track"><i className={index === 0 ? 'branch-lime' : ''} style={{ width: `${sales.revenue ? branch.revenue / sales.revenue * 100 : 0}%` }} /></div></div>)}{!sales.byBranch.length ? <p className="p-4 text-xs text-muted">No sales in this period.</p> : null}</div></section>
+                <section className="admin-panel"><div className="admin-panel-heading"><span>Top products</span><span>By revenue</span></div><div className="admin-table analytics-products-table"><div className="admin-table-head"><span>Product</span><span>Sold</span><span>Revenue</span></div>{sales.topProducts.slice(0, 8).map((product) => <div className="admin-table-row" key={product._id}><span className="truncate">{product.title}</span><span>{product.quantity}</span><span>{currencyFull.format(product.revenue)}</span></div>)}{!sales.topProducts.length ? <div className="p-4 text-xs text-muted">No sales yet.</div> : null}</div></section>
+              </div>
+              {sales.inventoryAlerts.some((b) => b.lowStock + b.outOfStock > 0) ? (
+                <section className="admin-panel"><div className="admin-panel-heading"><span>Inventory alerts</span><span>Low stock per branch</span></div><div className="admin-table analytics-products-table"><div className="admin-table-head"><span>Branch</span><span>Low stock</span><span>Out of stock</span></div>{sales.inventoryAlerts.filter((b) => b.lowStock + b.outOfStock > 0).map((branch) => <div className="admin-table-row" key={branch.branchId}><span>{branch.name}</span><span>{branch.lowStock}</span><span>{branch.outOfStock}</span></div>)}</div></section>
+              ) : null}
+            </>
+          ) : null}
+          {salesResult.error ? <div className="admin-api-error mt-4" role="alert"><span>Could not load sales analytics: {salesResult.error}</span><button type="button" onClick={salesResult.refetch}>Retry</button></div> : null}
+
           <footer className="admin-footer"><span>LIVE ANALYTICS · BACKEND API</span><span>{isLoading ? 'LOADING CATALOGUE' : `${products.length} PRODUCTS ANALYSED`}</span></footer>
         </div>
     </AdminLayout>

@@ -23,6 +23,7 @@ export interface RegisterCredentials {
 
 export interface AuthResponse {
   access_token: string
+  refresh_token?: string
   user: AuthUser
 }
 
@@ -44,6 +45,15 @@ export const authService = {
   async register(credentials: RegisterCredentials): Promise<AuthResponse> {
     const response = await backendClient.post<Envelope<AuthResponse>>('/auth/register', credentials)
     return unwrap(response.data)
+  },
+
+  async refresh(refreshToken: string): Promise<AuthResponse> {
+    const response = await backendClient.post<Envelope<AuthResponse>>('/auth/refresh', { refreshToken })
+    return unwrap(response.data)
+  },
+
+  async logout(): Promise<void> {
+    await backendClient.post('/auth/logout').catch(() => undefined)
   },
 
   async me(): Promise<AuthUser> {
