@@ -22,6 +22,7 @@ import { BranchAccessGuard } from '../common/guards/branch-access.guard.js';
 
 interface AuthenticatedUser {
   sub: number;
+  email?: string;
   role?: string;
   branchId?: string;
 }
@@ -45,7 +46,7 @@ export class OrdersController {
     @Request() req: { user: AuthenticatedUser },
     @Query() query: PaginationQueryDto,
   ) {
-    return this.ordersService.findMine(req.user.sub, query);
+    return this.ordersService.findMine(req.user.sub, req.user.email, query);
   }
 
   @Get('me/:id')

@@ -1,16 +1,32 @@
+import { useCallback, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AdminLayout } from '../components/layout/admin-layout'
 import { useFetch } from '../hooks/useFetch'
-import { ordersService, normalizeOrders } from '../lib/api/orders.service'
+import { normalizeOrders, ordersService } from '../lib/api/orders.service'
 import type { BackendOrder } from '../lib/api/orders.service'
+import { branchesService } from '../lib/api/branches.service'
+import type { Branch } from '../types/branch'
 
 const currency = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })
 
 export default function AdminOrders() {
-  const { data, isLoading, error, refetch } = useFetch<BackendOrder[]>(async (signal) =>
-    normalizeOrders(await ordersService.getAllOrders(undefined, signal)),
+  const [branchFilter, setBranchFilter] = useState('')
+  const ordersRequest = useCallback(
+    async (signal: AbortSignal) =>
+      normalizeOrders(await ordersService.getAllOrders(undefined, signal)),
+    [],
   )
-  const orders = data ?? []
+  const branchesRequest = useCallback(
+    (signal: AbortSignal) => branchesService.getBranches(signal),
+    [],
+  )
+  const { data, isLoading, error, refetch } = useFetch<BackendOrder[]>(ordersRequest)
+  const { data: branches } = useFetch<Branch[]>(branchesRequest)
+  const allOrders = data ?? []
+  const orders = useMemo(
+    () => (branchFilter ? allOrders.filter((order) => order.branch._id === branchFilter) : allOrders),
+    [allOrders, branchFilter],
+  )
 
   return (
     <AdminLayout activePage="orders" searchPlaceholder="Search orders">
@@ -38,7 +54,23 @@ export default function AdminOrders() {
           </div>
         ) : null}
         <section className="admin-panel admin-orders-panel" aria-label="All store orders">
-          <div className="admin-panel-heading"><span>All orders</span><span>{orders.length} records</span></div>
+          <div className="admin-panel-heading">
+            <span>All orders</span>
+            <span className="flex items-center gap-3">
+              <select
+                value={branchFilter}
+                onChange={(event) => setBranchFilter(event.target.value)}
+                className="border border-line bg-surface px-2 py-1 font-mono text-[10px] uppercase text-ink"
+                aria-label="Filter orders by branch"
+              >
+                <option value="">All branches</option>
+                {(branches ?? []).map((branch) => (
+                  <option key={branch._id} value={branch._id}>{branch.name}</option>
+                ))}
+              </select>
+              {orders.length} records
+            </span>
+          </div>
           {isLoading && !data ? (
             <div className="p-5 text-xs text-muted" role="status">Loading orders...</div>
           ) : (

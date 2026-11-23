@@ -17,7 +17,9 @@ describe('BranchInventoryService demo inventory seeding', () => {
     find: vi.fn(() => ({ sort: () => ({ lean: () => ({ exec: async () => products }) }) })),
   };
   const inventoryModel = {
-    bulkWrite: vi.fn(async () => ({ upsertedCount: 6 })),
+    bulkWrite: vi.fn(async (_operations: { updateOne: { update: Record<string, unknown> & { $setOnInsert: { quantity?: number } }; upsert: boolean } }[]) => ({
+      upsertedCount: 6,
+    })),
   };
   const service = new BranchInventoryService(
     branchModel as never,

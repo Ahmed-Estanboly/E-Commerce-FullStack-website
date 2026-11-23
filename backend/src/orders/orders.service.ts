@@ -34,6 +34,7 @@ export interface OrderActor {
 
 const ADMIN_ROLE = 'master admin';
 const BRANCH_OWNER_ROLES = ['branch owner', 'central owner', 'south owner'];
+const DELIVERY_SHIPPING_FEE = 6.5;
 
 @Injectable()
 export class OrdersService {
@@ -109,6 +110,8 @@ export class OrdersService {
           };
         });
         const subtotal = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        const shippingFee =
+          createOrderDto.fulfilment === 'deliver' ? DELIVERY_SHIPPING_FEE : 0;
         const branchSnapshot = {
           _id: branch._id.toString(),
           name: branch.name,
@@ -126,8 +129,8 @@ export class OrdersService {
           customerName: createOrderDto.customerName,
           items: orderItems,
           subtotal,
-          shippingFee: createOrderDto.shippingFee,
-          total: subtotal + createOrderDto.shippingFee,
+          shippingFee,
+          total: subtotal + shippingFee,
           fulfilment: createOrderDto.fulfilment,
           branch: branchSnapshot,
           deliveryAddress: createOrderDto.deliveryAddress,
@@ -170,14 +173,24 @@ export class OrdersService {
     );
   }
 
-  async findMine(userId: number, query: PaginationQueryDto = {}): Promise<Order[] | PaginatedResult<Order>> {
+  async findMine(
+    userId: number,
+    email?: string,
+    query: PaginationQueryDto = {},
+  ): Promise<Order[] | PaginatedResult<Order>> {
+    const filter = email
+      ? { $or: [{ userId }, { email: email.toLowerCase() }] }
+      : { userId };
     return this.paginatedFind(
-      this.orderModel.find({ userId }).sort({ createdAt: -1 }),
+      this.orderModel.find(filter).sort({ createdAt: -1 }),
       query,
     );
   }
 
   async findOne(id: string): Promise<(Order & { allowedTransitions: OrderStatus[] }) | null> {
+    if (!isValidObjectId(id)) {
+      return null;
+    }
     const order = await this.orderModel.findById(id).lean().exec();
     return order ? this.withTransitions(order) : null;
   }
