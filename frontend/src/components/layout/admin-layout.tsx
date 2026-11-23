@@ -6,7 +6,7 @@ import { useStoreProducts } from '../../hooks/use-products'
 import { ThemeToggle } from './theme-toggle'
 import { ProfileMenu } from './profile-menu'
 
-type AdminPage = 'dashboard' | 'analytics' | 'branches' | 'orders' | 'products'
+type AdminPage = 'dashboard' | 'analytics' | 'branches' | 'orders' | 'products' | 'customers'
 
 const navigation = [
   { label: 'Dashboard', icon: Store, path: '/admin/dashboard', page: 'dashboard' as AdminPage },
@@ -14,7 +14,7 @@ const navigation = [
   { label: 'Branches', icon: Store, path: '/admin/branches', page: 'branches' as AdminPage },
   { label: 'Orders', icon: ShoppingBag, path: '/admin/orders', page: 'orders' as AdminPage },
   { label: 'Inventory', icon: Package, path: '/admin/branches', page: 'branches' as AdminPage },
-  { label: 'Customers', icon: Users, path: '/admin/dashboard' },
+  { label: 'Customers', icon: Users, path: '/admin/customers', page: 'customers' as AdminPage },
   { label: 'Products', icon: Shirt, path: '/admin/products', page: 'products' as AdminPage },
   { label: 'Categories', icon: Store, path: '/#universes' },
 ]

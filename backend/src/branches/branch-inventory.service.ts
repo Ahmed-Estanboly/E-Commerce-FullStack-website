@@ -61,24 +61,17 @@ export class BranchInventoryService {
     ]);
     if (!branches.length || !products.length) return;
 
-    const categorySets: number[][] = [[1, 3], [2, 4], [3, 5]];
-    const operations = branches.flatMap((branch, branchIndex) => {
-      const categories = categorySets[branchIndex % categorySets.length];
-      const candidates = products.filter((product) => categories.includes(product.categoryId));
-      if (!candidates.length) return [];
-
-      const offset = (branchIndex * 3) % candidates.length;
-      return Array.from({ length: Math.min(5, candidates.length) }, (_, index) => {
-        const product = candidates[(offset + index) % candidates.length];
-        return {
-          updateOne: {
-            filter: { branch: branch._id, product: product._id },
-            update: { $setOnInsert: { quantity: index === 0 ? 0 : 4 + ((branchIndex + index) * 3) % 18 } },
-            upsert: true,
+    const operations = branches.flatMap((branch) =>
+      products.map((product) => ({
+        updateOne: {
+          filter: { branch: branch._id, product: product._id },
+          update: {
+            $setOnInsert: { quantity: product.stock ?? 10 },
           },
-        };
-      });
-    });
+          upsert: true,
+        },
+      })),
+    );
 
     if (operations.length) {
       const result = await this.inventoryModel.bulkWrite(operations, { ordered: false });

@@ -20,7 +20,7 @@ export function BranchLayout({ children, branchId, branchName, ownerName, search
   const closeSidebar = () => setSidebarOpen(false)
   const navigation = [
     { label: 'Dashboard', icon: Store, path: `/${branchId}/dashboard` },
-    { label: 'Orders', icon: ShoppingBag, path: `/${branchId}/dashboard#orders` },
+    { label: 'Orders', icon: ShoppingBag, path: `/${branchId}/orders` },
     { label: 'Inventory', icon: Package, path: `/${branchId}/inventory` },
     { label: 'Products', icon: Shirt, path: '/shop' },
   ]
