@@ -9,7 +9,7 @@ import {
   type IconProps,
 } from './icons'
 import type { PresentationType } from '../../types/home'
-import { cn, sizedImage } from '../../lib/utils'
+import { cn, resolveImageUrl, sizedImage } from '../../lib/utils'
 
 const fallbackIcons: Record<PresentationType, ComponentType<IconProps>> = {
   fashion: Shirt,
@@ -72,8 +72,8 @@ export function SmartImage({
   fit = 'cover',
   primary = false,
 }: SmartImageProps) {
-  const primarySrc = src?.trim() ? src : null
-  const secondarySrc = fallbackSrc?.trim() ? fallbackSrc : null
+  const primarySrc = resolveImageUrl(src)
+  const secondarySrc = resolveImageUrl(fallbackSrc)
   const [fallbackFor, setFallbackFor] = useState<string | null>(null)
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null)
   const [failedSrc, setFailedSrc] = useState<string | null>(null)

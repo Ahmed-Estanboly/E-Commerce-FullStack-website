@@ -34,6 +34,14 @@ class OrderItemDto {
   @IsInt()
   @Min(1)
   quantity: number;
+
+  @IsOptional()
+  @IsMongoId()
+  branchId?: string;
+
+  @IsOptional()
+  @IsString()
+  branchName?: string;
 }
 
 class OrderBranchDto {
@@ -71,9 +79,16 @@ export class CreateOrderDto {
   @IsEnum(['collect', 'deliver'])
   fulfilment: 'collect' | 'deliver';
 
+  @IsOptional()
   @ValidateNested()
   @Type(() => OrderBranchDto)
-  branch: OrderBranchDto;
+  branch?: OrderBranchDto;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrderBranchDto)
+  branches?: OrderBranchDto[];
 
   @ValidateIf((order: CreateOrderDto) => order.fulfilment === 'deliver')
   @IsString()

@@ -4,7 +4,6 @@ import type { CheckoutFormData, CheckoutStep, ConfirmedOrder, FormErrors } from 
 import { OrderSummaryCard } from '../components/checkout/OrderSummaryCard';
 import { OrderConfirmationView } from '../components/checkout/OrderConfirmationView';
 import { useCart } from '../store/cart-context';
-import { useBranchCatalog } from '../hooks/use-branch-catalog'
 import { useBranchSelection } from '../store/branch-context'
 import { getOrderRequestError, ordersService } from '../lib/api/orders.service';
 import { getStoredSession } from '../lib/auth';
@@ -14,17 +13,15 @@ export const CheckoutPage: React.FC = () => {
 
   const { items, subtotal, clearCart } = useCart();
   const {
-    selectedBranchId,
     branches,
     isLoadingBranches,
     branchError,
   } = useBranchSelection();
-  const {
-    data: branchCatalog,
-    isLoading: isLoadingBranchCatalog,
-    error: branchCatalogError,
-  } = useBranchCatalog(selectedBranchId);
   const activeBranches = useMemo(() => branches.filter((branch) => branch.isActive), [branches]);
+  const cartBranches = useMemo(() => {
+    const branchIds = new Set(items.map((item) => item.branchId))
+    return activeBranches.filter((branch) => branchIds.has(branch._id))
+  }, [activeBranches, items])
 
   const [step, setStep] = useState<CheckoutStep>('details');
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
@@ -50,7 +47,7 @@ export const CheckoutPage: React.FC = () => {
     }
   });
 
-  const activeBranch = activeBranches.find((branch) => branch._id === selectedBranchId) ?? null;
+  const activeBranch = cartBranches[0] ?? activeBranches[0] ?? null;
 
   const shippingFee = formData.fulfilment === 'deliver' ? 6.5 : 0;
   const total = subtotal + shippingFee;
@@ -85,21 +82,14 @@ export const CheckoutPage: React.FC = () => {
   const validate = (): FormErrors => {
     const nextErrors: FormErrors = {};
 
-    if (!activeBranch) {
-      nextErrors.branch = 'Select an active branch before placing your order.';
-    } else if (branchCatalogError) {
-      nextErrors.branch = 'Unable to verify branch stock. Please try again.';
-    } else if (isLoadingBranchCatalog || !branchCatalog) {
-      nextErrors.branch = 'Checking stock for this branch. Please try again shortly.';
+    if (!items.length) {
+      nextErrors.branch = 'Your cart is empty.';
     } else {
-      const unavailableItem = items.find((item) => {
-        const inventory = branchCatalog.find((entry) => entry.productId === item.product.id);
-        return item.branchId !== activeBranch._id
-          || !inventory?.isAssigned
-          || item.quantity > inventory.quantity;
-      });
-      if (unavailableItem) {
-        nextErrors.branch = `${unavailableItem.product.title} is unavailable in the selected quantity at this branch.`;
+      const inactiveBranchItem = items.find((item) =>
+        !activeBranches.some((branch) => branch._id === item.branchId),
+      )
+      if (inactiveBranchItem) {
+        nextErrors.branch = `${inactiveBranchItem.branchName} is no longer active. Remove its items before checkout.`
       }
     }
 
@@ -173,7 +163,7 @@ export const CheckoutPage: React.FC = () => {
       window.scrollTo({ top: 180, behavior: 'smooth' });
       return;
     }
-    if (!activeBranch || isSubmitting) return;
+    if (!items.length || isSubmitting) return;
 
     setIsSubmitting(true);
     setSubmitError(null);
@@ -199,11 +189,14 @@ export const CheckoutPage: React.FC = () => {
           title: item.product.title,
           price: item.product.price,
           quantity: item.quantity,
+          branchId: item.branchId,
+          branchName: item.branchName,
         })),
         subtotal,
         shippingFee,
         fulfilment: formData.fulfilment,
-        branch: { branchId: activeBranch._id },
+        branch: cartBranches[0] ? { branchId: cartBranches[0]._id } : undefined,
+        branches: cartBranches.map((branch) => ({ branchId: branch._id })),
         deliveryAddress,
         paymentMethod: formData.paymentMethod,
         cardLast4: digits.slice(-4) || undefined,
@@ -221,6 +214,7 @@ export const CheckoutPage: React.FC = () => {
         total: created.total,
         fulfilment: created.fulfilment,
         branch: activeBranch,
+        branches: cartBranches,
         deliveryAddress,
         paymentMethod: formData.paymentMethod,
         cardLast4: digits.slice(-4) || '4242',
@@ -313,9 +307,11 @@ export const CheckoutPage: React.FC = () => {
             <span className="border border-line-strong bg-surface px-2.5 py-1 font-mono text-[10px] uppercase text-ink">
               {isLoadingBranches
                 ? 'Loading…'
-                : activeBranch?.name ?? 'No store selected'}
+                : cartBranches.length
+                  ? `${cartBranches.length} ${cartBranches.length === 1 ? 'store' : 'stores'}`
+                  : 'No store selected'}
             </span>
-            {!activeBranch && !isLoadingBranches ? (
+            {!cartBranches.length && !isLoadingBranches ? (
               <span className="text-[10px] text-muted">Pick a store from the header first.</span>
             ) : null}
           </div>
@@ -407,14 +403,16 @@ export const CheckoutPage: React.FC = () => {
 
               {formData.fulfilment === 'collect' ? (
                 <div className="mt-4 border border-line bg-surface p-4">
-                  <div className="flex items-start gap-3">
-                    <span className="mt-0.5 flex h-5 w-5 items-center justify-center border border-line-strong font-mono text-[10px]">⌂</span>
-                    <div>
-                      <p className="text-xs font-medium text-ink">{activeBranch?.name}</p>
-                      <p className="mt-0.5 text-xs text-muted">{activeBranch?.address}</p>
-                      <p className="mt-0.5 text-xs text-muted">{activeBranch?.phone} · {activeBranch?.workingHours}</p>
+                  {cartBranches.map((branch) => (
+                    <div key={branch._id} className="flex items-start gap-3 border-b border-line py-3 last:border-0 last:pb-0 first:pt-0">
+                      <span className="mt-0.5 flex h-5 w-5 items-center justify-center border border-line-strong font-mono text-[10px]">⌂</span>
+                      <div>
+                        <p className="text-xs font-medium text-ink">{branch.name}</p>
+                        <p className="mt-0.5 text-xs text-muted">{branch.address}</p>
+                        <p className="mt-0.5 text-xs text-muted">{branch.phone} · {branch.workingHours}</p>
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
               ) : (
                 <div className="mt-4 grid grid-cols-1 gap-4 border border-line bg-surface p-4 sm:grid-cols-2">
@@ -539,15 +537,13 @@ export const CheckoutPage: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={isSubmitting || isLoadingBranches || isLoadingBranchCatalog || activeBranches.length === 0}
+                disabled={isSubmitting || isLoadingBranches || !cartBranches.length}
                 className="tabular mt-6 flex h-12 w-full items-center justify-center gap-2 bg-accent font-mono text-[10px] font-medium tracking-[0.2em] text-accent-ink uppercase transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <span>
                   {isSubmitting
                     ? 'PLACING ORDER…'
-                    : isLoadingBranchCatalog
-                      ? 'CHECKING STOCK…'
-                      : `PLACE ORDER · €${total.toFixed(2)}`}
+                    : `PLACE ORDER · €${total.toFixed(2)}`}
                 </span>
                 <span>→</span>
               </button>

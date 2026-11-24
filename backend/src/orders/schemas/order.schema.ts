@@ -64,6 +64,8 @@ export class Order {
         title: { type: String, required: true },
         price: { type: Number, required: true },
         quantity: { type: Number, required: true },
+        branchId: { type: String },
+        branchName: { type: String },
       },
     ],
     required: true,
@@ -73,6 +75,8 @@ export class Order {
     title: string;
     price: number;
     quantity: number;
+    branchId?: string;
+    branchName?: string;
   }[];
 
   @Prop({ required: true })
@@ -106,6 +110,28 @@ export class Order {
     workingHours?: string;
     isActive?: boolean;
   };
+
+  @Prop({
+    type: [
+      {
+        _id: String,
+        name: String,
+        address: String,
+        phone: String,
+        workingHours: String,
+        isActive: Boolean,
+      },
+    ],
+    default: [],
+  })
+  branches: {
+    _id: string;
+    name: string;
+    address: string;
+    phone: string;
+    workingHours?: string;
+    isActive?: boolean;
+  }[];
 
   @Prop()
   deliveryAddress?: string;

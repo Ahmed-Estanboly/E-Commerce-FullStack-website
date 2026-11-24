@@ -3,6 +3,7 @@ import { ArrowUpRight, ChevronDown } from '../components/ui/icons'
 import { AdminLayout } from '../components/layout/admin-layout'
 import { useStoreProducts } from '../hooks/use-products'
 import type { Product } from '../types/product'
+import { SmartImage } from '../components/ui/smart-image'
 
 const currency = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 
@@ -51,7 +52,7 @@ const AdminAnalytics = () => {
             <section className="admin-panel"><div className="admin-panel-heading"><span>Price distribution</span><span>{products.length} products</span></div><div className="analytics-bars">{bands.map((band, index) => <div className="analytics-bar-row" key={band.label}><div><span>{band.label}</span><small>{band.count} products</small></div><div className="analytics-bar-track"><i className={index === bands.length - 1 ? 'branch-lime' : ''} style={{ width: `${products.length ? band.count / products.length * 100 : 0}%` }} /></div></div>)}</div></section>
           </div>
 
-          <section className="admin-panel admin-orders-panel"><div className="admin-panel-heading"><span>Recently updated products</span><span>Latest API response <ChevronDown aria-hidden="true" /></span></div><div className="admin-table analytics-products-table"><div className="admin-table-head"><span>Product</span><span>Category</span><span>Updated</span><span>Price</span></div>{recentlyUpdated.map((product) => <div className="admin-table-row" key={product.id}><span className="product-name"><img className="product-thumb" src={product.images[0]} alt="" />{product.title}</span><span>{product.category.name}</span><span>{new Date(product.updatedAt).toLocaleDateString()}</span><span>{currency.format(product.price)}</span></div>)}</div></section>
+          <section className="admin-panel admin-orders-panel"><div className="admin-panel-heading"><span>Recently updated products</span><span>Latest API response <ChevronDown aria-hidden="true" /></span></div><div className="admin-table analytics-products-table"><div className="admin-table-head"><span>Product</span><span>Category</span><span>Updated</span><span>Price</span></div>{recentlyUpdated.map((product) => <div className="admin-table-row" key={product.id}>          <span className="product-name"><SmartImage src={product.images?.[0]} fallbackSrc={product.category.image} alt="" presentation="general" fallbackLabel={product.category.name} className="product-thumb" />{product.title}</span><span>{product.category.name}</span><span>{new Date(product.updatedAt).toLocaleDateString()}</span><span>{currency.format(product.price)}</span></div>)}</div></section>
           <footer className="admin-footer"><span>LIVE ANALYTICS · BACKEND API</span><span>{isLoading ? 'LOADING CATALOGUE' : `${products.length} PRODUCTS ANALYSED`}</span></footer>
         </div>
     </AdminLayout>

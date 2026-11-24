@@ -128,6 +128,34 @@ describe('OrdersService branch inventory', () => {
       expect.objectContaining({ session }),
     );
   });
+
+  it('creates one order and reserves items across multiple branches', async () => {
+    const multiBranchDto = {
+      ...dto,
+      branch: undefined,
+      branches: [{ branchId: '507f1f77bcf86cd799439011' }, { branchId: '507f1f77bcf86cd799439012' }],
+      items: [
+        { ...dto.items[0], branchId: '507f1f77bcf86cd799439011', branchName: 'Central' },
+        { ...dto.items[0], branchId: '507f1f77bcf86cd799439012', branchName: 'South' },
+      ],
+    };
+
+    await expect(service.create(multiBranchDto)).resolves.toBe(order);
+
+    expect(branchInventoryModel.findOneAndUpdate).toHaveBeenCalledTimes(2);
+    expect(orderModel.create).toHaveBeenCalledWith(
+      [expect.objectContaining({
+        branches: expect.arrayContaining([
+          expect.objectContaining({ name: 'Latakia Central' }),
+        ]),
+        items: expect.arrayContaining([
+          expect.objectContaining({ branchId: '507f1f77bcf86cd799439011' }),
+          expect.objectContaining({ branchId: '507f1f77bcf86cd799439012' }),
+        ]),
+      })],
+      { session },
+    );
+  });
 });
 
 describe('OrdersService status lifecycle', () => {

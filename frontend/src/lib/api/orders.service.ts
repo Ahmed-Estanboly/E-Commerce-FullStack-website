@@ -24,6 +24,8 @@ export interface OrderItemPayload {
   title: string
   price: number
   quantity: number
+  branchId?: string
+  branchName?: string
 }
 
 export interface CreateOrderPayload {
@@ -35,7 +37,8 @@ export interface CreateOrderPayload {
   shippingFee: number
   total?: number
   fulfilment: FulfilmentMethod
-  branch: { branchId: string }
+  branch?: { branchId: string }
+  branches?: Array<{ branchId: string }>
   deliveryAddress?: string
   paymentMethod: PaymentMethod
   cardLast4?: string
@@ -61,6 +64,14 @@ export interface BackendOrder {
     workingHours?: string
     isActive?: boolean
   }
+  branches?: Array<{
+    _id: string
+    name: string
+    address: string
+    phone: string
+    workingHours?: string
+    isActive?: boolean
+  }>
   deliveryAddress?: string
   paymentMethod: PaymentMethod
   cardLast4?: string

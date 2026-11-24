@@ -1,6 +1,7 @@
 import type { Branch, FulfilmentMethod } from '../../types/checkout';
 import type { CartItem } from '../../store/cart-context';
 import { formatPrice } from '../../lib/utils';
+import { SmartImage } from '../ui/smart-image';
 
 interface OrderSummaryCardProps {
   items: CartItem[];
@@ -39,12 +40,15 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
       </div>
 
       <ul className="divide-y divide-line">
-        {items.map((item, idx) => (
-          <li key={item.product.id || idx} className="flex items-start gap-3.5 py-4">
-            <img
+        {items.map((item) => (
+          <li key={`${item.branchId}-${item.product.id}`} className="flex items-start gap-3.5 py-4">
+            <SmartImage
               src={item.product.images?.[0]}
               alt={item.product.title}
-              className="h-14 w-11 shrink-0 border border-line object-cover"
+              presentation="general"
+              fallbackLabel={item.product.category?.name ?? 'NOVA'}
+              className="h-14 w-11 shrink-0 border border-line"
+              fit="cover"
             />
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
@@ -56,7 +60,7 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
                 </span>
               </div>
               <p className="mt-1 font-mono text-[7px] uppercase tracking-[0.16em] text-muted">
-                {item.product.category?.name} · QTY {item.quantity}
+                {item.product.category?.name} · {item.branchName} · QTY {item.quantity}
               </p>
             </div>
           </li>

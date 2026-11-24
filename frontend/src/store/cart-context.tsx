@@ -5,6 +5,11 @@ export interface CartItem {
   product: Product
   quantity: number
   branchId: string
+  branchName: string
+  productId: number
+  title: string
+  price: number
+  image: string
 }
 
 interface CartContextValue {
@@ -12,8 +17,8 @@ interface CartContextValue {
   itemCount: number
   subtotal: number
   addItem: (product: Product, quantity?: number) => void
-  updateQuantity: (productId: number, quantity: number) => void
-  removeItem: (productId: number) => void
+  updateQuantity: (productId: number, quantity: number, branchId?: string) => void
+  removeItem: (productId: number, branchId?: string) => void
   clearCart: () => void
 }
 
