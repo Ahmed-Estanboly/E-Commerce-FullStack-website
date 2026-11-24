@@ -9,6 +9,12 @@ interface ApiResponse<T> {
   timestamp: string;
 }
 
+export interface InventoryAlerts {
+  threshold: number
+  lowStock: BranchInventoryItem[]
+  outOfStock: BranchInventoryItem[]
+}
+
 export const branchesService = {
   async getBranches(signal?: AbortSignal): Promise<Branch[]> {
     const response = await backendApiClient.get<ApiResponse<Branch[]>>('/branches', { signal })
@@ -38,6 +44,14 @@ export const branchesService = {
     const response = await backendApiClient.get<ApiResponse<BranchInventoryItem[]>>(
       `/branches/${branchId}/inventory`,
       { signal },
+    )
+    return response.data.data
+  },
+
+  async getInventoryAlerts(branchId: string, threshold = 5, signal?: AbortSignal): Promise<InventoryAlerts> {
+    const response = await backendApiClient.get<ApiResponse<InventoryAlerts>>(
+      `/branches/${branchId}/inventory/alerts`,
+      { params: { threshold }, signal },
     )
     return response.data.data
   },

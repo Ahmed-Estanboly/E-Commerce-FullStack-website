@@ -139,7 +139,11 @@ const UserDashboard = () => {
             <h1 className="font-display text-[clamp(2.7rem,6vw,5.2rem)] leading-[0.88] tracking-[-0.04em]">Welcome back,<br /><em className="font-light">{profile.firstName || 'there'}.</em></h1>
             <p className="mt-5 max-w-md text-[13px] leading-relaxed text-muted">Keep track of your orders, pick up your edit and keep your details current.</p>
           </div>
-          <Link to="/shop" className="focus-ring inline-flex items-center gap-2 border border-line px-3 py-2 font-mono text-[9px] uppercase tracking-[0.12em] text-ink-soft transition-colors hover:border-ink hover:text-ink">Continue shopping <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" /></Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link to="/account/orders" className="focus-ring inline-flex items-center gap-2 border border-line px-3 py-2 font-mono text-[9px] uppercase tracking-[0.12em] text-ink-soft transition-colors hover:border-ink hover:text-ink">All orders</Link>
+            <Link to="/account/wishlist" className="focus-ring inline-flex items-center gap-2 border border-line px-3 py-2 font-mono text-[9px] uppercase tracking-[0.12em] text-ink-soft transition-colors hover:border-ink hover:text-ink">Wishlist</Link>
+            <Link to="/shop" className="focus-ring inline-flex items-center gap-2 border border-line px-3 py-2 font-mono text-[9px] uppercase tracking-[0.12em] text-ink-soft transition-colors hover:border-ink hover:text-ink">Continue shopping <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" /></Link>
+          </div>
         </div>
       </header>
 

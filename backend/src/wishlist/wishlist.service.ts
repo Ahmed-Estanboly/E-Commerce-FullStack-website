@@ -1,14 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import type { Model } from 'mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import type { Connection, Model } from 'mongoose';
 import { Product, ProductDocument } from '../products/schemas/products.schema.js';
 import { WishlistItem, WishlistItemDocument } from './schemas/wishlist.schema.js';
+import { withCategory } from '../common/with-category.js';
 
 @Injectable()
 export class WishlistService {
   constructor(
     @InjectModel(WishlistItem.name) private readonly wishlistModel: Model<WishlistItemDocument>,
     @InjectModel(Product.name) private readonly productModel: Model<ProductDocument>,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   async list(userId: number) {
@@ -17,7 +19,11 @@ export class WishlistService {
     const products = productIds.length
       ? await this.productModel.find({ id: { $in: productIds } }).lean().exec()
       : [];
-    const byId = new Map(products.map((product) => [product.id, product]));
+    const hydrated = await withCategory(
+      this.connection,
+      products.map((product) => ({ ...product })),
+    );
+    const byId = new Map(hydrated.map((product) => [product.id, product]));
     return items
       .map((item) => ({ ...item, product: byId.get(item.productId) ?? null }))
       .filter((item) => item.product !== null);

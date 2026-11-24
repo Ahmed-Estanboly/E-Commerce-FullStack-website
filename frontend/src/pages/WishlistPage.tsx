@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useFetch } from '../hooks/useFetch'
 import { wishlistService, type WishlistEntry } from '../lib/api/wishlist.service'
+import { wishlistCacheRemove } from '../lib/wishlist'
 import { Skeleton } from '../components/ui/feedback'
 
 const currency = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })
@@ -18,6 +19,7 @@ export default function WishlistPage() {
     setBusy(entry._id)
     try {
       await wishlistService.remove(entry.productId)
+      wishlistCacheRemove(entry.productId)
       setRemoved((current) => new Set(current).add(entry._id))
     } finally {
       setBusy(null)
@@ -88,7 +90,7 @@ export default function WishlistPage() {
                     </button>
                     <Link
                       to={`/products/${product.id}`}
-                      className="flex-1 border border-ink bg-ink px-3 py-2 text-center font-mono text-[9px] uppercase tracking-[0.1em] text-white transition-colors hover:bg-transparent hover:text-ink"
+                      className="flex-1 border border-accent bg-accent px-3 py-2 text-center font-mono text-[9px] uppercase tracking-[0.1em] text-accent-ink transition-colors hover:bg-transparent hover:text-accent"
                     >
                       View
                     </Link>

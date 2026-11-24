@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { BranchLayout } from '../components/layout/branch-layout'
 import { useFetch } from '../hooks/useFetch'
-import { branchesService } from '../lib/api/branches.service'
+import { branchesService, type InventoryAlerts } from '../lib/api/branches.service'
 import { ordersService, normalizeOrders } from '../lib/api/orders.service'
 import { getStoredSession } from '../lib/auth'
 import type { BackendOrder } from '../lib/api/orders.service'
@@ -26,9 +26,14 @@ export default function BranchDashboard() {
     async (signal: AbortSignal) => normalizeOrders(await ordersService.getBranchOrders(branchId, undefined, signal)),
     [branchId],
   )
+  const alertsRequest = useCallback(
+    (signal: AbortSignal) => branchesService.getInventoryAlerts(branchId, 5, signal),
+    [branchId],
+  )
   const branchResult = useFetch<Branch>(branchRequest)
   const inventoryResult = useFetch<BranchInventoryItem[]>(inventoryRequest)
   const ordersResult = useFetch<BackendOrder[]>(ordersRequest)
+  const alertsResult = useFetch<InventoryAlerts>(alertsRequest)
   const branch = branchResult.data
   const inventory = (inventoryResult.data ?? []).filter((item) => item.isAssigned)
   const orders = ordersResult.data ?? []
@@ -84,6 +89,29 @@ export default function BranchDashboard() {
               <span>Could not load branch orders: {ordersResult.error}</span>
               <button type="button" onClick={ordersResult.refetch}>Retry</button>
             </div>
+          ) : null}
+
+          {alertsResult.data && (alertsResult.data.lowStock.length > 0 || alertsResult.data.outOfStock.length > 0) ? (
+            <section className="admin-panel mt-4 border-l-4 border-l-danger" aria-label="Stock alerts">
+              <div className="admin-panel-heading">
+                <span>Stock alerts</span>
+                <Link to={`/${branchId}/inventory`} className="admin-row-action">Restock</Link>
+              </div>
+              <ul className="divide-y divide-line">
+                {alertsResult.data.outOfStock.map((item) => (
+                  <li key={item.productId} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                    <Link to={`/products/${item.productId}`} className="min-w-0 truncate text-[12px] text-ink hover:underline">{item.productName}</Link>
+                    <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-danger">Out of stock</span>
+                  </li>
+                ))}
+                {alertsResult.data.lowStock.map((item) => (
+                  <li key={item.productId} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                    <Link to={`/products/${item.productId}`} className="min-w-0 truncate text-[12px] text-ink hover:underline">{item.productName}</Link>
+                    <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-warning">{item.quantity} left</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ) : null}
 
           <section className="admin-panel admin-orders-panel mt-4">

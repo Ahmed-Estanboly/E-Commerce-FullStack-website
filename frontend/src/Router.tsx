@@ -13,6 +13,7 @@ import BranchDashboard from './pages/BranchDashboard'
 import AdminOrders from './pages/AdminOrders'
 import AdminOrderDetail from './pages/AdminOrderDetail'
 import AdminCustomers from './pages/AdminCustomers'
+import AdminCoupons from './pages/AdminCoupons'
 import BranchOrders from './pages/BranchOrders'
 import OrderDetailPage from './pages/OrderDetailPage'
 import AccountOrders from './pages/AccountOrders'
@@ -99,6 +100,7 @@ export function AppRouter() {
         <Route path="admin/orders" element={<RoleRoute role="admin"><AdminOrders /></RoleRoute>} />
         <Route path="admin/orders/:id" element={<RoleRoute role="admin"><AdminOrderDetail /></RoleRoute>} />
         <Route path="admin/customers" element={<RoleRoute role="admin"><AdminCustomers /></RoleRoute>} />
+        <Route path="admin/coupons" element={<RoleRoute role="admin"><AdminCoupons /></RoleRoute>} />
         <Route path="admin/products" element={<RoleRoute role="admin"><AdminProductsPage /></RoleRoute>} />
         <Route path="admin/branches/:branchId/inventory" element={<RoleRoute role="admin"><BranchInventoryPage /></RoleRoute>} />
         <Route path=":branchName/inventory" element={<RoleRoute role="branch-owner"><BranchInventoryPage branchOwnerView /></RoleRoute>} />

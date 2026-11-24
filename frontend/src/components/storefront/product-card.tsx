@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowUpRight } from '../ui/icons'
 import { SmartImage } from '../ui/smart-image'
@@ -10,6 +10,7 @@ import type { Product } from '../../types/product'
 import { cn, formatPrice } from '../../lib/utils'
 import { getStoredSession } from '../../lib/auth'
 import { wishlistService } from '../../lib/api/wishlist.service'
+import { getWishlistIds, peekWishlistIds, wishlistCacheAdd, wishlistCacheRemove } from '../../lib/wishlist'
 
 export interface ProductCardProps {
   product: Product
@@ -36,9 +37,18 @@ export function ProductCard({
   const label =
     eyebrow ?? product.category?.name ?? department?.name ?? 'The edit'
   const navigate = useNavigate()
-  const [wishlisted, setWishlisted] = useState(false)
+  const [wishlisted, setWishlisted] = useState(() => peekWishlistIds().has(product.id))
   const [wishBusy, setWishBusy] = useState(false)
   const canWishlist = Boolean(getStoredSession()?.user)
+
+  useEffect(() => {
+    if (!canWishlist) return
+    let cancelled = false
+    void getWishlistIds().then((ids) => {
+      if (!cancelled) setWishlisted(ids.has(product.id))
+    })
+    return () => { cancelled = true }
+  }, [canWishlist, product.id])
 
   const toggleWishlist = async (event: React.MouseEvent) => {
     event.preventDefault()
@@ -51,9 +61,11 @@ export function ProductCard({
     try {
       if (wishlisted) {
         await wishlistService.remove(product.id)
+        wishlistCacheRemove(product.id)
         setWishlisted(false)
       } else {
         await wishlistService.add(product.id)
+        wishlistCacheAdd(product.id)
         setWishlisted(true)
       }
     } finally {

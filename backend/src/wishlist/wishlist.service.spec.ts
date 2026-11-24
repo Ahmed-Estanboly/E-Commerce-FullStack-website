@@ -17,7 +17,10 @@ function makeService(items: { userId: number; productId: number }[], productIds:
     find: vi.fn(() => ({ lean: () => ({ exec: async () => productIds.map((id) => ({ id, title: `P${id}` })) }) })),
     exists: vi.fn(() => ({ exec: async () => ({}) })),
   };
-  return { service: new WishlistService(wishlistModel as never, productModel as never), wishlistModel, productModel };
+  const connection = {
+    model: () => ({ find: () => ({ exec: async () => [] }) }),
+  };
+  return { service: new WishlistService(wishlistModel as never, productModel as never, connection as never), wishlistModel, productModel };
 }
 
 describe('WishlistService', () => {

@@ -1,12 +1,12 @@
 import { useDeferredValue, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowUpRight, Menu, Package, Search, Shirt, ShoppingBag, Store, Users, X } from '../ui/icons'
+import { ArrowUpRight, Menu, Package, Search, Shirt, ShoppingBag, Sparkles, Store, Users, X } from '../ui/icons'
 import { Logo } from '../ui/logo'
 import { useStoreProducts } from '../../hooks/use-products'
 import { ThemeToggle } from './theme-toggle'
 import { ProfileMenu } from './profile-menu'
 
-type AdminPage = 'dashboard' | 'analytics' | 'branches' | 'orders' | 'products' | 'customers'
+type AdminPage = 'dashboard' | 'analytics' | 'branches' | 'orders' | 'products' | 'customers' | 'coupons'
 
 const navigation = [
   { label: 'Dashboard', icon: Store, path: '/admin/dashboard', page: 'dashboard' as AdminPage },
@@ -15,6 +15,7 @@ const navigation = [
   { label: 'Orders', icon: ShoppingBag, path: '/admin/orders', page: 'orders' as AdminPage },
   { label: 'Inventory', icon: Package, path: '/admin/branches', page: 'branches' as AdminPage },
   { label: 'Customers', icon: Users, path: '/admin/customers', page: 'customers' as AdminPage },
+  { label: 'Coupons', icon: Sparkles, path: '/admin/coupons', page: 'coupons' as AdminPage },
   { label: 'Products', icon: Shirt, path: '/admin/products', page: 'products' as AdminPage },
   { label: 'Categories', icon: Store, path: '/#universes' },
 ]
