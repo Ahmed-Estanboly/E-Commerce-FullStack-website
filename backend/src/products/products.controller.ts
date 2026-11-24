@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import { InjectConnection } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { ProductsService } from './products.service.js';
@@ -43,6 +44,28 @@ export class ProductsController {
     };
   }
 
+  @Get('export')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('master admin')
+  async export(@Res() res: Response) {
+    const csv = await this.productsService.exportCsv();
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="products.csv"');
+    res.send(csv);
+  }
+
+  @Get('slug/:slug')
+  async getProductBySlug(@Param('slug') slug: string) {
+    const data = await this.withCategory(await this.productsService.getProductBySlug(slug));
+    return data;
+  }
+
+  @Get('slug/:slug/related')
+  async getRelatedProductBySlug(@Param('slug') slug: string) {
+    const data = await this.withCategory(await this.productsService.getRelatedProductBySlug(slug));
+    return data;
+  }
+
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const data = await this.withCategory(await this.productsService.findOne(id));
@@ -71,15 +94,4 @@ export class ProductsController {
     return data;
   }
 
-  @Get('slug/:slug')
-  async getProductBySlug(@Param('slug') slug: string) {
-    const data = await this.withCategory(await this.productsService.getProductBySlug(slug));
-    return data;
-  }
-
-  @Get('slug/:slug/related')
-  async getRelatedProductBySlug(@Param('slug') slug: string) {
-    const data = await this.withCategory(await this.productsService.getRelatedProductBySlug(slug));
-    return data;
-  }
 }

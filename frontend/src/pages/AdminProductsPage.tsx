@@ -7,6 +7,7 @@ import { useBranches } from '../hooks/use-branches'
 import { branchesService, getBranchRequestError } from '../lib/api/branches.service'
 import { productsService } from '../lib/api/products.service'
 import { uploadService } from '../lib/api/upload.service'
+import { downloadCsv } from '../lib/api/client'
 import { Skeleton } from '../components/ui/feedback'
 import type { Product, ProductCategory } from '../types/product'
 
@@ -132,6 +133,9 @@ export default function AdminProductsPage() {
             <h1>Products,<br /><em>from one place.</em></h1>
             <p>Create shared catalogue products, then optionally assign an opening stock quantity to a branch.</p>
           </div>
+          <button type="button" onClick={() => void downloadCsv('/products/export', 'products.csv').catch(() => undefined)} className="admin-outline-button">
+            Export CSV
+          </button>
         </div>
 
         {(error || notice || branchesError || categoriesResult.error || productsResult.error) ? (

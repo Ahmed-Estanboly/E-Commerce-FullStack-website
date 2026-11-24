@@ -147,6 +147,23 @@ export class ProductsService implements OnApplicationBootstrap {
     return inventory.map((item) => item.product as Types.ObjectId);
   }
 
+  /** CSV export of all products for admin reporting. */
+  async exportCsv(): Promise<string> {
+    const products = await this.productModel.find().sort({ id: 1 }).lean().exec();
+    const escape = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+    const header = ['id', 'title', 'slug', 'price', 'categoryId', 'stock', 'ratingAverage', 'ratingCount', 'images', 'createdAt'];
+    const rows = products.map((product) => {
+      const createdAt = (product as { createdAt?: Date | string }).createdAt;
+      return [
+        product.id, product.title, product.slug, product.price, product.categoryId,
+        product.stock, product.ratingAverage ?? 0, product.ratingCount ?? 0,
+        (product.images ?? []).join('; '),
+        createdAt instanceof Date ? createdAt.toISOString() : createdAt,
+      ].map(escape).join(',');
+    });
+    return [header.join(','), ...rows].join('\n');
+  }
+
   async findOne(id: number) {
     const product = await this.productModel.findOne({ id }).exec();
     if (!product) {

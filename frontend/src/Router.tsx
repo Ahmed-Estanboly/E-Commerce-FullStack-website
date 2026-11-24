@@ -1,24 +1,24 @@
+import { lazy, Suspense, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Link, Route, Routes, useParams } from 'react-router-dom'
-import type { ReactNode } from 'react'
 import { StoreLayout } from './components/layout/store-layout'
 import { HomePage } from './pages/HomePage'
 import { ProductPage } from './pages/ProductPage'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
-import AdminDashboard from './pages/AdminDashboard'
-import AdminAnalytics from './pages/AdminAnalytics'
-import BranchesPage from './pages/BranchesPage'
-import BranchInventoryPage from './pages/BranchInventoryPage'
-import BranchDashboard from './pages/BranchDashboard'
-import AdminOrders from './pages/AdminOrders'
-import AdminOrderDetail from './pages/AdminOrderDetail'
-import AdminCustomers from './pages/AdminCustomers'
-import AdminCoupons from './pages/AdminCoupons'
-import BranchOrders from './pages/BranchOrders'
-import OrderDetailPage from './pages/OrderDetailPage'
-import AccountOrders from './pages/AccountOrders'
-import WishlistPage from './pages/WishlistPage'
-import AdminProductsPage from './pages/AdminProductsPage'
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
+const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'))
+const BranchesPage = lazy(() => import('./pages/BranchesPage'))
+const BranchInventoryPage = lazy(() => import('./pages/BranchInventoryPage'))
+const BranchDashboard = lazy(() => import('./pages/BranchDashboard'))
+const AdminOrders = lazy(() => import('./pages/AdminOrders'))
+const AdminOrderDetail = lazy(() => import('./pages/AdminOrderDetail'))
+const AdminCustomers = lazy(() => import('./pages/AdminCustomers'))
+const AdminCoupons = lazy(() => import('./pages/AdminCoupons'))
+const BranchOrders = lazy(() => import('./pages/BranchOrders'))
+const OrderDetailPage = lazy(() => import('./pages/OrderDetailPage'))
+const AccountOrders = lazy(() => import('./pages/AccountOrders'))
+const WishlistPage = lazy(() => import('./pages/WishlistPage'))
+const AdminProductsPage = lazy(() => import('./pages/AdminProductsPage'))
 import { buttonStyles } from './components/ui/button-styles'
 import { CartPage } from './pages/CartPage'
 import ProductsPage from './pages/ProductsPage'
@@ -85,6 +85,7 @@ function StorefrontLayout() {
 export function AppRouter() {
   return (
     <BrowserRouter>
+      <Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center font-mono text-[10px] uppercase tracking-[0.2em] text-muted">Loading…</div>}>
       <Routes>
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Signup />} />
@@ -120,6 +121,7 @@ export function AppRouter() {
           <Route path="*" element={<RoutePlaceholder />} />
         </Route>
       </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

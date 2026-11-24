@@ -4,6 +4,7 @@ import { AdminLayout } from '../components/layout/admin-layout'
 import { useFetch } from '../hooks/useFetch'
 import { Skeleton } from '../components/ui/feedback'
 import { usersService, type BackendUser } from '../lib/api/users.service'
+import { downloadCsv } from '../lib/api/client'
 import { normalizeOrders, ordersService, type BackendOrder, type OrderStatus } from '../lib/api/orders.service'
 import { ORDER_STATUS_LABELS } from '../lib/order-status'
 
@@ -131,6 +132,9 @@ export default function AdminCustomers() {
             <p>Every registered customer account and their order activity. Click a row to inspect their orders.</p>
           </div>
           <div className="admin-intro-actions">
+            <button type="button" onClick={() => void downloadCsv('/users/export', 'users.csv').catch(() => undefined)} className="admin-outline-button">
+              Export CSV
+            </button>
             <button type="button" onClick={() => setShowCreate((v) => !v)} className="admin-accent-button">
               {showCreate ? 'Close' : 'New user'}
             </button>
