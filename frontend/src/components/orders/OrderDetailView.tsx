@@ -89,13 +89,15 @@ export function OrderDetailView({ order }: { order: BackendOrder }) {
         </section>
 
         <section className="border border-line bg-surface p-5 sm:p-6" aria-label="Branch details">
-          <p className="eyebrow mb-2">Branch</p>
-          <DetailRow label="Branch">{order.branch.name}</DetailRow>
-          <DetailRow label="Address">{order.branch.address}</DetailRow>
-          <DetailRow label="Phone">{order.branch.phone}</DetailRow>
-          {order.branch.workingHours ? (
-            <DetailRow label="Hours">{order.branch.workingHours}</DetailRow>
-          ) : null}
+          <p className="eyebrow mb-2">Branches</p>
+          {(order.branches?.length ? order.branches : [order.branch]).map((branch) => (
+            <div key={branch._id} className="border-b border-line py-3 last:border-0">
+              <DetailRow label="Branch">{branch.name}</DetailRow>
+              <DetailRow label="Address">{branch.address}</DetailRow>
+              <DetailRow label="Phone">{branch.phone}</DetailRow>
+              {branch.workingHours ? <DetailRow label="Hours">{branch.workingHours}</DetailRow> : null}
+            </div>
+          ))}
         </section>
 
         {history.length ? (

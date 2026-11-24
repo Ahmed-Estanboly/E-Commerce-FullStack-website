@@ -8,17 +8,13 @@ import { SearchOverlay } from './search-overlay'
 import { ThemeToggle } from './theme-toggle'
 import { clearSession, getStoredSession } from '../../lib/auth'
 import { useBranchSelection } from '../../store/branch-context'
-import { useCart } from '../../store'
 import { NotificationBell } from './NotificationBell'
 
 function BranchSelector() {
   const { branches, selectedBranchId, isLoadingBranches, branchError, selectBranch } = useBranchSelection()
-  const { items, clearCart } = useCart()
 
   const handleChange = (branchId: string) => {
     if (branchId === selectedBranchId) return
-    if (items.length && !window.confirm('Changing branches will clear your cart. Continue?')) return
-    if (items.length) clearCart()
     selectBranch(branchId)
   }
 

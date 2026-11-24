@@ -2,6 +2,7 @@
 import type { Product } from "../../types/product";
 import { Link } from "react-router-dom";
 import {formatPrice } from "../../lib/utils"
+import { SmartImage } from "../ui/smart-image";
 
 interface ProductCardProps {
   product: Product;
@@ -13,12 +14,15 @@ function ProductCard({ product }: ProductCardProps) {
     <article className="group">
       {/* Product Image */}
       <div className="product-media aspect-[3/4] overflow-hidden bg-canvas-alt">
-        <img
-          src={product.images[0]}
+        <SmartImage
+          src={product.images?.[0]}
           alt={product.title}
-          data-primary
+          presentation="general"
+          fallbackLabel={product.category.name}
+          aspect="none"
+          primary
+          fit="cover"
           className="h-full w-full object-cover"
-          loading="lazy"
         />
       </div>
 

@@ -5,6 +5,7 @@ import { Skeleton } from '../components/ui/feedback'
 import { useStoreProducts } from '../hooks/use-products'
 import { useBranches } from '../hooks/use-branches'
 import type { Product } from '../types/product'
+import { SmartImage } from '../components/ui/smart-image'
 
 const currency = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 
@@ -142,7 +143,7 @@ const AdminDashboard = () => {
           </div>
 
           <div className="admin-secondary-grid">
-            <section className="admin-panel"><PanelHeading action="Highest listed price">Top pieces</PanelHeading><div className="admin-table admin-product-table"><div className="admin-table-head"><span>Piece</span><span>Department</span><span>ID</span><span>Price</span></div>{topProducts.map((product) => <div className="admin-table-row" key={product.id}><span className="product-name"><img className="product-thumb" src={product.images[0]} alt="" />{product.title}</span><span>{product.category.name}</span><span>#{product.id}</span><span>{currency.format(product.price)}</span></div>)}</div></section>
+            <section className="admin-panel"><PanelHeading action="Highest listed price">Top pieces</PanelHeading><div className="admin-table admin-product-table"><div className="admin-table-head"><span>Piece</span><span>Department</span><span>ID</span><span>Price</span></div>{topProducts.map((product) => <div className="admin-table-row" key={product.id}>            <span className="product-name"><SmartImage src={product.images?.[0]} fallbackSrc={product.category.image} alt="" presentation="general" fallbackLabel={product.category.name} className="product-thumb" />{product.title}</span><span>{product.category.name}</span><span>#{product.id}</span><span>{currency.format(product.price)}</span></div>)}</div></section>
             <section className="admin-panel"><PanelHeading action="Total value">Category performance</PanelHeading><div className="branch-list">{categoryStats.slice(0, 5).map((category, index) => <div className="branch-row" key={category.name}><div><span>{category.name}</span><small>{currency.format(category.total)} · {category.count} items</small></div><i className={`branch-bar ${index === 0 ? 'branch-lime' : ''}`} style={{ width: `${categoryStats[0] ? category.total / categoryStats[0].total * 100 : 0}%` }} /></div>)}</div><p className="panel-footnote">Grouped from product categories<br />Calculated from listed prices</p></section>
           </div>
 

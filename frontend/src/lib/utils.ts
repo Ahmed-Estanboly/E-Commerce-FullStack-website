@@ -58,3 +58,20 @@ export const sizedImage = (url: string, width: number): string => {
   }
   return url
 }
+
+export const resolveImageUrl = (url?: string | null): string | null => {
+  const clean = url?.trim()
+  if (!clean) return null
+  if (/^https?:\/\//i.test(clean)) return clean
+  if (clean.startsWith('/')) {
+    const apiUrl = import.meta.env.VITE_API_URL as string | undefined
+    if (apiUrl) {
+      try {
+        return new URL(clean, apiUrl.replace(/\/api\/v1\/?$/, '/')).toString()
+      } catch {
+        return clean
+      }
+    }
+  }
+  return clean
+}
