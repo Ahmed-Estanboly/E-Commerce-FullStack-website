@@ -65,7 +65,7 @@ function StepperButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'focus-ring flex h-full w-7 items-center justify-center transition-colors disabled:cursor-not-allowed disabled:opacity-40',
+        'focus-ring flex h-10 w-10 items-center justify-center transition-colors disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8',
         tone === 'inverse'
           ? 'text-cream/65 hover:bg-cream/10 hover:text-cream'
           : 'text-ink-soft hover:bg-canvas-alt hover:text-ink',
@@ -93,7 +93,7 @@ export function QuantityStepper({
   return (
     <div
       className={cn(
-        'flex h-7 items-center border',
+        'flex h-10 items-center border sm:h-8',
         tone === 'inverse' ? 'border-cream/20' : 'border-line',
         className,
       )}

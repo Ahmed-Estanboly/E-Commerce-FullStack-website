@@ -26,7 +26,7 @@ function BranchSelector() {
         value={selectedBranchId ?? ''}
         onChange={(event) => handleChange(event.target.value)}
         disabled={isLoadingBranches || branches.filter((branch) => branch.isActive).length === 0}
-        className="max-w-36 border border-line bg-canvas px-2 py-2 text-xs text-ink"
+        className="max-w-32 border border-line bg-canvas px-2 py-2 text-xs text-ink sm:max-w-36"
       >
         {!selectedBranchId ? <option value="">{isLoadingBranches ? 'Loading stores…' : 'Select a store'}</option> : null}
         {branches.filter((branch) => branch.isActive).map((branch) => (
@@ -163,7 +163,7 @@ export function Header({
     <>
       <header className="sticky top-0 z-50">
         <div className="site-topbar bg-bar text-bar-ink">
-          <div className="container-nova flex h-[30px] items-center justify-between gap-4">
+          <div className="container-nova flex h-[34px] items-center justify-between gap-4 sm:h-[30px]">
             <p className="flex items-center gap-2 truncate font-mono text-[8px] uppercase tracking-[0.16em] sm:text-[9px]">
               <span className="h-2 w-2 shrink-0 bg-accent" aria-hidden="true" />
               {announcement}
@@ -175,12 +175,12 @@ export function Header({
         </div>
 
         <div className="border-b border-line bg-[var(--header)] backdrop-blur-xl">
-          <div className="container-nova relative flex h-[64px] items-center justify-between gap-4 lg:h-[74px]">
-            <div className="flex items-center gap-2.5 lg:gap-4">
+          <div className="container-nova relative flex h-[60px] items-center justify-between gap-3 sm:h-[64px] lg:h-[74px]">
+            <div className="flex items-center gap-2 lg:gap-4">
               <button
                 type="button"
                 onClick={() => setMenuOpen(true)}
-                className="focus-ring -ml-2 flex h-10 w-10 items-center justify-center text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink lg:hidden"
+                className="focus-ring -ml-1 flex h-11 w-11 items-center justify-center text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink lg:hidden sm:-ml-2 sm:h-10 sm:w-10"
                 aria-label="Open menu"
                 aria-expanded={menuOpen}
               >
@@ -215,7 +215,7 @@ export function Header({
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
-                className="focus-ring flex h-10 w-10 items-center justify-center border border-transparent text-ink-soft transition-colors hover:border-line hover:bg-canvas-alt hover:text-ink"
+                className="focus-ring flex h-11 w-11 items-center justify-center border border-transparent text-ink-soft transition-colors hover:border-line hover:bg-canvas-alt hover:text-ink sm:h-10 sm:w-10"
                 aria-label="Search products"
               >
                 <Search className="h-[17px] w-[17px]" strokeWidth={1.5} aria-hidden="true" />
@@ -223,7 +223,7 @@ export function Header({
               <ThemeToggle />
               <BranchSelector />
               {isSignedIn ? <NotificationBell /> : null}
-              {isSignedIn ? <div className="relative ml-1"><button type="button" onClick={() => setAccountMenuOpen((open) => !open)} className="focus-ring flex h-8 w-8 items-center justify-center rounded-full bg-accent font-mono text-[10px] font-medium text-accent-ink transition-transform hover:scale-105" aria-label="Open account menu" aria-expanded={accountMenuOpen}>{accountInitial}</button>{accountMenuOpen ? <div className="absolute right-0 top-10 z-50 grid min-w-40 border border-line bg-surface p-1 shadow-lg"><Link to={dashboardHref ?? '/account'} onClick={() => setAccountMenuOpen(false)} className="px-3 py-2 text-left text-[11px] text-ink transition-colors hover:bg-canvas-alt">Account dashboard</Link><button type="button" onClick={logout} className="px-3 py-2 text-left text-[11px] text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink">Log out</button></div> : null}</div> : <div className="hidden items-center gap-2 pl-1 lg:flex">
+              {isSignedIn ? <div className="relative ml-1"><button type="button" onClick={() => setAccountMenuOpen((open) => !open)} className="focus-ring flex h-9 w-9 items-center justify-center rounded-full bg-accent font-mono text-[10px] font-medium text-accent-ink transition-transform hover:scale-105 sm:h-8 sm:w-8" aria-label="Open account menu" aria-expanded={accountMenuOpen}>{accountInitial}</button>{accountMenuOpen ? <div className="absolute right-0 top-10 z-50 grid min-w-40 border border-line bg-surface p-1 shadow-lg"><Link to={dashboardHref ?? '/account'} onClick={() => setAccountMenuOpen(false)} className="px-3 py-2 text-left text-[11px] text-ink transition-colors hover:bg-canvas-alt">Account dashboard</Link><button type="button" onClick={logout} className="px-3 py-2 text-left text-[11px] text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink">Log out</button></div> : null}</div> : <div className="hidden items-center gap-2 pl-1 lg:flex">
                 <Link
                   to="/login"
                   className="nav-link text-[11px] tracking-[0.12em]"
@@ -248,7 +248,7 @@ export function Header({
               <button
                 type="button"
                 onClick={openCart}
-                className="focus-ring relative ml-0.5 flex h-10 w-10 items-center justify-center border border-transparent text-ink-soft transition-colors hover:border-line hover:bg-canvas-alt hover:text-ink"
+                className="focus-ring relative ml-0.5 flex h-11 w-11 items-center justify-center border border-transparent text-ink-soft transition-colors hover:border-line hover:bg-canvas-alt hover:text-ink sm:h-10 sm:w-10"
                 aria-label={`Open bag, ${cartCount} ${cartCount === 1 ? 'item' : 'items'}`}
               >
                 <ShoppingBag className="h-[17px] w-[17px]" strokeWidth={1.5} aria-hidden="true" />
@@ -271,7 +271,7 @@ export function Header({
         title={brandName}
         eyebrow="Menu"
         side="left"
-        className="max-w-[380px]"
+        className="max-w-[380px] sm:max-w-[400px]"
         footer={
           <div className="space-y-3">
             <p className="eyebrow">The departments</p>
@@ -295,7 +295,7 @@ export function Header({
             <Link
               key={item.to}
               to={item.to}
-              className="group flex items-baseline justify-between border-b border-line/60 py-3.5 text-[22px] tracking-[-0.02em] text-ink last:border-0"
+              className="group flex items-baseline justify-between border-b border-line/60 py-4 text-[22px] tracking-[-0.02em] text-ink last:border-0"
               onClick={() => setMenuOpen(false)}
             >
               <span className="font-display">{item.label}</span>
@@ -306,13 +306,25 @@ export function Header({
 
         <div className="mt-6 grid gap-2">
           {isSignedIn ? (
-            <Link
-              to={dashboardHref ?? '/account'}
-              onClick={() => setMenuOpen(false)}
-              className={buttonStyles('primary', 'md', true)}
-            >
-              Account dashboard
-            </Link>
+            <>
+              <Link
+                to={dashboardHref ?? '/account'}
+                onClick={() => setMenuOpen(false)}
+                className={buttonStyles('primary', 'md', true)}
+              >
+                Account dashboard
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  logout()
+                  setMenuOpen(false)
+                }}
+                className={buttonStyles('outline', 'md', true)}
+              >
+                Sign out
+              </button>
+            </>
           ) : (
             <>
               <Link
@@ -339,21 +351,21 @@ export function Header({
             <Link
               to="/shop"
               onClick={() => setMenuOpen(false)}
-              className="block py-2 text-[13px] text-ink-soft transition-colors hover:text-ink"
+              className="block py-2.5 text-[13px] text-ink-soft transition-colors hover:text-ink"
             >
               Shop the full edit
             </Link>
             <Link
               to="/#services"
               onClick={() => setMenuOpen(false)}
-              className="block py-2 text-[13px] text-ink-soft transition-colors hover:text-ink"
+              className="block py-2.5 text-[13px] text-ink-soft transition-colors hover:text-ink"
             >
               Delivery &amp; returns
             </Link>
             <Link
               to="/cart"
               onClick={() => setMenuOpen(false)}
-              className="block py-2 text-[13px] text-ink-soft transition-colors hover:text-ink"
+              className="block py-2.5 text-[13px] text-ink-soft transition-colors hover:text-ink"
             >
               Your bag{cartCount > 0 ? ` (${cartCount})` : ''}
             </Link>

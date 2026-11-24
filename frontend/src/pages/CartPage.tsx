@@ -44,16 +44,16 @@ export function CartPage() {
 
   return (
     <div className="cart-page page-enter bg-canvas text-ink">
-      <div className="container-nova py-10 sm:py-14 lg:py-16">
-        <div className="flex flex-wrap items-end justify-between gap-5 border-b border-line pb-7 sm:pb-9">
+      <div className="container-nova py-8 sm:py-10 lg:py-16">
+        <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-5 sm:gap-5 sm:pb-7 lg:pb-9">
           <div>
             <p className="font-mono text-[8px] uppercase tracking-[0.2em] text-muted">
               Home <span className="px-1.5 text-muted/60">/</span> Your selection
             </p>
-            <p className="mt-5 font-mono text-[8px] uppercase tracking-[0.18em] text-accent">
+            <p className="mt-4 font-mono text-[8px] uppercase tracking-[0.18em] text-accent sm:mt-5">
               {items.length > 0 ? 'Multi-branch selection' : 'A considered edit'}
             </p>
-            <h1 className="mt-2 font-display text-[clamp(3.2rem,7vw,6.2rem)] leading-[0.88] tracking-[-0.06em]">
+            <h1 className="mt-2 font-display text-[clamp(2.5rem,7vw,6.2rem)] leading-[0.88] tracking-[-0.06em]">
               Your <em className="font-light italic text-accent">bag.</em>
             </h1>
           </div>
@@ -67,7 +67,7 @@ export function CartPage() {
         {items.length === 0 ? (
           <CartEmptyState />
         ) : (
-          <div className="grid gap-8 pt-7 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-6">
+          <div className="grid gap-6 pt-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-6 lg:pt-7">
             <div>
               <div className="flex items-center justify-between border-b border-line pb-3 font-mono text-[8px] uppercase tracking-[0.16em] text-muted">
                 <span>Your selection</span>

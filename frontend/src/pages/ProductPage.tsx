@@ -111,19 +111,19 @@ function ProductGallery({
           />
         </div>
 
-        <span className="absolute left-4 top-4 border border-cream/35 bg-charcoal/65 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.18em] text-cream/80 backdrop-blur-sm">
+        <span className="absolute left-3 top-3 border border-cream/35 bg-charcoal/65 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.18em] text-cream/80 backdrop-blur-sm sm:left-4 sm:top-4">
           {department?.name ?? product.category?.name ?? 'The edit'}
         </span>
-        <span className="absolute right-4 top-4 bg-accent px-2 py-1 font-mono text-[8px] uppercase tracking-[0.16em] text-accent-ink">
+        <span className="absolute right-3 top-3 bg-accent px-2 py-1 font-mono text-[8px] uppercase tracking-[0.16em] text-accent-ink sm:right-4 sm:top-4">
           {String(safeIndex + 1).padStart(2, '0')} / {String(imageCount).padStart(2, '0')}
         </span>
 
         {hasMultiple ? (
-          <div className="absolute bottom-4 left-4 flex gap-1.5">
+          <div className="absolute bottom-3 left-3 flex gap-1.5 sm:bottom-4 sm:left-4">
             <button
               type="button"
               onClick={() => move(-1)}
-              className="focus-ring flex h-10 w-10 items-center justify-center border border-cream/40 bg-charcoal/65 text-cream backdrop-blur-sm transition-colors hover:border-accent hover:bg-accent hover:text-accent-ink"
+              className="focus-ring flex h-11 w-11 items-center justify-center border border-cream/40 bg-charcoal/65 text-cream backdrop-blur-sm transition-colors hover:border-accent hover:bg-accent hover:text-accent-ink sm:h-10 sm:w-10"
               aria-label="Previous image"
             >
               <ArrowRight className="h-4 w-4 -rotate-180" aria-hidden="true" />
@@ -131,7 +131,7 @@ function ProductGallery({
             <button
               type="button"
               onClick={() => move(1)}
-              className="focus-ring flex h-10 w-10 items-center justify-center border border-cream/40 bg-charcoal/65 text-cream backdrop-blur-sm transition-colors hover:border-accent hover:bg-accent hover:text-accent-ink"
+              className="focus-ring flex h-11 w-11 items-center justify-center border border-cream/40 bg-charcoal/65 text-cream backdrop-blur-sm transition-colors hover:border-accent hover:bg-accent hover:text-accent-ink sm:h-10 sm:w-10"
               aria-label="Next image"
             >
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -158,7 +158,7 @@ function ProductGallery({
                 type="button"
                 onClick={() => onChange(index)}
                 className={cn(
-                  'focus-ring relative h-[76px] w-[62px] shrink-0 overflow-hidden border bg-canvas-alt transition-opacity sm:h-[92px] sm:w-full',
+                  'focus-ring relative h-[70px] w-[58px] shrink-0 overflow-hidden border bg-canvas-alt transition-opacity sm:h-[76px] sm:w-[62px] lg:h-[92px] lg:w-full',
                   selected
                     ? 'border-accent opacity-100'
                     : 'border-line opacity-65 hover:opacity-100',
@@ -404,7 +404,7 @@ function ProductDetail({
 
   return (
     <div className="page-enter">
-      <div className="container-nova py-6 lg:py-9">
+      <div className="container-nova py-4 lg:py-9">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
           <ProductBreadcrumb product={currentProduct} department={department} />
           <Link
@@ -417,8 +417,8 @@ function ProductDetail({
         </div>
       </div>
 
-      <section className="container-nova pb-14 lg:pb-20" aria-labelledby="product-title">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-16">
+      <section className="container-nova pb-12 lg:pb-20" aria-labelledby="product-title">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-16">
           <ProductGallery
             product={currentProduct}
             images={images}
@@ -440,14 +440,14 @@ function ProductDetail({
 
             <h1
               id="product-title"
-              className="mt-4 font-display text-[clamp(3rem,5.4vw,5.8rem)] leading-[0.88] tracking-[-0.055em]"
+              className="mt-3 font-display text-[clamp(2.2rem,5.4vw,5.8rem)] leading-[0.88] tracking-[-0.055em] sm:mt-4"
             >
               {currentProduct.title}
             </h1>
 
-            <div className="mt-6 flex flex-wrap items-baseline justify-between gap-3 border-b border-line pb-5">
+            <div className="mt-5 flex flex-wrap items-baseline justify-between gap-3 border-b border-line pb-5 sm:mt-6">
               <div>
-                <p className="font-display text-[clamp(1.8rem,2.7vw,2.5rem)] leading-none tabular tracking-[-0.03em]">
+                <p className="font-display text-[clamp(1.6rem,2.7vw,2.5rem)] leading-none tabular tracking-[-0.03em]">
                   {formatPrice(currentProduct.price)}
                 </p>
                 {currentProduct.ratingCount ? (
@@ -462,16 +462,16 @@ function ProductDetail({
               </p>
             </div>
 
-            <p className="mt-5 text-[13px] leading-[1.8] text-ink-soft">
+            <p className="mt-4 text-[12px] leading-[1.8] text-ink-soft sm:mt-5 sm:text-[13px]">
               {currentProduct.description}
             </p>
 
-            <dl className="mt-7 grid grid-cols-2 gap-x-6 gap-y-5 border-y border-line py-5">
+            <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-y border-line py-5 sm:mt-7">
               <div>
                 <dt className="font-mono text-[8px] uppercase tracking-[0.16em] text-muted">
                   House
                 </dt>
-                <dd className="mt-1.5 text-[12px] text-ink">
+                <dd className="mt-1.5 text-[11px] text-ink sm:text-[12px]">
                   {department ? department.name : 'The edit'}
                 </dd>
               </div>
@@ -479,7 +479,7 @@ function ProductDetail({
                 <dt className="font-mono text-[8px] uppercase tracking-[0.16em] text-muted">
                   Category
                 </dt>
-                <dd className="mt-1.5 text-[12px] text-ink">
+                <dd className="mt-1.5 text-[11px] text-ink sm:text-[12px]">
                   {currentProduct.category?.name ?? 'This edit'}
                 </dd>
               </div>
@@ -487,7 +487,7 @@ function ProductDetail({
                 <dt className="font-mono text-[8px] uppercase tracking-[0.16em] text-muted">
                   Reference
                 </dt>
-                <dd className="mt-1.5 text-[12px] tabular text-ink">
+                <dd className="mt-1.5 text-[11px] tabular text-ink sm:text-[12px]">
                   NOVA-{String(currentProduct.id).padStart(4, '0')}
                 </dd>
               </div>
@@ -495,7 +495,7 @@ function ProductDetail({
                 <dt className="font-mono text-[8px] uppercase tracking-[0.16em] text-muted">
                   The service
                 </dt>
-                <dd className="mt-1.5 text-[12px] text-ink">
+                <dd className="mt-1.5 text-[11px] text-ink sm:text-[12px]">
                   <Link
                     to="/#services"
                     className="link-underline transition-colors hover:text-ink-soft"
@@ -507,9 +507,9 @@ function ProductDetail({
             </dl>
 
             {maxQuantity === 0 ? (
-              <div className="mt-7 border border-danger/40 bg-danger/5 px-4 py-3" role="status">
+              <div className="mt-6 border border-danger/40 bg-danger/5 px-4 py-3 sm:mt-7" role="status">
                 <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-danger">Out of stock</p>
-                <p className="mt-1 text-[12px] leading-relaxed text-ink-soft">
+                <p className="mt-1 text-[11px] leading-relaxed text-ink-soft sm:text-[12px]">
                   This piece is currently unavailable at this branch. Check another branch or browse similar pieces below.
                 </p>
               </div>
@@ -529,7 +529,7 @@ function ProductDetail({
                     type="button"
                     onClick={() => setQuantity((current) => clampQuantity(current - 1, maxQuantity))}
                     disabled={quantity <= 1}
-                    className="focus-ring flex w-11 items-center justify-center text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink disabled:pointer-events-none disabled:opacity-35"
+                    className="focus-ring flex w-12 items-center justify-center text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink disabled:pointer-events-none disabled:opacity-35 sm:w-11"
                     aria-label="Decrease quantity"
                   >
                     <span className="block h-px w-3.5 bg-current" aria-hidden="true" />
@@ -555,7 +555,7 @@ function ProductDetail({
                     type="button"
                     onClick={() => setQuantity((current) => clampQuantity(current + 1, maxQuantity))}
                     disabled={quantity >= maxQuantity || maxQuantity === 0}
-                    className="focus-ring flex w-11 items-center justify-center text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink disabled:pointer-events-none disabled:opacity-35"
+                    className="focus-ring flex w-12 items-center justify-center text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink disabled:pointer-events-none disabled:opacity-35 sm:w-11"
                     aria-label="Increase quantity"
                   >
                     <Plus className="h-4 w-4" aria-hidden="true" />
@@ -567,7 +567,7 @@ function ProductDetail({
                   size="lg"
                   onClick={handleAddToCart}
                   disabled={maxQuantity === 0}
-                  className="min-w-[190px] flex-1"
+                  className="min-w-[140px] flex-1 sm:min-w-[190px]"
                   leftIcon={<ShoppingBag className="h-4 w-4" aria-hidden="true" />}
                 >
                   {maxQuantity === 0
@@ -611,7 +611,7 @@ function ProductDetail({
 
       {catalogueLoading || relatedProducts.length > 0 ? (
         <section
-          className="container-nova pb-16 lg:pb-24"
+          className="container-nova pb-12 lg:pb-24"
           aria-labelledby="related-title"
         >
           <SectionHeading
@@ -628,7 +628,7 @@ function ProductDetail({
             }
           />
 
-          <div className="mt-8 grid gap-x-5 gap-y-9 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 grid gap-x-4 gap-y-8 sm:mt-8 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-9 lg:grid-cols-4">
             {catalogueLoading
               ? [0, 1, 2, 3].map((item) => (
                   <div key={item}>
@@ -649,11 +649,11 @@ function ProductDetail({
         </section>
       ) : null}
 
-      <section className="container-nova pb-16 lg:pb-20">
+      <section className="container-nova pb-12 lg:pb-20">
         <ProductReviews productId={currentProduct.id} />
       </section>
 
-      <section className="container-nova pb-16">
+      <section className="container-nova pb-12">
         <div className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
           <Link
             to="/shop"

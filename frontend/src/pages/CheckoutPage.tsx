@@ -270,15 +270,15 @@ export const CheckoutPage: React.FC = () => {
   }
 
   return (
-    <div className="page-enter pb-20">
-      <div className="border-b border-line pt-8 pb-7">
+    <div className="page-enter pb-16 sm:pb-20">
+      <div className="border-b border-line pt-6 pb-5 sm:pt-8 sm:pb-7">
         <div className="container-nova">
           <nav aria-label="Breadcrumb" className="eyebrow">
             HOME <span className="mx-1.5">/</span> BAG <span className="mx-1.5">/</span>{' '}
             <span className="text-ink">CHECKOUT</span>
           </nav>
 
-          <p className="eyebrow mt-5">— STEP 02 OF 03</p>
+          <p className="eyebrow mt-4 sm:mt-5">— STEP 02 OF 03</p>
 
           <div className="mt-2 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <h1 className="display-title text-ink">
@@ -292,9 +292,9 @@ export const CheckoutPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="border-b border-line py-4">
+      <div className="border-b border-line py-3 sm:py-4">
         <div className="container-nova flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-6">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
             <div className="flex items-center gap-2">
               <span className="bg-accent px-1.5 py-0.5 font-mono text-[9px] font-medium text-accent-ink">01</span>
               <span className="eyebrow-strong">BAG</span>
@@ -325,7 +325,7 @@ export const CheckoutPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="container-nova pt-8">
+      <div className="container-nova pt-6 sm:pt-8">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-start">
           <form onSubmit={handleSubmit} noValidate className="space-y-10 lg:col-span-8">
             {branchError ? (

@@ -73,7 +73,7 @@ function ProductCard({ product }: ProductCardProps) {
           aria-label={wishlisted ? `Remove ${product.title} from wishlist` : `Save ${product.title} to wishlist`}
           aria-pressed={wishlisted}
           className={cn(
-            "absolute right-3 top-3 flex h-9 w-9 items-center justify-center border backdrop-blur-sm transition-colors disabled:opacity-40",
+            "absolute right-2.5 top-2.5 flex h-10 w-10 items-center justify-center border backdrop-blur-sm transition-colors disabled:opacity-40 sm:right-3 sm:top-3 sm:h-9 sm:w-9",
             wishlisted
               ? "border-accent bg-accent text-accent-ink"
               : "border-line bg-surface/80 text-ink-soft hover:border-accent hover:text-accent",

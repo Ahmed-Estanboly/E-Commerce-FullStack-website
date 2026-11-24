@@ -293,20 +293,20 @@ export function HomePage({ onAddToCart }: HomePageProps) {
       {/* Opening frame */}
       <section className="home-hero" aria-labelledby="home-title">
         <div className="home-hero-grid" aria-hidden="true" />
-        <div className="container-nova relative py-6 sm:py-8 lg:py-10">
+        <div className="container-nova relative py-5 sm:py-8 lg:py-10">
           <div className="flex items-center justify-between gap-4 border-b border-cream/15 pb-3 font-mono text-[8px] uppercase tracking-[0.18em] text-cream/45">
             <p className="home-hero-kicker">NOVA / The living universe</p>
             <p className="hidden sm:block">Edition 01 · Autumn 2026</p>
             <p className="sm:hidden">Ed. 01 / 2026</p>
           </div>
 
-          <div className="grid gap-10 pt-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-end lg:gap-12 lg:pt-14">
+          <div className="grid gap-8 pt-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-end lg:gap-12 lg:pt-14">
             <div className="flex min-w-0 flex-col">
               <div>
                 <p className="home-hero-kicker font-mono text-[9px] uppercase tracking-[0.2em] text-accent">
                   A general store, considered
                 </p>
-                <h1 id="home-title" className="home-hero-title mt-5">
+                <h1 id="home-title" className="home-hero-title mt-4 sm:mt-5">
                   <span className="home-hero-line">
                     <span>The world,</span>
                   </span>
@@ -316,13 +316,13 @@ export function HomePage({ onAddToCart }: HomePageProps) {
                     </span>
                   </span>
                 </h1>
-                <p className="home-hero-copy mt-6 max-w-[420px] text-[14px] leading-[1.75] text-cream/65 sm:text-[15px]">
+                <p className="home-hero-copy mt-5 max-w-[420px] text-[13px] leading-[1.75] text-cream/65 sm:mt-6 sm:text-[15px]">
                   Things to wear, eat, hear, read, and live with. Six departments, one deliberately
                   short edit — chosen for the way they live, not the season they belong to.
                 </p>
               </div>
 
-              <div className="home-hero-actions mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <div className="home-hero-actions mt-6 flex flex-wrap items-center gap-x-4 gap-y-3 sm:mt-8 sm:gap-x-5">
                 <Link to="/shop" className={cn(buttonStyles('accent', 'lg'), 'group')}>
                   Enter the edit
                   <ArrowRight
@@ -339,7 +339,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
                 </a>
               </div>
 
-              <div className="home-hero-actions mt-8 flex flex-wrap gap-x-5 gap-y-2">
+              <div className="home-hero-actions mt-6 flex flex-wrap gap-x-4 gap-y-2 sm:mt-8 sm:gap-x-5">
                 {departments.map((department, index) => (
                   <Link
                     key={department.id}
@@ -354,7 +354,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
                 ))}
               </div>
 
-              <div className="home-hero-copy mt-10 grid grid-cols-2 gap-5 border-t border-cream/15 pt-4">
+              <div className="home-hero-copy mt-8 grid grid-cols-2 gap-4 border-t border-cream/15 pt-4 sm:mt-10 sm:gap-5">
                 <a href="#services" className="focus-ring group block">
                   <span className="block font-mono text-[8px] uppercase tracking-[0.16em] text-cream/40">
                     The service
@@ -397,7 +397,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
                 <span className="hero-tile-index">01 / Style</span>
                 <div className="hero-tile-bar">
                   <div className="min-w-0">
-                    <p className="truncate font-display text-[17px] leading-none tracking-[-0.02em] sm:text-[20px]">
+                    <p className="truncate font-display text-[15px] leading-none tracking-[-0.02em] sm:text-[17px] sm:leading-none">
                       Fashion &amp; Footwear
                     </p>
                     <p className="mt-1 font-mono text-[8px] uppercase tracking-[0.14em] text-cream/50">
@@ -493,7 +493,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
       </div>
 
       {/* Universe discovery */}
-      <section id="universes" className="container-nova scroll-mt-28 pt-16 lg:pt-24">
+      <section id="universes" className="container-nova scroll-mt-28 pt-12 lg:pt-24">
         <SectionHeading
           eyebrow="01 / Universes"
           title="Choose your universe."
@@ -501,7 +501,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
           data-reveal
         />
 
-        <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
+        <div className="mt-8 grid gap-8 lg:mt-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
           <div className="lg:sticky lg:top-[118px] lg:self-start" data-reveal>
             <Link
               to={`/shop?category=${activeDepartment.slug}`}
@@ -523,13 +523,13 @@ export function HomePage({ onAddToCart }: HomePageProps) {
                   {TWO_DIGITS(activeDepartmentIndex + 1)} / {TWO_DIGITS(departments.length)}
                 </span>
               </div>
-              <div className="border-t border-cream/20 p-5">
+              <div className="border-t border-cream/20 p-4 sm:p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="font-mono text-[8px] uppercase tracking-[0.18em] text-cream/45">
                       {activeDepartment.presentation} department
                     </p>
-                    <h3 className="mt-2 font-display text-[clamp(1.8rem,2.6vw,2.5rem)] leading-none tracking-[-0.035em]">
+                    <h3 className="mt-2 font-display text-[clamp(1.6rem,2.6vw,2.5rem)] leading-none tracking-[-0.035em]">
                       {activeDepartment.name}
                     </h3>
                   </div>
@@ -537,7 +537,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
                     <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                   </span>
                 </div>
-                <p className="mt-3 max-w-sm text-[12px] leading-relaxed text-cream/55">
+                <p className="mt-3 max-w-sm text-[11px] leading-relaxed text-cream/55 sm:text-[12px]">
                   {activeDepartment.caption}
                 </p>
               </div>
@@ -554,7 +554,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
                   onMouseEnter={() => setActiveDepartmentId(department.id)}
                   onFocus={() => setActiveDepartmentId(department.id)}
                   data-active={active}
-                  className="home-category-row group relative flex items-center gap-4 border-b border-line py-5 transition-colors hover:bg-canvas-alt/40 sm:gap-6 sm:py-6"
+                  className="home-category-row group relative flex items-center gap-3 border-b border-line py-4 transition-colors hover:bg-canvas-alt/40 sm:gap-6 sm:py-6"
                 >
                   <span
                     className={cn(
@@ -570,11 +570,11 @@ export function HomePage({ onAddToCart }: HomePageProps) {
                     presentation={department.presentation}
                     fallbackLabel={department.name}
                     aspect="square"
-                    className="h-[58px] w-[46px] shrink-0 lg:hidden"
+                    className="h-[52px] w-[42px] shrink-0 lg:hidden sm:h-[58px] sm:w-[46px]"
                     sizes="46px"
                   />
                   <span className="min-w-0 flex-1">
-                    <h3 className="font-display text-[clamp(1.55rem,2.5vw,2.5rem)] leading-[0.95] tracking-[-0.04em]">
+                    <h3 className="font-display text-[clamp(1.4rem,2.5vw,2.5rem)] leading-[0.95] tracking-[-0.04em]">
                       {department.name}
                     </h3>
                     <span className="mt-2 hidden max-w-md text-[11px] leading-relaxed text-muted sm:block">
@@ -596,7 +596,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
       </section>
 
       {/* The selection */}
-      <section className="container-nova pt-16 lg:pt-24">
+      <section className="container-nova pt-12 lg:pt-24">
         <SectionHeading
           eyebrow="02 / The selection"
           title="The current selection."
@@ -691,24 +691,24 @@ export function HomePage({ onAddToCart }: HomePageProps) {
       {/* The service — replaces NOVA's branch selector */}
       <section
         id="services"
-        className="on-dark-surface mt-16 scroll-mt-28 bg-charcoal py-16 text-cream lg:mt-24 lg:py-24"
+        className="on-dark-surface mt-12 scroll-mt-28 bg-charcoal py-12 text-cream lg:mt-24 lg:py-24"
       >
         <div className="container-nova">
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
             <div data-reveal>
               <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-cream/45">
                 03 / The service
               </p>
-              <h2 className="mt-4 font-display text-[clamp(2.9rem,5.6vw,5.8rem)] leading-[0.9] tracking-[-0.05em]">
+              <h2 className="mt-4 font-display text-[clamp(2.2rem,5.6vw,5.8rem)] leading-[0.9] tracking-[-0.05em]">
                 Chosen well,
                 <br />
                 <em className="font-light italic text-accent">sent with care.</em>
               </h2>
-              <p className="mt-6 max-w-md text-[13px] leading-[1.8] text-cream/60">
+              <p className="mt-5 max-w-md text-[12px] leading-[1.8] text-cream/60 sm:mt-6 sm:text-[13px]">
                 Delivery, collection and returns are handled from the studio. One standard of
                 packing, one place to ask a question — whichever way the order reaches you.
               </p>
-              <div className="mt-8 flex flex-wrap gap-1.5">
+              <div className="mt-6 flex flex-wrap gap-1.5 sm:mt-8">
                 {HOME_SERVICES.map((service, index) => {
                   const selected = service.id === activeService.id
                   return (
@@ -734,15 +734,15 @@ export function HomePage({ onAddToCart }: HomePageProps) {
               </div>
             </div>
 
-            <div className="border border-cream/20 bg-cream/[0.035] p-5 sm:p-7 lg:p-8" data-reveal>
+            <div className="border border-cream/20 bg-cream/[0.035] p-4 sm:p-7 lg:p-8" data-reveal>
               <div className="flex items-center justify-between gap-4 border-b border-cream/15 pb-3 font-mono text-[8px] uppercase tracking-[0.18em] text-cream/40">
                 <span>Selected service</span>
                 <span>
                   {TWO_DIGITS(activeServiceIndex + 1)} / {TWO_DIGITS(HOME_SERVICES.length)}
                 </span>
               </div>
-              <div className="mt-8 flex items-end justify-between gap-4">
-                <p className="font-display text-[clamp(3rem,7vw,6.6rem)] leading-[0.82] tracking-[-0.055em]">
+              <div className="mt-6 flex items-end justify-between gap-4 sm:mt-8">
+                <p className="font-display text-[clamp(2.5rem,7vw,6.6rem)] leading-[0.82] tracking-[-0.055em]">
                   {activeService.name}
                 </p>
                 <ActiveServiceIcon
@@ -751,26 +751,26 @@ export function HomePage({ onAddToCart }: HomePageProps) {
                   aria-hidden="true"
                 />
               </div>
-              <p className="mt-4 text-[13px] text-cream/60">{activeService.caption}</p>
+              <p className="mt-4 text-[12px] text-cream/60 sm:text-[13px]">{activeService.caption}</p>
 
-              <dl className="mt-8 grid gap-x-6 gap-y-5 border-t border-cream/15 pt-5 sm:grid-cols-2">
+              <dl className="mt-6 grid gap-x-6 gap-y-5 border-t border-cream/15 pt-5 sm:mt-8 sm:grid-cols-2">
                 {activeService.details.map((detail) => (
                   <div key={detail.label}>
                     <dt className="font-mono text-[8px] uppercase tracking-[0.16em] text-cream/35">
                       {detail.label}
                     </dt>
-                    <dd className="mt-1.5 text-[12px] leading-relaxed text-cream/75">
+                    <dd className="mt-1.5 text-[11px] leading-relaxed text-cream/75 sm:text-[12px]">
                       {detail.value}
                     </dd>
                   </div>
                 ))}
               </dl>
 
-              <p className="mt-6 text-[12px] leading-relaxed text-cream/55">
+              <p className="mt-5 text-[11px] leading-relaxed text-cream/55 sm:mt-6 sm:text-[12px]">
                 {activeService.description}
               </p>
 
-              <div className="mt-8 flex flex-wrap gap-2">
+              <div className="mt-6 flex flex-wrap gap-2 sm:mt-8">
                 <Link
                   to="/shop"
                   className="inline-flex h-10 items-center gap-2 bg-accent px-4 font-mono text-[9px] uppercase tracking-[0.13em] text-accent-ink transition-colors hover:bg-accent-strong"
@@ -790,17 +790,17 @@ export function HomePage({ onAddToCart }: HomePageProps) {
       </section>
 
       {/* Closing */}
-      <section className="container-nova py-16 lg:py-24">
+      <section className="container-nova py-12 lg:py-24">
         <div
           className="grid gap-8 border-t border-line pt-8 lg:grid-cols-[1fr_auto] lg:items-end"
           data-reveal
         >
           <div>
             <p className="eyebrow">04 / Begin</p>
-            <h2 className="mt-4 font-display text-[clamp(3rem,7vw,7rem)] leading-[0.86] tracking-[-0.055em]">
+            <h2 className="mt-4 font-display text-[clamp(2.5rem,7vw,7rem)] leading-[0.86] tracking-[-0.055em]">
               Start <em className="font-light italic">anywhere.</em>
             </h2>
-            <p className="mt-5 max-w-md text-[13px] leading-relaxed text-muted">
+            <p className="mt-4 max-w-md text-[12px] leading-relaxed text-muted sm:mt-5 sm:text-[13px]">
               The edit is short by design. Choose a department, or let the full catalogue show you
               what is close.
             </p>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { Filter, ChevronDown } from "../components/ui/icons";
 
 import { useFetch } from "../hooks/useFetch";
 import { useBranchCatalog } from "../hooks/use-branch-catalog";
@@ -89,16 +90,16 @@ function matchesDepartment(product: Product, slug: string): boolean {
 function ProductsPageSkeleton() {
   return (
     <main
-      className="min-h-screen bg-canvas px-5 py-10 sm:px-8 lg:px-10"
+      className="min-h-screen bg-canvas px-4 py-8 font-sans text-ink sm:px-6 sm:py-10 lg:px-10"
       aria-label="Loading products"
     >
-      <section className="mb-10 border-b border-line pb-8">
+      <section className="mb-8 border-b border-line pb-6 sm:mb-10 sm:pb-8">
         <Skeleton className="h-3 w-36" />
         <Skeleton className="mt-5 h-16 w-72 max-w-full" />
         <Skeleton className="mt-4 h-3 w-48" />
       </section>
 
-      <section className="grid grid-cols-1 gap-8 md:grid-cols-[190px_minmax(0,1fr)] lg:gap-12">
+      <section className="grid grid-cols-1 gap-6 md:grid-cols-[190px_minmax(0,1fr)] lg:gap-12">
         <aside className="hidden border-r border-line pr-6 md:block">
           <Skeleton className="h-3 w-24" />
           <div className="mt-6 space-y-5">
@@ -109,12 +110,12 @@ function ProductsPageSkeleton() {
         </aside>
 
         <div className="min-w-0">
-          <div className="mb-6 flex justify-between border-b border-line pb-4">
+          <div className="mb-4 flex justify-between border-b border-line pb-4 sm:mb-6">
             <Skeleton className="h-3 w-40" />
             <Skeleton className="h-9 w-48" />
           </div>
 
-          <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-2 sm:gap-x-6 sm:gap-y-10 lg:grid-cols-3">
             {Array.from({ length: PAGE_SIZE }, (_, index) => (
               <div key={index}>
                 <Skeleton className="aspect-3/4 w-full" />
@@ -150,6 +151,9 @@ function ProductsPage() {
 
   // الصفحة الحالية
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Mobile filter toggle
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   // جلب الفئات
   const fetchCategories = useCallback(
@@ -350,50 +354,64 @@ function ProductsPage() {
   const activeDepartment = departmentParam ? DEPARTMENT_NAMES[departmentParam] : null;
 
   return (
-    <main className="min-h-screen bg-canvas px-5 py-10 font-sans text-ink sm:px-8 lg:px-10 page-enter">
-  
+    <main className="min-h-screen bg-canvas px-4 py-8 font-sans text-ink sm:px-6 sm:py-10 lg:px-10 lg:py-10 page-enter">
+
       {/* Page Introduction */}
-      <section className="mb-10 border-b border-line pb-8">
-        
-        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+      <section className="mb-8 border-b border-line pb-6 sm:mb-10 sm:pb-8">
+
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end md:gap-6">
           <div>
             <p className="eyebrow-strong mb-3">
               {activeDepartment ?? 'The full catalogue'}
             </p>
-  
-            <h1 className="font-display text-5xl tracking-tight sm:text-6xl lg:text-7xl">
+
+            <h1 className="font-display text-4xl tracking-tight sm:text-5xl lg:text-7xl">
               {activeDepartment ? (
                 <>{activeDepartment} <span className="italic text-accent">edit.</span></>
               ) : (
                 <>The full <span className="italic text-accent">edit.</span></>
               )}
             </h1>
-  
-            <p className="eyebrow mt-4">
+
+            <p className="eyebrow mt-3 sm:mt-4">
               {clientSide ? filteredProducts.length : productsTotal} Pieces — {categories.length} Departments
             </p>
           </div>
-  
+
           <p className="max-w-sm text-xs leading-6 text-ink-soft">
             Discover our complete collection. Explore products,
             browse categories and find your next favourite piece.
           </p>
         </div>
       </section>
-  
+
       {/* Products Layout */}
-      <section className="grid grid-cols-1 gap-8 md:grid-cols-[190px_minmax(0,1fr)] lg:gap-12">
-  
-        {/* Sidebar */}
-        <aside className="border-b border-line pb-8 md:border-b-0 md:border-r md:pr-6">
-  
+      <section className="grid grid-cols-1 gap-6 md:grid-cols-[190px_minmax(0,1fr)] lg:gap-12">
+
+        {/* Mobile Filter Toggle Button */}
+        <button
+          type="button"
+          onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+          className="md:hidden flex items-center justify-between gap-3 border border-line bg-surface px-4 py-3 text-sm text-ink transition-colors hover:border-ink"
+          aria-expanded={mobileFiltersOpen}
+        >
+          <span className="flex items-center gap-2">
+            <Filter className="h-4 w-4" />
+            Filters
+          </span>
+          <ChevronDown className={`h-4 w-4 transition-transform ${mobileFiltersOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {/* Sidebar - Collapsible on Mobile */}
+        <aside className={`md:border-b-0 md:border-r md:pr-6 ${mobileFiltersOpen ? 'border-b border-line pb-6' : 'hidden md:block md:pb-0'}`}>
+
           {/* Categories */}
-          <div className="border-b border-line pb-6">
-            <h2 className="eyebrow-strong mb-5">
+          <div className="border-b border-line pb-4 last:border-0 md:pb-6">
+            <h2 className="eyebrow-strong mb-4 md:mb-5">
               Department
             </h2>
-  
-            <div className="space-y-4">
+
+            <div className="space-y-3 md:space-y-4">
               <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-soft">
                 <input
                   type="checkbox"
@@ -403,7 +421,7 @@ function ProductsPage() {
                 />
                 All pieces
               </label>
-  
+
               {categories.map((category) => (
                 <label
                   key={category.id}
@@ -428,14 +446,14 @@ function ProductsPage() {
               ))}
             </div>
           </div>
-  
+
           {/* Price */}
-          <div className="border-b border-line py-6">
-            <h2 className="eyebrow-strong mb-5">
+          <div className="border-b border-line py-4 last:border-0 md:py-6">
+            <h2 className="eyebrow-strong mb-4 md:mb-5">
               Price
             </h2>
-  
-            <div className="space-y-4">
+
+            <div className="space-y-3 md:space-y-4">
               <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-soft">
                 <input
                   type="checkbox"
@@ -448,7 +466,7 @@ function ProductsPage() {
                 />
                 Under 100
               </label>
-  
+
               <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-soft">
                 <input
                   type="checkbox"
@@ -475,27 +493,27 @@ function ProductsPage() {
             </label>
           </div>
         </div>
-  
+
         {/* Reset Filters */}
         <button
           type="button"
           onClick={resetFilters}
-          className="mt-6 text-[10px] uppercase tracking-[0.2em] text-muted underline underline-offset-4 transition-colors hover:text-ink"
+          className="mt-4 text-[10px] uppercase tracking-[0.2em] text-muted underline underline-offset-4 transition-colors hover:text-ink md:mt-6"
         >
           Reset all filters
         </button>
       </aside>
-  
+
       {/* Products Area */}
       <div className="min-w-0">
-  
+
         {/* Toolbar */}
-        <div className="mb-6 flex flex-col justify-between gap-4 border-b border-line pb-4 sm:flex-row sm:items-center">
-  
+        <div className="mb-4 flex flex-col justify-between gap-3 border-b border-line pb-4 sm:mb-6 sm:flex-row sm:items-center sm:gap-4">
+
           <p className="eyebrow">
             Showing {filteredProducts.length} of {productsTotal} pieces
           </p>
-  
+
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
               type="text"
@@ -504,7 +522,7 @@ function ProductsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full border border-line bg-surface px-3 py-2 text-xs text-ink placeholder:text-muted outline-none transition-colors focus:border-ink sm:w-48"
             />
-  
+
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -517,7 +535,7 @@ function ProductsPage() {
             </select>
           </div>
         </div>
-  
+
         {/* Loading Categories */}
         {isLoadingCategories && (
           <div className="mb-4 flex flex-wrap gap-2" role="status" aria-label="Loading categories">
@@ -526,13 +544,13 @@ function ProductsPage() {
             ))}
           </div>
         )}
-  
+
         {categoriesError && (
           <p className="mb-4 text-xs text-danger">
             Failed to load categories.
           </p>
         )}
-  
+
         {/* Product Grid */}
         {currentProducts.length > 0 ? (
           <ProductList products={currentProducts} />
@@ -541,9 +559,9 @@ function ProductsPage() {
             No products found.
           </p>
         )}
-  
+
         {/* Pagination */}
-        <div className="mt-10 border-t border-line pt-6">
+        <div className="mt-8 border-t border-line pt-6 sm:mt-10">
           <Pagination
             currentPage={effectivePage}
             totalPages={totalPages}
