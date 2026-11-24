@@ -49,4 +49,5 @@ export interface ConfirmedOrder {
   paymentMethod: PaymentMethod;
   cardLast4: string;
   createdAt: string;
+  branches?: Branch[];
 }

@@ -7,6 +7,8 @@ export interface AuthSession {
   user: AuthUser
 }
 
+export const AUTH_SESSION_CHANGED_EVENT = 'nova-auth-session-changed'
+
 export function updateSessionTokens(token: string, refreshToken?: string) {
   const session = getStoredSession()
   if (!session) return
@@ -20,6 +22,7 @@ export function saveSession(session: AuthSession, rememberMe: boolean) {
   window.sessionStorage.removeItem(AUTH_STORAGE_KEY)
   const storage = rememberMe ? window.localStorage : window.sessionStorage
   storage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session))
+  window.dispatchEvent(new Event(AUTH_SESSION_CHANGED_EVENT))
 }
 
 export function updateSessionUser(user: AuthUser) {
@@ -35,6 +38,7 @@ export function clearSession() {
   window.sessionStorage.removeItem(AUTH_STORAGE_KEY)
   window.localStorage.removeItem('auth_token')
   window.sessionStorage.removeItem('auth_token')
+  window.dispatchEvent(new Event(AUTH_SESSION_CHANGED_EVENT))
 }
 
 export function getStoredSession(): AuthSession | null {

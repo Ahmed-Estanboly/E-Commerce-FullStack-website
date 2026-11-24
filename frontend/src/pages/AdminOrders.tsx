@@ -24,9 +24,15 @@ export default function AdminOrders() {
   )
   const { data, isLoading, error, refetch } = useFetch<BackendOrder[]>(ordersRequest)
   const { data: branches } = useFetch<Branch[]>(branchesRequest)
-  const allOrders = data ?? []
+  const allOrders = useMemo(() => data ?? [], [data])
   const orders = useMemo(
-    () => (branchFilter ? allOrders.filter((order) => order.branch._id === branchFilter) : allOrders),
+    () => (branchFilter
+      ? allOrders.filter((order) =>
+        order.branch._id === branchFilter
+        || order.branches?.some((branch) => branch._id === branchFilter)
+        || order.items.some((item) => item.branchId === branchFilter),
+      )
+      : allOrders),
     [allOrders, branchFilter],
   )
 

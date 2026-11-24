@@ -55,62 +55,99 @@ export class OrdersService {
     if (!createOrderDto.items.length) {
       throw new BadRequestException('An order must contain at least one item.');
     }
+    const fallbackBranchId =
+      createOrderDto.branch?.branchId ?? createOrderDto.branches?.[0]?.branchId;
+    if (!fallbackBranchId) {
+      const hasLineBranch = createOrderDto.items.some((item) => Boolean(item.branchId));
+      if (!hasLineBranch) {
+        throw new BadRequestException('At least one branch must be provided.');
+      }
+    }
 
-    const requestedQuantities = new Map<number, number>();
+    const branchItems = new Map<string, typeof createOrderDto.items>();
     for (const item of createOrderDto.items) {
-      requestedQuantities.set(
-        item.productId,
-        (requestedQuantities.get(item.productId) ?? 0) + item.quantity,
-      );
+      const branchId = item.branchId ?? fallbackBranchId;
+      if (!branchId) {
+        throw new BadRequestException(`A branch is required for product ${item.productId}.`);
+      }
+      branchItems.set(branchId, [...(branchItems.get(branchId) ?? []), item]);
     }
 
     const session = await this.connection.startSession();
     try {
       let createdOrder: OrderDocument | undefined;
       await session.withTransaction(async () => {
-        const branch = await this.branchModel
-          .findById(createOrderDto.branch.branchId)
-          .session(session)
-          .exec();
-        if (!branch || !branch.isActive) {
-          throw new BadRequestException('The selected branch is not active.');
-        }
-
+        const allProductIds = Array.from(new Set(createOrderDto.items.map((item) => item.productId)));
         const products = await this.productModel
-          .find({ id: { $in: Array.from(requestedQuantities.keys()) } })
+          .find({ id: { $in: allProductIds } })
           .session(session)
           .exec();
         const productsById = new Map(products.map((product) => [product.id, product]));
+        const branchSnapshots: Array<{
+          _id: string;
+          name: string;
+          address: string;
+          phone: string;
+          workingHours?: string;
+          isActive?: boolean;
+        }> = [];
 
-        for (const [productId, quantity] of requestedQuantities) {
-          const product = productsById.get(productId);
-          if (!product) {
-            throw new BadRequestException(`Product ${productId} was not found.`);
+        for (const [branchId, branchItemsForBranch] of branchItems) {
+          const branch = await this.branchModel.findById(branchId).session(session).exec();
+          if (!branch || !branch.isActive) {
+            throw new BadRequestException('One or more selected branches are not active.');
+          }
+          branchSnapshots.push({
+            _id: branch._id.toString(),
+            name: branch.name,
+            address: branch.address,
+            phone: branch.phone,
+            workingHours: branch.workingHours,
+            isActive: branch.isActive,
+          });
+
+          const requestedQuantities = new Map<number, number>();
+          for (const item of branchItemsForBranch) {
+            requestedQuantities.set(
+              item.productId,
+              (requestedQuantities.get(item.productId) ?? 0) + item.quantity,
+            );
           }
 
-          const reservation = await this.branchInventoryModel.findOneAndUpdate(
-            {
-              branch: branch._id,
-              product: product._id,
-              quantity: { $gte: quantity },
-            },
-            { $inc: { quantity: -quantity } },
-            { new: true, session },
-          ).exec();
-          if (!reservation) {
-            throw new BadRequestException(
-              `Product "${product.title}" is unavailable or has insufficient stock at this branch.`,
-            );
+          for (const [productId, quantity] of requestedQuantities) {
+            const product = productsById.get(productId);
+            if (!product) {
+              throw new BadRequestException(`Product ${productId} was not found.`);
+            }
+
+            const reservation = await this.branchInventoryModel.findOneAndUpdate(
+              {
+                branch: branch._id,
+                product: product._id,
+                quantity: { $gte: quantity },
+              },
+              { $inc: { quantity: -quantity } },
+              { new: true, session },
+            ).exec();
+            if (!reservation) {
+              throw new BadRequestException(
+                `Product "${product.title}" is unavailable or has insufficient stock at ${branch.name}.`,
+              );
+            }
           }
         }
 
         const orderItems = createOrderDto.items.map((item) => {
           const product = productsById.get(item.productId)!;
+          const itemBranchId = item.branchId ?? fallbackBranchId!;
+          const branchSnapshot = branchSnapshots.find((branch) => branch._id === itemBranchId);
           return {
             productId: product.id,
             title: product.title,
             price: product.price,
             quantity: item.quantity,
+            branchId: itemBranchId,
+            branchName: item.branchName ?? branchSnapshot?.name,
           };
         });
         const subtotal = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -128,14 +165,10 @@ export class OrdersService {
           couponCode = coupon.code;
         }
 
-        const branchSnapshot = {
-          _id: branch._id.toString(),
-          name: branch.name,
-          address: branch.address,
-          phone: branch.phone,
-          workingHours: branch.workingHours,
-          isActive: branch.isActive,
-        };
+        const branchSnapshot = branchSnapshots[0];
+        if (!branchSnapshot) {
+          throw new BadRequestException('At least one active branch is required.');
+        }
 
         const orderData = {
           orderNumber: '',
@@ -151,6 +184,7 @@ export class OrdersService {
           couponCode,
           fulfilment: createOrderDto.fulfilment,
           branch: branchSnapshot,
+          branches: branchSnapshots,
           deliveryAddress: createOrderDto.deliveryAddress,
           paymentMethod: createOrderDto.paymentMethod,
           cardLast4: createOrderDto.cardLast4,
@@ -186,7 +220,13 @@ export class OrdersService {
       throw new NotFoundException('Branch not found');
     }
     return this.paginatedFind(
-      this.orderModel.find({ 'branch._id': branchId }).sort({ createdAt: -1 }),
+      this.orderModel.find({
+        $or: [
+          { 'branch._id': branchId },
+          { 'branches._id': branchId },
+          { 'items.branchId': branchId },
+        ],
+      }).sort({ createdAt: -1 }),
       query,
     );
   }
@@ -301,8 +341,12 @@ export class OrdersService {
   private assertCanManage(actor: OrderActor, order: OrderDocument) {
     if (actor.role === ADMIN_ROLE) return;
     if (BRANCH_OWNER_ROLES.includes(actor.role ?? '') && actor.branchId) {
-      const orderBranchId = order.branch?._id;
-      if (orderBranchId && orderBranchId === actor.branchId) return;
+      const orderBranchIds = new Set([
+        order.branch?._id,
+        ...(order.branches?.map((branch) => branch._id) ?? []),
+        ...order.items.map((item) => item.branchId).filter((branchId): branchId is string => Boolean(branchId)),
+      ]);
+      if (orderBranchIds.has(actor.branchId)) return;
     }
     throw new ForbiddenException('You can only update orders for your own branch.');
   }
@@ -316,11 +360,12 @@ export class OrdersService {
       .session(session)
       .exec();
     const objectIdByProductId = new Map(products.map((product) => [product.id, product._id]));
-    const branchObjectId = new Types.ObjectId(order.branch._id);
-
     for (const item of order.items) {
       const productObjectId = objectIdByProductId.get(item.productId);
       if (!productObjectId) continue;
+      const itemBranchId = item.branchId ?? order.branches?.[0]?._id ?? order.branch._id;
+      if (!itemBranchId) continue;
+      const branchObjectId = new Types.ObjectId(itemBranchId);
       await this.branchInventoryModel.findOneAndUpdate(
         { branch: branchObjectId, product: productObjectId },
         { $inc: { quantity: item.quantity } },

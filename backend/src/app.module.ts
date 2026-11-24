@@ -21,7 +21,6 @@ import { WishlistModule } from './wishlist/wishlist.module.js';
 import { CouponsModule } from './coupons/coupons.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { AnalyticsModule } from './analytics/analytics.module.js';
-import { UploadsModule } from './uploads/uploads.module.js';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'node:path';
 
@@ -57,7 +56,6 @@ import { join } from 'node:path';
     CouponsModule,
     NotificationsModule,
     AnalyticsModule,
-    UploadsModule,
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',

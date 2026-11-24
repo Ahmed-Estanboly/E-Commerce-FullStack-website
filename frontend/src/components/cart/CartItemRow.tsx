@@ -7,12 +7,12 @@ import { presentationForCategory } from '../../data/home'
 
 export interface CartItemRowProps {
   item: CartItem
-  onQuantityChange: (productId: number, quantity: number) => void
-  onRemove: (productId: number) => void
+  onQuantityChange: (productId: number, quantity: number, branchId: string) => void
+  onRemove: (productId: number, branchId: string) => void
 }
 
 /** Reusable cart row with quantity controls and a remove action. */
-export function CartItemRow({ item: { product, quantity }, onQuantityChange, onRemove }: CartItemRowProps) {
+export function CartItemRow({ item: { product, quantity, branchId, branchName }, onQuantityChange, onRemove }: CartItemRowProps) {
   return (
     <li className="grid grid-cols-[68px_minmax(0,1fr)_auto] items-center gap-x-3 py-4 sm:grid-cols-[88px_minmax(0,1fr)_auto] sm:gap-x-4 sm:py-5">
       <Link
@@ -33,7 +33,7 @@ export function CartItemRow({ item: { product, quantity }, onQuantityChange, onR
 
       <div className="min-w-0 self-end sm:self-center">
         <p className="font-mono text-[7px] uppercase tracking-[0.16em] text-muted sm:text-[8px]">
-          {product.category?.name ?? 'NOVA'}
+          {product.category?.name ?? 'NOVA'} · {branchName}
         </p>
         <h2 className="mt-1 font-display text-[clamp(1.05rem,2vw,1.55rem)] leading-tight tracking-[-0.03em]">
           <Link to={`/products/${product.id}`} className="transition-colors hover:text-accent">
@@ -52,13 +52,13 @@ export function CartItemRow({ item: { product, quantity }, onQuantityChange, onR
       <div className="col-start-2 row-start-2 mt-2 flex items-center gap-3 sm:mt-3">
         <QuantityStepper
           value={quantity}
-          onChange={(nextQuantity) => onQuantityChange(product.id, nextQuantity)}
+          onChange={(nextQuantity) => onQuantityChange(product.id, nextQuantity, branchId)}
           label={`quantity of ${product.title}`}
           tone="default"
         />
         <button
           type="button"
-          onClick={() => onRemove(product.id)}
+          onClick={() => onRemove(product.id, branchId)}
           className="focus-ring font-mono text-[7px] uppercase tracking-[0.13em] text-muted transition-colors hover:text-accent"
           aria-label={`Remove ${product.title} from bag`}
         >

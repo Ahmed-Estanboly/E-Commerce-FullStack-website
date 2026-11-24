@@ -69,21 +69,22 @@ export const OrderConfirmationView: React.FC<OrderConfirmationViewProps> = ({
               <div className="mt-5 space-y-4 text-xs">
                 {order.fulfilment === 'collect' ? (
                   <>
-                    <div>
-                      <p className="eyebrow text-muted">SELECTED BRANCH</p>
-                      <p className="mt-1 font-medium text-ink">{order.branch.name}</p>
-                      <p className="mt-0.5 text-muted">{order.branch.address}</p>
-                    </div>
-                    <div>
-                      <p className="eyebrow text-muted">BRANCH CONTACT</p>
-                      <p className="mt-1 text-ink">{order.branch.phone}</p>
-                    </div>
+                    {(order.branches?.length ? order.branches : [order.branch]).map((branch) => (
+                      <div key={branch._id} className="border-b border-line pb-4 last:border-0 last:pb-0">
+                        <p className="eyebrow text-muted">COLLECTION BRANCH</p>
+                        <p className="mt-1 font-medium text-ink">{branch.name}</p>
+                        <p className="mt-0.5 text-muted">{branch.address}</p>
+                        <p className="mt-1 text-ink">{branch.phone}</p>
+                      </div>
+                    ))}
                   </>
                 ) : (
                   <div>
                     <p className="eyebrow text-muted">DELIVERY ADDRESS</p>
                     <p className="mt-1 font-medium text-ink">{order.deliveryAddress}</p>
-                    <p className="mt-0.5 text-muted">Dispatched from {order.branch.name}</p>
+                    <p className="mt-0.5 text-muted">
+                      Dispatched from {(order.branches?.length ? order.branches : [order.branch]).map((branch) => branch.name).join(', ')}
+                    </p>
                   </div>
                 )}
 

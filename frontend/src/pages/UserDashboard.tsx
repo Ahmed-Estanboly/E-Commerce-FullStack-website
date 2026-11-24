@@ -54,7 +54,9 @@ function toOrderView(order: BackendOrder): Order {
     status: order.status,
     total: order.total,
     items: order.items.reduce((sum, item) => sum + item.quantity, 0),
-    branchName: order.branch.name,
+    branchName: order.branches?.length
+      ? order.branches.map((branch) => branch.name).join(', ')
+      : order.branch.name,
   }
 }
 
@@ -158,7 +160,7 @@ const UserDashboard = () => {
 
         <section className="border border-line bg-surface p-5 sm:p-7" aria-labelledby="cart-heading">
           <div className="flex items-start justify-between gap-4 border-b border-line pb-4"><div><p className="eyebrow">Ready when you are</p><h2 id="cart-heading" className="mt-1 font-display text-3xl tracking-[-0.03em]">Your cart</h2></div><span className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted">{itemCount} {itemCount === 1 ? 'item' : 'items'}</span></div>
-          {items.length ? <><ul className="divide-y divide-line">{items.map((item) => <CartItemRow key={item.product.id} item={item} onQuantityChange={updateQuantity} onRemove={removeItem} />)}</ul><div className="flex items-center justify-between border-t border-line pt-4"><span className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted">Subtotal</span><strong className="font-display text-2xl font-normal">{formatPrice(subtotal)}</strong></div><Link to="/cart" className="mt-5 flex h-11 items-center justify-center bg-accent px-4 font-mono text-[9px] uppercase tracking-[0.12em] text-accent-ink transition-colors hover:bg-accent-strong">Review cart <ArrowRight className="ml-2 h-3.5 w-3.5" aria-hidden="true" /></Link></> : <div className="py-16 text-center"><ShoppingBag className="mx-auto h-7 w-7 text-muted" strokeWidth={1.25} aria-hidden="true" /><h3 className="mt-4 font-display text-2xl">Your cart is quiet.</h3><p className="mx-auto mt-2 max-w-xs text-[12px] leading-relaxed text-muted">Add something considered and it will wait here for you.</p><Link to="/shop" className="mt-5 inline-flex font-mono text-[9px] uppercase tracking-[0.12em] text-ink underline underline-offset-4">Browse products</Link></div>}
+          {items.length ? <><ul className="divide-y divide-line">{items.map((item) => <CartItemRow key={`${item.branchId}-${item.product.id}`} item={item} onQuantityChange={updateQuantity} onRemove={removeItem} />)}</ul><div className="flex items-center justify-between border-t border-line pt-4"><span className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted">Subtotal</span><strong className="font-display text-2xl font-normal">{formatPrice(subtotal)}</strong></div><Link to="/cart" className="mt-5 flex h-11 items-center justify-center bg-accent px-4 font-mono text-[9px] uppercase tracking-[0.12em] text-accent-ink transition-colors hover:bg-accent-strong">Review cart <ArrowRight className="ml-2 h-3.5 w-3.5" aria-hidden="true" /></Link></> : <div className="py-16 text-center"><ShoppingBag className="mx-auto h-7 w-7 text-muted" strokeWidth={1.25} aria-hidden="true" /><h3 className="mt-4 font-display text-2xl">Your cart is quiet.</h3><p className="mx-auto mt-2 max-w-xs text-[12px] leading-relaxed text-muted">Add something considered and it will wait here for you.</p><Link to="/shop" className="mt-5 inline-flex font-mono text-[9px] uppercase tracking-[0.12em] text-ink underline underline-offset-4">Browse products</Link></div>}
         </section>
       </div>
 
