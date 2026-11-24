@@ -89,45 +89,45 @@
 :root {
   color-scheme: light;
 
-  --canvas: #f2f0e8;
-  --canvas-alt: #e8e4d9;
-  --surface: #fbf9f4;
-  --surface-raised: #ffffff;
-  --ink: #101110;
-  --ink-soft: #3c3e39;
-  --muted: #64665e;
-  --line: #dcddd2;
-  --line-strong: #bfc1b2;
+  --canvas: #d5e0c5;
+  --canvas-alt: #c9d4b8;
+  --surface: #dde6d0;
+  --surface-raised: #e5edd9;
+  --ink: #1a2218;
+  --ink-soft: #3d4a38;
+  --muted: #5a664f;
+  --line: #c5d0b5;
+  --line-strong: #a5ba88;
 
-  --accent: #d4ff00;
-  --accent-strong: #c2eb00;
-  --accent-soft: #eefbb7;
-  --accent-ink: #101110;
+  --accent: #6a7a3f;
+  --accent-strong: #5a6a2f;
+  --accent-soft: #dbeacc;
+  --accent-ink: #1a2218;
 
-  /* Neon stays available for the dark stages even in the light theme. */
+  /* Neon for dark-mode hero/footer/topbar in light theme. */
   --accent-neon: #d4ff00;
   --accent-neon-strong: #c2eb00;
-  --accent-neon-ink: #101110;
+  --accent-neon-ink: #1a2218;
 
-  --inverse: #101110;
-  --inverse-soft: #1b1d1a;
-  --inverse-ink: #f5f5f0;
-  --charcoal: #101110;
-  --cream: #f2f0e8;
-  --bar: #101110;
-  --bar-ink: #f2f0e8;
+  --inverse: #1a2218;
+  --inverse-soft: #2b3526;
+  --inverse-ink: #f2f5eb;
+  --charcoal: #1a2218;
+  --cream: #d5e0c5;
+  --bar: #1a2218;
+  --bar-ink: #d5e0c5;
 
-  --danger: #a83725;
-  --danger-soft: #f7e5df;
-  --success: #28654a;
-  --success-soft: #e0f0e7;
-  --warning: #75500f;
-  --warning-soft: #f6ebd5;
-  --focus: #101110;
+  --danger: #9c4238;
+  --danger-soft: #ede3e0;
+  --success: #2f6b4f;
+  --success-soft: #e1ece3;
+  --warning: #6f5c18;
+  --warning-soft: #ebe5d5;
+  --focus: #1a2218;
 
-  --shadow-sm: 0 1px 2px rgb(16 17 16 / 0.06);
-  --shadow-lift: 0 22px 60px -30px rgb(16 17 16 / 0.42);
-  --header: rgb(242 240 232 / 0.9);
+  --shadow-sm: 0 1px 2px rgb(16 17 16 / 0.1), 0 1px 1px rgb(16 17 16 / 0.06);
+  --shadow-lift: 0 28px 70px -32px rgb(16 17 16 / 0.45), 0 8px 24px -16px rgb(16 17 16 / 0.25);
+  --header: rgb(213 224 197 / 0.88);
 }
 
 .dark {
@@ -385,8 +385,8 @@
     position: absolute;
     inset: 0;
     background-image:
-      linear-gradient(to right, rgb(242 240 232 / 0.06) 1px, transparent 1px),
-      linear-gradient(to bottom, rgb(242 240 232 / 0.06) 1px, transparent 1px);
+      linear-gradient(to right, rgb(213 224 197 / 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(213 224 197 / 0.08) 1px, transparent 1px);
     background-size: 84px 84px;
     mask-image: linear-gradient(to bottom, black 0%, black 72%, transparent 100%);
     pointer-events: none;
@@ -472,8 +472,8 @@
     align-items: flex-end;
     justify-content: space-between;
     gap: 12px;
-    border-top: 1px solid rgb(242 240 232 / 0.22);
-    background: rgb(16 17 16 / 0.86);
+    border-top: 1px solid rgb(213 224 197 / 0.28);
+    background: rgb(16 17 16 / 0.88);
     padding: 13px 14px;
     color: var(--cream);
     backdrop-filter: blur(8px);
@@ -483,13 +483,13 @@
     position: absolute;
     top: 12px;
     left: 12px;
-    border: 1px solid rgb(242 240 232 / 0.35);
-    background: rgb(16 17 16 / 0.6);
+    border: 1px solid rgb(213 224 197 / 0.4);
+    background: rgb(16 17 16 / 0.65);
     padding: 4px 7px;
     font-family: var(--font-mono);
     font-size: 8px;
     letter-spacing: 0.16em;
-    color: rgb(242 240 232 / 0.82);
+    color: rgb(213 224 197 / 0.88);
   }
 
   .home-preview-image {

@@ -399,7 +399,10 @@ export class OrdersService {
   /** CSV export of all orders (admin reporting). */
   async exportCsv(): Promise<string> {
     const orders = await this.orderModel.find().sort({ createdAt: -1 }).lean().exec();
-    const escape = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+    const escape = (value: unknown) => {
+      const normalized = typeof value === 'string' ? value : JSON.stringify(value) ?? '';
+      return `"${normalized.replaceAll('"', '""')}"`;
+    };
     const header = [
       'orderNumber', 'createdAt', 'customerName', 'email', 'phone',
       'branch', 'fulfilment', 'status', 'subtotal', 'shippingFee', 'discount', 'total', 'paymentMethod', 'couponCode',

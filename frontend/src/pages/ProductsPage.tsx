@@ -117,7 +117,7 @@ function ProductsPageSkeleton() {
           <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: PAGE_SIZE }, (_, index) => (
               <div key={index}>
-                <Skeleton className="aspect-[3/4] w-full" />
+                <Skeleton className="aspect-3/4 w-full" />
                 <Skeleton className="mt-4 h-2.5 w-20" />
                 <Skeleton className="mt-3 h-4 w-4/5" />
                 <Skeleton className="mt-3 h-3 w-16" />

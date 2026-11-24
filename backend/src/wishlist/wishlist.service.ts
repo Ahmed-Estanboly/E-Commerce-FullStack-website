@@ -21,11 +21,11 @@ export class WishlistService {
       : [];
     const hydrated = await withCategory(
       this.connection,
-      products.map((product) => ({ ...product })),
+      products,
     );
     const byId = new Map(hydrated.map((product) => [product.id, product]));
     return items
-      .map((item) => ({ ...item, product: byId.get(item.productId) ?? null }))
+      .map((item) => Object.assign({}, item, { product: byId.get(item.productId) ?? null }))
       .filter((item) => item.product !== null);
   }
 

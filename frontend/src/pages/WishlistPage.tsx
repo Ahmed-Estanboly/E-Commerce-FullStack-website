@@ -1,9 +1,11 @@
 import { useCallback, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { SmartImage } from '../components/ui/smart-image'
 import { useFetch } from '../hooks/useFetch'
 import { wishlistService, type WishlistEntry } from '../lib/api/wishlist.service'
 import { wishlistCacheRemove } from '../lib/wishlist'
 import { Skeleton } from '../components/ui/feedback'
+import { presentationForCategory } from '../data/home'
 
 const currency = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })
 
@@ -39,7 +41,7 @@ export default function WishlistPage() {
         {error ? (
           <div className="mb-6 flex items-center justify-between border border-danger/40 bg-danger/5 px-4 py-3 text-sm text-danger" role="alert">
             <span>{error}</span>
-            <button type="button" onClick={() => void refetch()} className="font-mono text-[10px] uppercase tracking-[0.1em] underline">Retry</button>
+            <button type="button" onClick={() => void refetch()} className="font-mono text-[10px] uppercase tracking-widest underline">Retry</button>
           </div>
         ) : null}
 
@@ -71,7 +73,16 @@ export default function WishlistPage() {
                 <li key={entry._id} className="group border border-line bg-surface">
                   <Link to={`/products/${product.id}`} className="block">
                     <div className="aspect-square overflow-hidden bg-canvas">
-                      <img src={product.images[0]} alt={product.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                      <SmartImage
+                        src={product.images[0]}
+                        alt={product.title}
+                        presentation={presentationForCategory(product.category?.name)}
+                        fallbackLabel={product.category?.name ?? 'NOVA'}
+                        aspect="none"
+                        className="h-full w-full"
+                        imgClassName="transition-transform duration-500 group-hover:scale-105"
+                        sizes="(max-width: 640px) 100vw, 33vw"
+                      />
                     </div>
                     <div className="p-4">
                       <p className="text-[10px] uppercase tracking-[0.12em] text-muted">{product.category.name}</p>
@@ -84,13 +95,13 @@ export default function WishlistPage() {
                       type="button"
                       onClick={() => void remove(entry)}
                       disabled={busy === entry._id}
-                      className="flex-1 border border-line px-3 py-2 font-mono text-[9px] uppercase tracking-[0.1em] text-muted transition-colors hover:border-danger hover:text-danger disabled:opacity-40"
+                      className="flex-1 border border-line px-3 py-2 font-mono text-[9px] uppercase tracking-widest text-muted transition-colors hover:border-danger hover:text-danger disabled:opacity-40"
                     >
                       {busy === entry._id ? 'Removing…' : 'Remove'}
                     </button>
                     <Link
                       to={`/products/${product.id}`}
-                      className="flex-1 border border-accent bg-accent px-3 py-2 text-center font-mono text-[9px] uppercase tracking-[0.1em] text-accent-ink transition-colors hover:bg-transparent hover:text-accent"
+                      className="flex-1 border border-accent bg-accent px-3 py-2 text-center font-mono text-[9px] uppercase tracking-widest text-accent-ink transition-colors hover:bg-transparent hover:text-accent"
                     >
                       View
                     </Link>

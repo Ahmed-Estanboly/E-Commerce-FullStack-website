@@ -534,7 +534,7 @@ export const CheckoutPage: React.FC = () => {
                   type="checkbox"
                   checked={formData.acceptedTerms}
                   onChange={(e) => handleFieldChange('acceptedTerms', e.target.checked)}
-                  className="mt-0.5 h-4 w-4 accent-[#d4ff00]"
+                  className="mt-0.5 h-4 w-4 accent-accent"
                 />
                 <span className="text-xs text-ink-soft">
                   I understand this order is recorded by the store backend and no real payment will be taken.
@@ -558,7 +558,7 @@ export const CheckoutPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => { setCoupon(null); setCouponInput(''); setCouponError(null) }}
-                      className="h-10 border border-line px-4 font-mono text-[9px] uppercase tracking-[0.1em] text-muted transition-colors hover:border-danger hover:text-danger"
+                      className="h-10 border border-line px-4 font-mono text-[9px] uppercase tracking-widest text-muted transition-colors hover:border-danger hover:text-danger"
                     >
                       Remove
                     </button>
@@ -579,7 +579,7 @@ export const CheckoutPage: React.FC = () => {
                           setCouponBusy(false)
                         }
                       }}
-                      className="h-10 border border-ink px-4 font-mono text-[9px] uppercase tracking-[0.1em] text-ink transition-colors hover:bg-ink hover:text-white disabled:opacity-40"
+                      className="h-10 border border-ink px-4 font-mono text-[9px] uppercase tracking-widest text-ink transition-colors hover:bg-ink hover:text-white disabled:opacity-40"
                     >
                       {couponBusy ? 'Checking…' : 'Apply'}
                     </button>

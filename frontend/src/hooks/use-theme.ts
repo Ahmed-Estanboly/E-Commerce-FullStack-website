@@ -41,7 +41,7 @@ export function applyTheme(preference: ThemePreference): ResolvedTheme {
   root.style.colorScheme = resolved
 
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.setAttribute('content', resolved === 'dark' ? '#101110' : '#f2f0e8')
+  if (meta) meta.setAttribute('content', resolved === 'dark' ? '#101110' : '#d5e0c5')
 
   window.setTimeout(() => root.classList.remove('theme-changing'), 380)
   return resolved

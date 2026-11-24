@@ -21,7 +21,10 @@ export class CouponsService {
       throw new BadRequestException('Percent coupons cannot exceed 100.');
     }
     return this.couponModel.create({
-      ...dto,
+      kind: dto.kind,
+      value: dto.value,
+      minSubtotal: dto.minSubtotal,
+      usageLimit: dto.usageLimit,
       code: dto.code.toUpperCase(),
       expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined,
     });

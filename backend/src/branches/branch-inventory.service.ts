@@ -67,7 +67,10 @@ export class BranchInventoryService {
   /** CSV export of a branch's inventory. */
   async exportCsv(branchId: string) {
     const items = await this.findAll(branchId);
-    const escape = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+    const escape = (value: unknown) => {
+      const normalized = typeof value === 'string' ? value : JSON.stringify(value) ?? '';
+      return `"${normalized.replaceAll('"', '""')}"`;
+    };
     const header = ['productId', 'productName', 'categoryId', 'price', 'quantity', 'isAssigned'];
     const rows = items.map((item) =>
       [item.productId, item.productName, item.categoryId, item.price, item.quantity, item.isAssigned]

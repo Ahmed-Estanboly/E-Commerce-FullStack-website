@@ -150,7 +150,10 @@ export class ProductsService implements OnApplicationBootstrap {
   /** CSV export of all products for admin reporting. */
   async exportCsv(): Promise<string> {
     const products = await this.productModel.find().sort({ id: 1 }).lean().exec();
-    const escape = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+    const escape = (value: unknown) => {
+      const normalized = typeof value === 'string' ? value : JSON.stringify(value) ?? '';
+      return `"${normalized.replaceAll('"', '""')}"`;
+    };
     const header = ['id', 'title', 'slug', 'price', 'categoryId', 'stock', 'ratingAverage', 'ratingCount', 'images', 'createdAt'];
     const rows = products.map((product) => {
       const createdAt = (product as { createdAt?: Date | string }).createdAt;

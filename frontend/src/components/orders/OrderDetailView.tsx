@@ -43,7 +43,7 @@ export function OrderDetailView({ order }: { order: BackendOrder }) {
                 >
                   {item.title}
                 </Link>
-                <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-muted">
+                <p className="mt-1 font-mono text-[9px] uppercase tracking-widest text-muted">
                   Qty {item.quantity} · Ref NOVA-{String(item.productId).padStart(4, '0')}
                 </p>
               </div>
@@ -56,6 +56,12 @@ export function OrderDetailView({ order }: { order: BackendOrder }) {
         <div className="space-y-1 border-t border-line pt-4">
           <DetailRow label="Subtotal">{currency.format(order.subtotal)}</DetailRow>
           <DetailRow label="Shipping">{currency.format(order.shippingFee)}</DetailRow>
+          {order.couponCode ? <DetailRow label="Coupon">{order.couponCode}</DetailRow> : null}
+          {order.discount ? (
+            <DetailRow label="Discount">
+              <span className="text-success">-{currency.format(order.discount)}</span>
+            </DetailRow>
+          ) : null}
           <div className="flex items-center justify-between pt-2">
             <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted">Total</span>
             <strong className="font-display text-2xl font-normal">{formatPrice(order.total)}</strong>
@@ -106,9 +112,9 @@ export function OrderDetailView({ order }: { order: BackendOrder }) {
             <ol className="relative space-y-4 border-l border-line pl-4">
               {[...history].reverse().map((entry, index) => (
                 <li key={`${entry.at}-${index}`} className="relative">
-                  <span className="absolute -left-[21px] top-1 h-2 w-2 rounded-full bg-accent" aria-hidden="true" />
+                  <span className="absolute -left-5.25 top-1 h-2 w-2 rounded-full bg-accent" aria-hidden="true" />
                   <p className="text-[12px] text-ink">{orderStatusLabel(entry.status)}</p>
-                  <p className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-muted">
+                  <p className="mt-0.5 font-mono text-[8px] uppercase tracking-widest text-muted">
                     {formatOrderDateTime(entry.at)}
                     {entry.by ? ` · ${entry.by}` : ''}
                   </p>

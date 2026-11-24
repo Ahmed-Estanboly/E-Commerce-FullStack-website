@@ -138,7 +138,10 @@ export class UsersService {
   /** CSV export of all users for admin reporting (no credentials). */
   async exportCsv(): Promise<string> {
     const users = await this.userModel.find().sort({ id: 1 }).lean().exec();
-    const escape = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+    const escape = (value: unknown) => {
+      const normalized = typeof value === 'string' ? value : JSON.stringify(value) ?? '';
+      return `"${normalized.replaceAll('"', '""')}"`;
+    };
     const header = ['id', 'name', 'email', 'role', 'branchId', 'phone', 'createdAt'];
     const rows = users.map((user) => {
       const createdAt = (user as { createdAt?: Date | string }).createdAt;
