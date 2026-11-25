@@ -5,7 +5,10 @@ import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.use(helmet());
+  app.use(helmet({
+    // Uploaded images must be embeddable by the storefront on another origin
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }));
   const configuredEntries = (process.env.FRONTEND_URL ?? 'http://localhost:5173')
     .split(',')
     .map((entry) => entry.trim())
