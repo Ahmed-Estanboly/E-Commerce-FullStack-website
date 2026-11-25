@@ -5,6 +5,7 @@ import { Logo } from '../ui/logo'
 import { useStoreProducts } from '../../hooks/use-products'
 import { ThemeToggle } from './theme-toggle'
 import { ProfileMenu } from './profile-menu'
+import { NotificationBell } from './NotificationBell'
 
 export function BranchLayout({ children, branchId, branchName, ownerName, searchPlaceholder = 'Search products' }: { children: ReactNode; branchId: string; branchName: string; ownerName: string; searchPlaceholder?: string }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -65,6 +66,7 @@ export function BranchLayout({ children, branchId, branchName, ownerName, search
             </div> : null}
           </form>
           <div className="admin-topbar-actions">
+            <NotificationBell />
             <ThemeToggle />
             <ProfileMenu fallbackName={ownerName} roleLabel="Branch manager" />
           </div>

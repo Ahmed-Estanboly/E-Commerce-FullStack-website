@@ -11,6 +11,9 @@ import {
 import { UpdateBranchInventoryDto } from './dto/update-branch-inventory.dto.js';
 import { CreateBranchProductDto } from './dto/create-branch-product.dto.js';
 import { ProductsService } from '../products/products.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
+
+const LOW_STOCK_THRESHOLD = 5;
 
 @Injectable()
 export class BranchInventoryService {
@@ -22,6 +25,7 @@ export class BranchInventoryService {
     @InjectModel(BranchInventory.name)
     private readonly inventoryModel: Model<BranchInventoryDocument>,
     private readonly productsService: ProductsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async findAll(branchId: string) {
@@ -159,10 +163,16 @@ export class BranchInventoryService {
 
   async update(branchId: string, productId: number, dto: UpdateBranchInventoryDto) {
     const branchObjectId = await this.getBranchId(branchId);
-    const product = await this.productModel.findOne({ id: productId }).select('_id').lean().exec();
+    const product = await this.productModel.findOne({ id: productId }).select('_id title').lean().exec();
     if (!product) {
       throw new NotFoundException('Product not found');
     }
+
+    const previous = await this.inventoryModel
+      .findOne({ branch: branchObjectId, product: product._id })
+      .select('quantity')
+      .lean()
+      .exec();
 
     const inventory = await this.inventoryModel
       .findOneAndUpdate(
@@ -172,6 +182,25 @@ export class BranchInventoryService {
       )
       .lean()
       .exec();
+
+    const previousQuantity = previous?.quantity ?? null;
+    const crossedLow =
+      dto.quantity > 0 &&
+      dto.quantity < LOW_STOCK_THRESHOLD &&
+      (previousQuantity === null || previousQuantity >= LOW_STOCK_THRESHOLD);
+    const wentOutOfStock = dto.quantity === 0 && previousQuantity !== 0;
+    if (crossedLow || wentOutOfStock) {
+      const branch = await this.branchModel.findById(branchObjectId).select('name').lean().exec();
+      void this.notificationsService
+        .notifyInventoryAlert({
+          branchId: branchObjectId.toString(),
+          branchName: branch?.name ?? 'A branch',
+          productTitle: product.title,
+          quantity: dto.quantity,
+          outOfStock: wentOutOfStock,
+        })
+        .catch(() => undefined);
+    }
 
     return { productId, quantity: inventory.quantity };
   }

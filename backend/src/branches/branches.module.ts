@@ -9,11 +9,13 @@ import { Product, ProductSchema } from '../products/schemas/products.schema.js';
 import { UsersModule } from '../users/users.module.js';
 import { ProductsModule } from '../products/products.module.js';
 import { Order, OrderSchema } from '../orders/schemas/order.schema.js';
+import { NotificationsModule } from '../notifications/notifications.module.js';
 
 @Module({
   imports: [
     UsersModule,
     ProductsModule,
+    NotificationsModule,
     MongooseModule.forFeature([
       { name: Branch.name, schema: BranchSchema },
       { name: BranchInventory.name, schema: BranchInventorySchema },

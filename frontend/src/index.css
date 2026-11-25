@@ -1260,6 +1260,7 @@
 .analytics-bar-track i { display: block; height: 100%; background: var(--ink); transition: width 600ms cubic-bezier(0.22, 1, 0.36, 1); }
 .analytics-bar-track i.branch-lime { background: var(--accent); }
 .analytics-products-table .admin-table-head, .analytics-products-table .admin-table-row { min-width: 650px; grid-template-columns: 1.8fr 1fr 0.9fr 0.65fr; }
+.analytics-5col .admin-table-head, .analytics-5col .admin-table-row { min-width: 700px; grid-template-columns: 1.7fr 0.6fr 0.9fr 0.6fr 0.7fr; }
 .branch-inventory-table-head, .branch-inventory-table-row { min-width: 640px; grid-template-columns: minmax(200px, 1fr) 120px 150px 100px; }
 .admin-all-orders-head, .admin-all-orders-row { min-width: 850px; grid-template-columns: 0.9fr 1.5fr 1.1fr 0.8fr 0.8fr 0.8fr; }
 .sales-chart-panel { padding: 14px 16px 4px; }

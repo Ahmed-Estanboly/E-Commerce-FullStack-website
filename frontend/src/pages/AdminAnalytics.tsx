@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowUpRight } from '../components/ui/icons'
 import { AdminLayout } from '../components/layout/admin-layout'
 import { useStoreProducts } from '../hooks/use-products'
+import { useBranches } from '../hooks/use-branches'
 import { useFetch } from '../hooks/useFetch'
 import { analyticsService, type SalesAnalytics } from '../lib/api/analytics.service'
 import { SalesChart } from '../components/admin/SalesChart'
@@ -41,8 +42,10 @@ function Delta({ value, suffix = '' }: { value: number | null; suffix?: string }
 
 const AdminAnalytics = () => {
   const [days, setDays] = useState<number>(30)
+  const [branchId, setBranchId] = useState<string>('')
   const { products, isLoading } = useStoreProducts()
-  const salesRequest = useCallback((signal: AbortSignal) => analyticsService.sales(days, signal), [days])
+  const { branches } = useBranches()
+  const salesRequest = useCallback((signal: AbortSignal) => analyticsService.sales(days, branchId || undefined, signal), [days, branchId])
   const salesResult = useFetch<SalesAnalytics>(salesRequest)
   const sales = salesResult.data
 
@@ -131,6 +134,11 @@ const AdminAnalytics = () => {
       value: pct.format(cancelRate),
       note: `${cancelled?.count ?? 0} of ${statusTotals.count} orders cancelled · ${pct.format(deliveryRate)} delivered`,
     })
+    rows.push({
+      label: 'Customer mix',
+      value: `${sales.customers.newCustomers} new · ${sales.customers.returningCustomers} returning`,
+      note: `${sales.customers.registered} registered buyers · ${sales.guestOrders} guest checkouts this period`,
+    })
     if (!isLoading) {
       const soldCount = sales.productsSold
       const zeroSales = Math.max(products.length - soldCount, 0)
@@ -161,6 +169,15 @@ const AdminAnalytics = () => {
               <div className="period-switch" role="group" aria-label="Analytics period">
                 {PERIODS.map((p) => <button key={p} type="button" className={days === p ? 'is-active' : ''} onClick={() => setDays(p)}>{p}d</button>)}
               </div>
+              <select
+                value={branchId}
+                onChange={(event) => setBranchId(event.target.value)}
+                aria-label="Filter by branch"
+                className="h-10 border border-line bg-canvas/40 px-3 font-mono text-[10px] uppercase text-ink outline-none focus:border-line-strong"
+              >
+                <option value="">All branches</option>
+                {branches.map((branch) => <option key={branch._id} value={branch._id}>{branch.name}</option>)}
+              </select>
               <Link className="admin-outline-button" to="/admin/dashboard">Back to dashboard <ArrowUpRight aria-hidden="true" /></Link>
               <button className="admin-accent-button" type="button" onClick={() => salesResult.refetch()}>Refresh data <ArrowUpRight aria-hidden="true" /></button>
             </div>
@@ -249,6 +266,24 @@ const AdminAnalytics = () => {
                   </div>
                 </section>
               </div>
+
+              {sales.stockRisk.length ? (
+                <section className="admin-panel admin-orders-panel">
+                  <div className="admin-panel-heading"><span>Stock-out risk</span><span>Top sellers under 7 days cover</span></div>
+                  <div className="admin-table analytics-products-table analytics-5col">
+                    <div className="admin-table-head"><span>Product</span><span>Sold</span><span>Revenue</span><span>Stock</span><span>Cover</span></div>
+                    {sales.stockRisk.map((product) => (
+                      <div className="admin-table-row" key={product._id}>
+                        <span className="product-name"><SmartImage src={productById.get(product._id)?.images?.[0]} fallbackSrc={productById.get(product._id)?.category.image} alt="" presentation="general" fallbackLabel={product.title.slice(0, 2)} className="product-thumb" />{product.title}</span>
+                        <span>{product.quantity}</span>
+                        <span>{currencyFull.format(product.revenue)}</span>
+                        <span>{product.totalStock}</span>
+                        <span>{product.totalStock === 0 ? <em className="order-status status-cancelled">Out</em> : `${product.coverDays}d`}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
 
               {sales.inventoryAlerts.some((b) => b.lowStock + b.outOfStock > 0) ? (
                 <section className="admin-panel admin-orders-panel">

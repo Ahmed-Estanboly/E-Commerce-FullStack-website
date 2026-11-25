@@ -5,6 +5,7 @@ import { Logo } from '../ui/logo'
 import { useStoreProducts } from '../../hooks/use-products'
 import { ThemeToggle } from './theme-toggle'
 import { ProfileMenu } from './profile-menu'
+import { NotificationBell } from './NotificationBell'
 
 type AdminPage = 'dashboard' | 'analytics' | 'branches' | 'orders' | 'products' | 'customers' | 'coupons'
 
@@ -76,6 +77,7 @@ export function AdminLayout({ children, activePage, searchPlaceholder = 'Search 
             </div> : null}
           </form>
           <div className="admin-topbar-actions">
+            <NotificationBell />
             <ThemeToggle />
             <ProfileMenu fallbackName="Admin" roleLabel="Store administrator" />
           </div>

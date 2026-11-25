@@ -37,6 +37,7 @@ export interface OrderActor {
 const ADMIN_ROLE = 'master admin';
 const BRANCH_OWNER_ROLES = ['branch owner', 'central owner', 'south owner'];
 const DELIVERY_SHIPPING_FEE = 6.5;
+const LOW_STOCK_THRESHOLD = 5;
 
 @Injectable()
 export class OrdersService {
@@ -72,6 +73,13 @@ export class OrdersService {
       }
       branchItems.set(branchId, [...(branchItems.get(branchId) ?? []), item]);
     }
+
+    const stockAlerts: {
+      branch: BranchDocument;
+      product: ProductDocument;
+      quantity: number;
+      outOfStock: boolean;
+    }[] = [];
 
     const session = await this.connection.startSession();
     try {
@@ -133,6 +141,16 @@ export class OrdersService {
               throw new BadRequestException(
                 `Product "${product.title}" is unavailable or has insufficient stock at ${branch.name}.`,
               );
+            }
+
+            const previousQuantity = reservation.quantity + quantity;
+            if (reservation.quantity === 0) {
+              stockAlerts.push({ branch, product, quantity: 0, outOfStock: true });
+            } else if (
+              previousQuantity >= LOW_STOCK_THRESHOLD &&
+              reservation.quantity < LOW_STOCK_THRESHOLD
+            ) {
+              stockAlerts.push({ branch, product, quantity: reservation.quantity, outOfStock: false });
             }
           }
         }
@@ -204,6 +222,17 @@ export class OrdersService {
 
       if (!createdOrder) {
         throw new Error('Order transaction completed without creating an order.');
+      }
+      for (const alert of stockAlerts) {
+        void this.notificationsService
+          .notifyInventoryAlert({
+            branchId: alert.branch._id.toString(),
+            branchName: alert.branch.name,
+            productTitle: alert.product.title,
+            quantity: alert.quantity,
+            outOfStock: alert.outOfStock,
+          })
+          .catch(() => undefined);
       }
       return createdOrder;
     } finally {

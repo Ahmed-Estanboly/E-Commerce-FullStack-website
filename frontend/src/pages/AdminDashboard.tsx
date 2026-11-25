@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowUpRight } from '../components/ui/icons'
 import { AdminLayout } from '../components/layout/admin-layout'
@@ -8,29 +8,12 @@ import { useBranches } from '../hooks/use-branches'
 import { useFetch } from '../hooks/useFetch'
 import { analyticsService, type SalesAnalytics } from '../lib/api/analytics.service'
 import { SalesChart } from '../components/admin/SalesChart'
-import type { Product } from '../types/product'
-import { SmartImage } from '../components/ui/smart-image'
 
 const currency = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
+const currencyFull = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })
 
-function buildChartPoints(values: number[]) {
-  const max = Math.max(...values, 1)
-  const points = values.map((value, index) => {
-    const x = values.length === 1 ? 355 : 24 + (662 / (values.length - 1)) * index
-    const y = 188 - (value / max) * 142
-    return `${x} ${y}`
-  }).join(' L ')
-  return `M ${points}`
-}
-
-function getCategoryStats(products: Product[]) {
-  const stats = new Map<string, { count: number; total: number }>()
-  products.forEach((product) => {
-    const current = stats.get(product.category.name) ?? { count: 0, total: 0 }
-    stats.set(product.category.name, { count: current.count + 1, total: current.total + product.price })
-  })
-  return Array.from(stats, ([name, values]) => ({ name, ...values })).sort((a, b) => b.total - a.total)
-}
+const STATUS_ORDER = ['pending', 'confirmed', 'preparing', 'ready', 'shipped', 'delivered', 'cancelled']
+const PERIODS = [7, 30, 90] as const
 
 function PanelHeading({ children, action }: { children: string; action?: string }) {
   return (
@@ -41,48 +24,58 @@ function PanelHeading({ children, action }: { children: string; action?: string 
   )
 }
 
-function AdminDashboardSkeleton() {
+function SalesSkeleton() {
   return (
-    <div className="admin-dashboard-skeleton" aria-label="Loading catalogue dashboard">
+    <div aria-label="Loading sales data">
       <section className="admin-metrics" aria-hidden="true">
         {Array.from({ length: 4 }, (_, index) => (
           <article key={index}><Skeleton className="h-2 w-16" /><Skeleton className="mt-3 h-8 w-20" /><Skeleton className="mt-2 h-2 w-24" /></article>
         ))}
       </section>
       <div className="admin-primary-grid">
-        <section className="admin-panel"><div className="admin-panel-heading"><Skeleton className="h-2 w-40" /><Skeleton className="h-2 w-24" /></div><div className="admin-chart"><Skeleton className="h-full w-full" /></div></section>
-        <section className="admin-panel"><div className="admin-panel-heading"><Skeleton className="h-2 w-32" /><Skeleton className="h-2 w-20" /></div><div className="space-y-5 p-4">{Array.from({ length: 4 }, (_, index) => <Skeleton key={index} className="h-3 w-full" />)}</div></section>
+        <section className="admin-panel"><PanelHeading action="30 days">Revenue &amp; orders</PanelHeading><Skeleton className="m-4 h-40 w-auto" /></section>
+        <section className="admin-panel"><PanelHeading action="By revenue">Top sellers</PanelHeading><div className="space-y-5 p-4">{Array.from({ length: 5 }, (_, index) => <Skeleton key={index} className="h-3 w-full" />)}</div></section>
       </div>
-      <div className="admin-secondary-grid">
-        {Array.from({ length: 2 }, (_, index) => <section className="admin-panel" key={index}><div className="admin-panel-heading"><Skeleton className="h-2 w-32" /><Skeleton className="h-2 w-20" /></div><div className="space-y-5 p-4">{Array.from({ length: 4 }, (_, row) => <Skeleton key={row} className="h-3 w-full" />)}</div></section>)}
-      </div>
-      <section className="admin-panel"><div className="admin-panel-heading"><Skeleton className="h-2 w-28" /><Skeleton className="h-2 w-20" /></div><div className="space-y-5 p-4">{Array.from({ length: 5 }, (_, index) => <Skeleton key={index} className="h-3 w-full" />)}</div></section>
     </div>
   )
 }
 
 const AdminDashboard = () => {
-  const { products, isLoading, error, refetch } = useStoreProducts()
+  const { isLoading: productsLoading } = useStoreProducts()
   const { branches, isLoading: branchesLoading, error: branchesError, refetch: refetchBranches } = useBranches()
-  const salesRequest = useCallback((signal: AbortSignal) => analyticsService.sales(30, signal), [])
-  const { data: sales, error: salesError, refetch: refetchSales } = useFetch<SalesAnalytics>(salesRequest)
-  const categoryStats = getCategoryStats(products)
-  const latestProducts = [...products].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)).slice(0, 5)
-  const topProducts = [...products].sort((a, b) => b.price - a.price).slice(0, 5)
-  const totalCatalogueValue = products.reduce((sum, product) => sum + product.price, 0)
-  const averagePrice = products.length ? totalCatalogueValue / products.length : 0
-  const chartValues = categoryStats.slice(0, 6).map((category) => category.total)
-  const chartPath = buildChartPoints(chartValues.length ? chartValues : [0, 0])
-  const chartAreaPath = `${chartPath} L ${chartValues.length === 1 ? 355 : 686} 202 L 24 202 Z`
+  const [days, setDays] = useState<number>(30)
+  const salesRequest = useCallback((signal: AbortSignal) => analyticsService.sales(days, undefined, signal), [days])
+  const { data: sales, error: salesError, refetch: refetchSales, isLoading: salesLoading } = useFetch<SalesAnalytics>(salesRequest)
+
+  const revenueGrowth = useMemo(() => {
+    if (!sales || sales.previousPeriod.revenue <= 0) return null
+    return ((sales.revenue - sales.previousPeriod.revenue) / sales.previousPeriod.revenue) * 100
+  }, [sales])
+
+  const statusRows = useMemo(() => {
+    if (!sales) return []
+    const known = STATUS_ORDER.map((status) => sales.byStatus.find((row) => row._id === status)).filter(Boolean) as SalesAnalytics['byStatus']
+    const extras = sales.byStatus.filter((row) => !STATUS_ORDER.includes(row._id))
+    return [...known, ...extras]
+  }, [sales])
+  const statusTotal = statusRows.reduce((sum, row) => sum + row.count, 0)
+  const stockAlerts = sales?.inventoryAlerts.filter((b) => b.lowStock + b.outOfStock > 0) ?? []
+  const pendingCount = statusRows.filter((row) => ['pending', 'confirmed', 'preparing'].includes(row._id)).reduce((sum, row) => sum + row.count, 0)
 
   return (
     <AdminLayout activePage="dashboard">
         <div className="admin-content">
           <div className="admin-page-intro">
             <div>
-              <p className="eyebrow">Catalogue overview · live API data</p>
+              <p className="eyebrow">Business overview · live API data</p>
               <h1>The house,<br /><em>at a glance.</em></h1>
-              <p>Live sales, fulfilment and catalogue performance from the connected backend APIs.</p>
+              <p>Sales, fulfilment and branch operations.</p>
+            </div>
+            <div className="admin-intro-actions">
+              <div className="period-switch" role="group" aria-label="Dashboard period">
+                {PERIODS.map((p) => <button key={p} type="button" className={days === p ? 'is-active' : ''} onClick={() => setDays(p)}>{p}d</button>)}
+              </div>
+              <Link className="admin-outline-button" to="/admin/analytics">Full analytics <ArrowUpRight aria-hidden="true" /></Link>
             </div>
           </div>
 
@@ -91,15 +84,15 @@ const AdminDashboard = () => {
           {sales ? (
             <>
               <section className="admin-metrics" aria-label="Sales key performance indicators">
-                <article><span>Revenue · 30d</span><strong>{currency.format(sales.revenue)}</strong><small>{sales.orders} orders</small></article>
+                <article><span>Revenue · {sales.periodDays}d</span><strong>{currency.format(sales.revenue)}</strong>{revenueGrowth === null ? <small>No prior data</small> : <small className={`delta ${revenueGrowth > 0.5 ? 'positive' : revenueGrowth < -0.5 ? 'negative' : 'flat'}`}>{revenueGrowth > 0 ? '+' : ''}{revenueGrowth.toFixed(1)}% vs prev</small>}<small>{sales.orders} orders</small></article>
                 <article><span>Avg order value</span><strong>{currency.format(sales.averageOrderValue)}</strong><small>{sales.itemsSold} items sold</small></article>
-                <article><span>Products selling</span><strong>{sales.productsSold}<span className="text-muted"> / {isLoading ? '…' : products.length}</span></strong><small>Distinct products with sales</small></article>
-                <article><span>Branches selling</span><strong>{sales.byBranch.length}</strong><small>With revenue in period</small></article>
+                <article><span>Awaiting fulfilment</span><strong>{pendingCount}</strong><small>Pending / confirmed / preparing</small></article>
+                <article><span>Stock alerts</span><strong>{stockAlerts.reduce((sum, b) => sum + b.lowStock + b.outOfStock, 0)}</strong><small>{stockAlerts.length} branch{stockAlerts.length === 1 ? '' : 'es'} affected</small></article>
               </section>
 
               <div className="admin-primary-grid">
                 <section className="admin-panel admin-orders-panel">
-                  <PanelHeading action="30 days">Revenue &amp; orders</PanelHeading>
+                  <PanelHeading action={`${sales.periodDays} days`}>Revenue &amp; orders</PanelHeading>
                   <SalesChart days={sales.periodDays} data={sales.daily} currency={currency} />
                 </section>
                 <section className="admin-panel admin-orders-panel">
@@ -116,16 +109,94 @@ const AdminDashboard = () => {
                   <p className="panel-footnote">Ranked by revenue<br />Last {sales.periodDays} days</p>
                 </section>
               </div>
-            </>
-          ) : null}
 
-          {isLoading && products.length === 0 ? <AdminDashboardSkeleton /> : <>
-          <section className="admin-metrics" aria-label="Catalogue key performance indicators">
-            <article><span>Products</span><strong>{isLoading ? '—' : products.length}</strong><small className="positive">Live catalogue count</small></article>
-            <article><span>Categories</span><strong>{isLoading ? '—' : categoryStats.length}</strong><small className="positive">Live category count</small></article>
-            <article><span>Average price</span><strong>{isLoading ? '—' : currency.format(averagePrice)}</strong><small className="positive">Across all products</small></article>
-            <article><span>Catalogue value</span><strong>{isLoading ? '—' : currency.format(totalCatalogueValue)}</strong><small>Sum of listed prices</small></article>
-          </section>
+              <div className="admin-secondary-grid">
+                <section className="admin-panel">
+                  <PanelHeading action={`${statusTotal} orders`}>Order pipeline</PanelHeading>
+                  <div className="analytics-bars">
+                    {statusRows.map((row) => (
+                      <div className="analytics-bar-row" key={row._id}>
+                        <div><span className="capitalize">{row._id}</span><small>{row.count} · {currencyFull.format(row.revenue)}</small></div>
+                        <div className="analytics-bar-track"><i className={row._id === 'delivered' ? 'branch-lime' : ''} style={{ width: `${statusTotal ? row.count / statusTotal * 100 : 0}%` }} /></div>
+                      </div>
+                    ))}
+                    {!statusRows.length ? <p className="p-4 text-xs text-muted">No orders in this period.</p> : null}
+                  </div>
+                </section>
+
+                <section className="admin-panel">
+                  <PanelHeading action="Low stock">Inventory alerts</PanelHeading>
+                  {stockAlerts.length ? (
+                    <div className="admin-table analytics-products-table">
+                      <div className="admin-table-head"><span>Branch</span><span>Low stock</span><span>Out of stock</span></div>
+                      {stockAlerts.map((branch) => (
+                        <div className="admin-table-row" key={branch.branchId}><span>{branch.name}</span><span>{branch.lowStock}</span><span>{branch.outOfStock}</span></div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="p-4 text-xs text-muted">All branches are adequately stocked.</p>
+                  )}
+                  <p className="panel-footnote">SKUs under 5 units or at zero<br />Across all branches</p>
+                </section>
+              </div>
+
+              <div className="admin-secondary-grid">
+                <section className="admin-panel">
+                  <PanelHeading action={`${sales.periodDays} days`}>Revenue by branch</PanelHeading>
+                  <div className="analytics-bars">
+                    {sales.byBranch.map((branch, index) => (
+                      <div className="analytics-bar-row" key={branch.branchId}>
+                        <div><span>{branch.name}</span><small>{branch.orders} orders · {currencyFull.format(branch.revenue)}</small></div>
+                        <div className="analytics-bar-track"><i className={index === 0 ? 'branch-lime' : ''} style={{ width: `${sales.revenue ? branch.revenue / sales.revenue * 100 : 0}%` }} /></div>
+                      </div>
+                    ))}
+                    {!sales.byBranch.length ? <p className="p-4 text-xs text-muted">No sales in this period.</p> : null}
+                  </div>
+                </section>
+
+                <section className="admin-panel">
+                  <PanelHeading action="Registered customers">New vs returning</PanelHeading>
+                  <div className="analytics-bars">
+                    <div className="analytics-bar-row">
+                      <div><span>Returning customers</span><small>Ordered before this period</small></div>
+                      <div className="analytics-bar-track"><i className="branch-lime" style={{ width: `${sales.customers.registered ? sales.customers.returningCustomers / sales.customers.registered * 100 : 0}%` }} /></div>
+                    </div>
+                    <div className="analytics-bar-row">
+                      <div><span>New customers</span><small>First order in this period</small></div>
+                      <div className="analytics-bar-track"><i style={{ width: `${sales.customers.registered ? sales.customers.newCustomers / sales.customers.registered * 100 : 0}%` }} /></div>
+                    </div>
+                    <div className="analytics-bar-row">
+                      <div><span>Guest checkouts</span><small>Orders without an account</small></div>
+                      <div className="analytics-bar-track"><i style={{ width: `${sales.orders ? sales.guestOrders / sales.orders * 100 : 0}%` }} /></div>
+                    </div>
+                  </div>
+                  <p className="panel-footnote">
+                    {sales.customers.registered} registered buyers · {sales.customers.newCustomers} new · {sales.customers.returningCustomers} returning<br />
+                    {sales.guestOrders} guest orders in period
+                  </p>
+                </section>
+              </div>
+
+              {sales.stockRisk.length ? (
+                <section className="admin-panel admin-orders-panel">
+                  <PanelHeading action="Restock now">Top sellers at risk of stockout</PanelHeading>
+                  <div className="admin-table analytics-products-table analytics-5col">
+                    <div className="admin-table-head"><span>Product</span><span>Sold</span><span>Revenue</span><span>Stock</span><span>Cover</span></div>
+                    {sales.stockRisk.map((product) => (
+                      <div className="admin-table-row" key={product._id}>
+                        <span className="truncate">{product.title}</span>
+                        <span>{product.quantity}</span>
+                        <span>{currencyFull.format(product.revenue)}</span>
+                        <span>{product.totalStock}</span>
+                        <span>{product.totalStock === 0 ? <em className="order-status status-cancelled">Out</em> : `${product.coverDays}d`}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="panel-footnote">Top sellers with under 7 days of stock cover<br />Across all branches</p>
+                </section>
+              ) : null}
+            </>
+          ) : salesLoading ? <SalesSkeleton /> : null}
 
           <section className="admin-panel admin-orders-panel mt-4" aria-labelledby="branch-network-heading">
             <div className="admin-panel-heading">
@@ -174,21 +245,7 @@ const AdminDashboard = () => {
             )}
           </section>
 
-          {error ? <div className="admin-api-error" role="alert"><span>Could not load catalogue data: {error}</span><button type="button" onClick={refetch}>Retry</button></div> : null}
-
-          <div className="admin-primary-grid">
-            <section className="admin-panel admin-revenue-panel"><PanelHeading action="Category value">Catalogue value by category</PanelHeading><div className="admin-chart"><div className="chart-y-labels"><span>{currency.format(Math.max(...chartValues, 0))}</span><span>Price</span><span>range</span><span>EUR</span></div><svg viewBox="0 0 720 220" role="img" aria-label="Catalogue value by product category"><defs><linearGradient id="revenue-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="var(--accent)" stopOpacity="0.34" /><stop offset="1" stopColor="var(--accent)" stopOpacity="0.03" /></linearGradient></defs><path className="chart-area" d={chartAreaPath} /><path className="chart-line" d={chartPath} />{(chartValues.length ? chartValues : [0, 0]).map((value, index, values) => <circle key={`${value}-${index}`} cx={values.length === 1 ? 355 : 24 + (662 / (values.length - 1)) * index} cy={188 - (value / Math.max(...values, 1)) * 142} r="3" />)}</svg><div className="chart-months">{(categoryStats.length ? categoryStats.slice(0, 6) : [{ name: 'No data' }]).map((category) => <span key={category.name}>{category.name}</span>)}</div></div><div className="chart-legend"><span><i className="legend-line" /> Category value</span><span><i className="legend-fill" /> Live API</span><Link to="/admin/analytics">Open full analytics <ArrowUpRight aria-hidden="true" /></Link></div></section>
-            <section className="admin-panel low-stock-panel"><PanelHeading action="Latest products">Latest additions</PanelHeading><div className="stock-list">{latestProducts.map((product, index) => <div className="stock-row" key={product.id}><span><b>#{String(index + 1).padStart(2, '0')}</b> {product.title}</span><small>{currency.format(product.price)}</small><div className="stock-bar"><i style={{ width: `${Math.min(100, 25 + product.price / Math.max(averagePrice, 1) * 20)}%` }} /></div></div>)}</div><p className="panel-footnote">Sorted by latest update<br />Prices and titles from the live catalogue</p></section>
-          </div>
-
-          <div className="admin-secondary-grid">
-            <section className="admin-panel"><PanelHeading action="Highest listed price">Top pieces</PanelHeading><div className="admin-table admin-product-table"><div className="admin-table-head"><span>Piece</span><span>Department</span><span>ID</span><span>Price</span></div>{topProducts.map((product) => <div className="admin-table-row" key={product.id}>            <span className="product-name"><SmartImage src={product.images?.[0]} fallbackSrc={product.category.image} alt="" presentation="general" fallbackLabel={product.category.name} className="product-thumb" />{product.title}</span><span>{product.category.name}</span><span>#{product.id}</span><span>{currency.format(product.price)}</span></div>)}</div></section>
-            <section className="admin-panel"><PanelHeading action="Total value">Category performance</PanelHeading><div className="branch-list">{categoryStats.slice(0, 5).map((category, index) => <div className="branch-row" key={category.name}><div><span>{category.name}</span><small>{currency.format(category.total)} · {category.count} items</small></div><i className={`branch-bar ${index === 0 ? 'branch-lime' : ''}`} style={{ width: `${categoryStats[0] ? category.total / categoryStats[0].total * 100 : 0}%` }} /></div>)}</div><p className="panel-footnote">Grouped from product categories<br />Calculated from listed prices</p></section>
-          </div>
-
-          <section className="admin-panel admin-orders-panel"><PanelHeading action="Live catalogue">Product feed</PanelHeading><div className="admin-table admin-orders-table"><div className="admin-table-head"><span>Product ID</span><span>Product</span><span>Category</span><span>Updated</span><span>Price</span><span>Source</span><span /></div>{latestProducts.map((product) => <div className="admin-table-row" key={product.id}><span>#{product.id}</span><span>{product.title}</span><span>{product.category.name}</span><span>{new Date(product.updatedAt).toLocaleDateString()}</span><span>{currency.format(product.price)}</span><span><em className="order-status status-complete">API</em></span><Link className="admin-row-action" to={`/products/${product.id}`}>View</Link></div>)}</div></section>
-          <footer className="admin-footer"><span>LIVE CATALOGUE · BACKEND API</span><span>{error ? 'API ERROR · RETRY AVAILABLE' : isLoading ? 'LOADING CATALOGUE' : `LAST REFRESHED · ${products.length} PRODUCTS`}</span></footer>
-          </>}
+          <footer className="admin-footer"><span>LIVE DASHBOARD · BACKEND API</span><span>{sales ? `LAST ${sales.periodDays} DAYS · ${sales.orders} ORDERS` : productsLoading ? 'LOADING' : 'NO SALES DATA'}</span></footer>
         </div>
     </AdminLayout>
   )

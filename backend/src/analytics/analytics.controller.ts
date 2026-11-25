@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsInt, IsMongoId, IsOptional, Max, Min } from 'class-validator';
 
 class SalesQueryDto {
   @IsOptional()
@@ -13,6 +13,10 @@ class SalesQueryDto {
   @Min(1)
   @Max(365)
   days?: number;
+
+  @IsOptional()
+  @IsMongoId()
+  branchId?: string;
 }
 
 @Controller('analytics')
@@ -23,6 +27,6 @@ export class AnalyticsController {
 
   @Get('sales')
   sales(@Query() query: SalesQueryDto) {
-    return this.analyticsService.sales(query.days ?? 30);
+    return this.analyticsService.sales(query.days ?? 30, query.branchId);
   }
 }
