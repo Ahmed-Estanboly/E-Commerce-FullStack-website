@@ -65,13 +65,17 @@ export const resolveImageUrl = (url?: string | null): string | null => {
   if (/^https?:\/\//i.test(clean)) return clean
   if (clean.startsWith('/')) {
     const apiUrl = import.meta.env.VITE_API_URL as string | undefined
+    // Uploaded files are served under the /api/v1 prefix
+    const isUpload = clean.startsWith('/uploads/')
+    const path = isUpload ? `/api/v1${clean}` : clean
     if (apiUrl) {
       try {
-        return new URL(clean, apiUrl.replace(/\/api\/v1\/?$/, '/')).toString()
+        return new URL(path, apiUrl.replace(/\/api\/v1\/?$/, '/')).toString()
       } catch {
         return clean
       }
     }
+    return path
   }
   return clean
 }

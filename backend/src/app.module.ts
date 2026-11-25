@@ -58,8 +58,7 @@ import { join } from 'node:path';
     AnalyticsModule,
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),
-      serveRoot: '/uploads',
-      exclude: ['/api/(.*)'],
+      serveRoot: '/api/v1/uploads',
     }),
   ],
   controllers: [AppController],

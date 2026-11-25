@@ -10,14 +10,9 @@ export default defineConfig({
       'maximus-backed-umbilically.ngrok-free.dev'
     ],
     proxy: {
-      // Forward all /api requests to your local backend
+      // Forward all /api requests (incl. /api/v1/uploads images) to your local backend
       '/api': {
         target: 'http://localhost:3000', // Change to your backend port
-        changeOrigin: true,
-      },
-      // Uploaded product images are served by the backend at /uploads
-      '/uploads': {
-        target: 'http://localhost:3000',
         changeOrigin: true,
       }
     }
