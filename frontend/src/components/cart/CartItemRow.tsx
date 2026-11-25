@@ -14,7 +14,7 @@ export interface CartItemRowProps {
 /** Reusable cart row with quantity controls and a remove action. */
 export function CartItemRow({ item: { product, quantity, branchId, branchName }, onQuantityChange, onRemove }: CartItemRowProps) {
   return (
-    <li className="grid grid-cols-[68px_minmax(0,1fr)_auto] items-center gap-x-3 py-4 sm:grid-cols-[88px_minmax(0,1fr)_auto] sm:gap-x-4 sm:py-5">
+    <li className="grid grid-cols-[60px_minmax(0,1fr)_auto] items-center gap-x-2 py-3 sm:grid-cols-[68px_minmax(0,1fr)_auto] sm:gap-x-3 sm:py-4 lg:grid-cols-[88px_minmax(0,1fr)_auto] lg:gap-x-4 lg:py-5">
       <Link
         to={`/products/${product.id}`}
         className="row-span-2 block aspect-square overflow-hidden bg-canvas-alt focus-ring sm:row-span-1"
@@ -32,10 +32,10 @@ export function CartItemRow({ item: { product, quantity, branchId, branchName },
       </Link>
 
       <div className="min-w-0 self-end sm:self-center">
-        <p className="font-mono text-[7px] uppercase tracking-[0.16em] text-muted sm:text-[8px]">
+        <p className="font-mono text-[6px] uppercase tracking-[0.14em] text-muted sm:text-[7px] lg:text-[8px]">
           {product.category?.name ?? 'NOVA'} · {branchName}
         </p>
-        <h2 className="mt-1 font-display text-[clamp(1.05rem,2vw,1.55rem)] leading-tight tracking-[-0.03em]">
+        <h2 className="mt-0.5 font-display text-[clamp(0.95rem,2vw,1.4rem)] leading-tight tracking-[-0.03em] sm:mt-1">
           <Link to={`/products/${product.id}`} className="transition-colors hover:text-accent">
             {product.title}
           </Link>
@@ -45,11 +45,11 @@ export function CartItemRow({ item: { product, quantity, branchId, branchName },
         </p>
       </div>
 
-      <p className="row-start-1 self-start pt-1 text-right font-mono text-[9px] tabular text-ink sm:row-start-auto sm:self-center sm:pt-0 sm:text-[10px]">
+      <p className="row-start-1 self-start pt-1 text-right font-mono text-[8px] tabular text-ink sm:row-start-auto sm:self-center sm:pt-0 sm:text-[9px] lg:text-[10px]">
         {formatPrice(product.price * quantity)}
       </p>
 
-      <div className="col-start-2 row-start-2 mt-2 flex items-center gap-3 sm:mt-3">
+      <div className="col-start-2 row-start-2 mt-1.5 flex items-center gap-2 sm:mt-2 sm:gap-3">
         <QuantityStepper
           value={quantity}
           onChange={(nextQuantity) => onQuantityChange(product.id, nextQuantity, branchId)}

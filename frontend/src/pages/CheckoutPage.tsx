@@ -270,17 +270,17 @@ export const CheckoutPage: React.FC = () => {
   }
 
   return (
-    <div className="page-enter pb-16 sm:pb-20">
-      <div className="border-b border-line pt-6 pb-5 sm:pt-8 sm:pb-7">
+    <div className="page-enter pb-12 sm:pb-16">
+      <div className="border-b border-line pt-5 pb-4 sm:pt-6 sm:pb-5">
         <div className="container-nova">
           <nav aria-label="Breadcrumb" className="eyebrow">
             HOME <span className="mx-1.5">/</span> BAG <span className="mx-1.5">/</span>{' '}
             <span className="text-ink">CHECKOUT</span>
           </nav>
 
-          <p className="eyebrow mt-4 sm:mt-5">— STEP 02 OF 03</p>
+          <p className="eyebrow mt-3 sm:mt-4">— STEP 02 OF 03</p>
 
-          <div className="mt-2 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+          <div className="mt-2 flex flex-col justify-between gap-3 md:flex-row md:items-end">
             <h1 className="display-title text-ink">
               Checkout<span className="text-accent">.</span>
             </h1>
@@ -292,18 +292,18 @@ export const CheckoutPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="border-b border-line py-3 sm:py-4">
-        <div className="container-nova flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-            <div className="flex items-center gap-2">
+      <div className="border-b border-line py-2.5 sm:py-3">
+        <div className="container-nova flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-1.5">
               <span className="bg-accent px-1.5 py-0.5 font-mono text-[9px] font-medium text-accent-ink">01</span>
               <span className="eyebrow-strong">BAG</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <span className="bg-accent px-1.5 py-0.5 font-mono text-[9px] font-medium text-accent-ink">02</span>
               <span className="eyebrow-strong">DETAILS</span>
             </div>
-            <div className="flex items-center gap-2 opacity-60">
+            <div className="flex items-center gap-1.5 opacity-60">
               <span className="border border-line-strong bg-surface px-1.5 py-0.5 font-mono text-[9px] text-muted">03</span>
               <span className="eyebrow">CONFIRMATION</span>
             </div>
@@ -311,7 +311,7 @@ export const CheckoutPage: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <span className="eyebrow">BRANCH:</span>
-            <span className="border border-line-strong bg-surface px-2.5 py-1 font-mono text-[10px] uppercase text-ink">
+            <span className="border border-line-strong bg-surface px-2 py-1 font-mono text-[10px] uppercase text-ink">
               {isLoadingBranches
                 ? 'Loading…'
                 : cartBranches.length
@@ -325,9 +325,9 @@ export const CheckoutPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="container-nova pt-6 sm:pt-8">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-start">
-          <form onSubmit={handleSubmit} noValidate className="space-y-10 lg:col-span-8">
+      <div className="container-nova pt-5 sm:pt-6">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
+          <form onSubmit={handleSubmit} noValidate className="space-y-8 lg:col-span-8 sm:space-y-10">
             {branchError ? (
               <div role="alert" className="border border-danger bg-danger-soft px-4 py-3 text-xs text-danger">
                 Could not load store branches: {branchError}

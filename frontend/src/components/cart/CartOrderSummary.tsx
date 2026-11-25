@@ -23,14 +23,14 @@ export function CartOrderSummary({
   const amountToFreeShipping = Math.max(FREE_SHIPPING_THRESHOLD - subtotal, 0)
 
   return (
-    <aside className="h-fit border border-line bg-surface p-4 sm:p-5 lg:sticky lg:top-32">
-      <div className="flex items-center justify-between border-b border-line pb-3">
+    <aside className="h-fit border border-line bg-surface p-3 sm:p-4 lg:sticky lg:top-32 lg:p-5">
+      <div className="flex items-center justify-between border-b border-line pb-2.5">
         <p className="font-mono text-[8px] uppercase tracking-[0.17em] text-muted">Order summary</p>
         <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-muted">
           {pluralise(itemCount, 'piece')}
         </p>
       </div>
-      <dl className="space-y-2.5 py-4 text-[10px]">
+      <dl className="space-y-2 py-3 text-[10px]">
         <div className="flex justify-between gap-3">
           <dt className="text-muted">Subtotal</dt>
           <dd className="tabular">{formatPrice(subtotal)}</dd>
@@ -48,16 +48,16 @@ export function CartOrderSummary({
           <dd className="text-right">Collect or delivery</dd>
         </div>
       </dl>
-      <div className="flex items-baseline justify-between border-t border-line py-4">
+      <div className="flex items-baseline justify-between border-t border-line py-3.5">
         <span className="font-mono text-[8px] uppercase tracking-[0.14em]">Total</span>
-        <span className="font-display text-[21px] tabular">{formatPrice(subtotal + delivery)}</span>
+        <span className="font-display text-[19px] tabular">{formatPrice(subtotal + delivery)}</span>
       </div>
       {amountToFreeShipping > 0 ? (
-        <p className="mb-3 border border-line px-2.5 py-2 font-mono text-[7px] uppercase leading-relaxed tracking-[0.08em] text-muted">
+        <p className="mb-2.5 border border-line px-2.5 py-2 font-mono text-[7px] uppercase leading-relaxed tracking-[0.08em] text-muted">
           Free collection · delivery is complimentary over {formatPrice(FREE_SHIPPING_THRESHOLD)}
         </p>
       ) : (
-        <p className="mb-3 border border-accent/20 bg-accent/[0.04] px-2.5 py-2 font-mono text-[7px] uppercase leading-relaxed tracking-[0.08em] text-accent/80">
+        <p className="mb-2.5 border border-accent/20 bg-accent/[0.04] px-2.5 py-2 font-mono text-[7px] uppercase leading-relaxed tracking-[0.08em] text-accent/80">
           Complimentary delivery unlocked
         </p>
       )}
@@ -70,7 +70,7 @@ export function CartOrderSummary({
       >
         Keep looking
       </Link>
-      <p className="mt-3 font-mono text-[7px] uppercase leading-relaxed tracking-[0.09em] text-muted">
+      <p className="mt-2.5 font-mono text-[7px] uppercase leading-relaxed tracking-[0.09em] text-muted">
         Tax included · all fees final · secure checkout
       </p>
     </aside>

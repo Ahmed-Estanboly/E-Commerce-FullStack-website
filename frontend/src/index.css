@@ -604,6 +604,118 @@
     }
   }
 
+  /* 360px and smaller mobile devices - further optimization */
+  @media (max-width: 360px) {
+    .container-nova {
+      padding-inline: 0.875rem;
+    }
+
+    body {
+      font-size: 13px;
+    }
+
+    /* Reduce section padding further */
+    section {
+      padding-top: 1.5rem;
+      padding-bottom: 1.5rem;
+    }
+
+    /* Smaller gaps for grids */
+    .grid {
+      gap: 0.75rem;
+    }
+
+    /* Reduce button padding */
+    button, a {
+      padding: 0.5rem 0.75rem;
+    }
+
+    /* Smaller font sizes for better fit */
+    h1, h2, h3 {
+      font-size: 1.25rem;
+    }
+
+    /* Reduce container margins */
+    .container-nova {
+      margin-inline: 0.5rem;
+    }
+
+    /* Optimize for very small screens */
+    .product-card {
+      padding: 0.5rem;
+    }
+
+    /* Reduce border padding */
+    .border {
+      padding: 0.75rem;
+    }
+
+    /* Smaller input fields */
+    input, select, textarea {
+      padding: 0.5rem;
+      font-size: 14px;
+    }
+  }
+
+  /* 320px mobile devices - ultra compact layout */
+  @media (max-width: 320px) {
+    .container-nova {
+      padding-inline: 0.75rem;
+    }
+
+    body {
+      font-size: 12px;
+    }
+
+    /* Even tighter section padding */
+    section {
+      padding-top: 1rem;
+      padding-bottom: 1rem;
+    }
+
+    /* Minimal grid gaps */
+    .grid {
+      gap: 0.5rem;
+    }
+
+    /* Compact buttons and links */
+    button, a {
+      padding: 0.375rem 0.625rem;
+    }
+
+    /* Very small headings */
+    h1, h2, h3, h4 {
+      font-size: 1.125rem;
+    }
+
+    /* Minimal container margins */
+    .container-nova {
+      margin-inline: 0.25rem;
+    }
+
+    /* Compact inputs */
+    input, select, textarea {
+      padding: 0.375rem;
+      font-size: 13px;
+    }
+
+    /* Smaller icons */
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Tighter hero collage on tiny screens */
+    .home-hero-collage {
+      height: 260px;
+      gap: 5px;
+    }
+
+    .hero-tile-bar {
+      padding: 8px 10px;
+    }
+  }
+
   /* iOS safe area support for devices with notches/home indicators */
   @supports (padding: env(safe-area-inset-bottom)) {
     body {

@@ -86,21 +86,18 @@ function ProductCard({ product }: ProductCardProps) {
       </div>
 
       {/* Product Info */}
-      <div className="mt-3 space-y-1">
-        <p className="font-mono text-[10px] uppercase tracking-wider text-muted">
+      <div className="mt-2 space-y-0.5 sm:mt-3 sm:space-y-1">
+        <p className="font-mono text-[9px] uppercase tracking-wider text-muted sm:text-[10px]">
           {product.category.name}
         </p>
 
-        <h3 className="text-base font-medium text-ink">
+        <h3 className="text-sm font-medium text-ink sm:text-base">
           {product.title}
         </h3>
-       
-       
-        <p className="shrink-0 pt-0.5 text-[13px] tabular text-ink">
-              {formatPrice(product.price)}
-            </p>
 
-
+        <p className="shrink-0 pt-0.5 text-[12px] tabular text-ink sm:text-[13px]">
+          {formatPrice(product.price)}
+        </p>
       </div>
     </article>
     </Link>

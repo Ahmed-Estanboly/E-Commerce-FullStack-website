@@ -23,11 +23,11 @@ export function CartRecommendations({
   shopHref = '/shop',
 }: CartRecommendationsProps) {
   return (
-    <section className="mt-14 border-t border-line pt-5 sm:mt-16" aria-labelledby="cart-recommendations">
+    <section className="mt-8 border-t border-line pt-4 sm:mt-10 sm:pt-5 lg:mt-14 lg:pt-5" aria-labelledby="cart-recommendations">
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="font-mono text-[7px] uppercase tracking-[0.18em] text-muted">Complete the room</p>
-          <h2 id="cart-recommendations" className="mt-1 font-display text-2xl tracking-[-0.035em]">
+          <h2 id="cart-recommendations" className="mt-1 font-display text-xl tracking-[-0.035em] sm:text-2xl">
             Pieces to <em className="font-light italic text-accent">consider.</em>
           </h2>
         </div>

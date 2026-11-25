@@ -19,7 +19,7 @@ function BranchSelector() {
   }
 
   return (
-    <label className="flex items-center gap-2">
+    <label className="hidden min-[400px]:flex items-center gap-2">
       <span className="sr-only">Store branch</span>
       <select
         aria-label="Store branch"
@@ -34,6 +34,31 @@ function BranchSelector() {
         ))}
       </select>
       {branchError ? <span className="sr-only" role="status">{branchError}</span> : null}
+    </label>
+  )
+}
+
+function DrawerBranchSelector({ onChange }: { onChange?: () => void }) {
+  const { branches, selectedBranchId, isLoadingBranches, selectBranch } = useBranchSelection()
+
+  return (
+    <label className="flex items-center gap-2">
+      <span className="eyebrow shrink-0">Store</span>
+      <select
+        aria-label="Store branch"
+        value={selectedBranchId ?? ''}
+        onChange={(event) => {
+          if (event.target.value !== selectedBranchId) selectBranch(event.target.value)
+          onChange?.()
+        }}
+        disabled={isLoadingBranches || branches.filter((branch) => branch.isActive).length === 0}
+        className="min-w-0 flex-1 border border-line bg-canvas px-2 py-2 text-xs text-ink"
+      >
+        {!selectedBranchId ? <option value="">{isLoadingBranches ? 'Loading stores…' : 'Select a store'}</option> : null}
+        {branches.filter((branch) => branch.isActive).map((branch) => (
+          <option key={branch._id} value={branch._id}>{branch.name}</option>
+        ))}
+      </select>
     </label>
   )
 }
@@ -220,7 +245,7 @@ export function Header({
               >
                 <Search className="h-[17px] w-[17px]" strokeWidth={1.5} aria-hidden="true" />
               </button>
-              <ThemeToggle />
+              <ThemeToggle className="hidden min-[400px]:block" />
               <BranchSelector />
               {isSignedIn ? <NotificationBell /> : null}
               {isSignedIn ? <div className="relative ml-1"><button type="button" onClick={() => setAccountMenuOpen((open) => !open)} className="focus-ring flex h-9 w-9 items-center justify-center rounded-full bg-accent font-mono text-[10px] font-medium text-accent-ink transition-transform hover:scale-105 sm:h-8 sm:w-8" aria-label="Open account menu" aria-expanded={accountMenuOpen}>{accountInitial}</button>{accountMenuOpen ? <div className="absolute right-0 top-10 z-50 grid min-w-40 border border-line bg-surface p-1 shadow-lg"><Link to={dashboardHref ?? '/account'} onClick={() => setAccountMenuOpen(false)} className="px-3 py-2 text-left text-[11px] text-ink transition-colors hover:bg-canvas-alt">Account dashboard</Link><button type="button" onClick={logout} className="px-3 py-2 text-left text-[11px] text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink">Log out</button></div> : null}</div> : <div className="hidden items-center gap-2 pl-1 lg:flex">
@@ -290,12 +315,16 @@ export function Header({
           </div>
         }
       >
-        <nav aria-label="Mobile navigation" className="border-b border-line pb-5">
+        <div className="mt-4">
+          <DrawerBranchSelector />
+        </div>
+
+        <nav aria-label="Mobile navigation" className="mt-4 border-b border-line pb-4">
           {navigation.map((item, index) => (
             <Link
               key={item.to}
               to={item.to}
-              className="group flex items-baseline justify-between border-b border-line/60 py-4 text-[22px] tracking-[-0.02em] text-ink last:border-0"
+              className="group flex items-baseline justify-between border-b border-line/60 py-3 text-[20px] tracking-[-0.02em] text-ink last:border-0 sm:py-4 sm:text-[22px]"
               onClick={() => setMenuOpen(false)}
             >
               <span className="font-display">{item.label}</span>
@@ -304,7 +333,7 @@ export function Header({
           ))}
         </nav>
 
-        <div className="mt-6 grid gap-2">
+        <div className="mt-5 grid gap-2">
           {isSignedIn ? (
             <>
               <Link
@@ -345,33 +374,33 @@ export function Header({
           )}
         </div>
 
-        <div className="mt-6">
-          <p className="eyebrow mb-3">The house</p>
-          <div className="space-y-1">
+        <div className="mt-5">
+          <p className="eyebrow mb-2">The house</p>
+          <div className="space-y-0.5">
             <Link
               to="/shop"
               onClick={() => setMenuOpen(false)}
-              className="block py-2.5 text-[13px] text-ink-soft transition-colors hover:text-ink"
+              className="block py-2 text-[13px] text-ink-soft transition-colors hover:text-ink"
             >
               Shop the full edit
             </Link>
             <Link
               to="/#services"
               onClick={() => setMenuOpen(false)}
-              className="block py-2.5 text-[13px] text-ink-soft transition-colors hover:text-ink"
+              className="block py-2 text-[13px] text-ink-soft transition-colors hover:text-ink"
             >
               Delivery &amp; returns
             </Link>
             <Link
               to="/cart"
               onClick={() => setMenuOpen(false)}
-              className="block py-2.5 text-[13px] text-ink-soft transition-colors hover:text-ink"
+              className="block py-2 text-[13px] text-ink-soft transition-colors hover:text-ink"
             >
               Your bag{cartCount > 0 ? ` (${cartCount})` : ''}
             </Link>
           </div>
 
-          <p className="mt-4 border-t border-line pt-4 text-[10px] leading-relaxed text-muted">
+          <p className="mt-3 border-t border-line pt-3 text-[10px] leading-relaxed text-muted">
             Demo storefront. No real orders, payments or personal data are processed.
           </p>
         </div>

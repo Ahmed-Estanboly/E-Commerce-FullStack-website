@@ -29,11 +29,11 @@ export default function WishlistPage() {
   }
 
   return (
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-        <div className="mb-8 flex items-end justify-between gap-4">
+      <div className="mx-auto max-w-6xl px-3 py-8 sm:px-4 sm:px-6 sm:py-10">
+        <div className="mb-6 flex items-end justify-between gap-3 sm:mb-8 sm:gap-4">
           <div>
             <p className="eyebrow">Your account</p>
-            <h1 className="mt-1 font-display text-4xl tracking-[-0.03em]">Wish<em>list.</em></h1>
+            <h1 className="mt-1 font-display text-3xl tracking-[-0.03em] sm:text-4xl">Wish<em>list.</em></h1>
           </div>
           <Link to="/account" className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted transition-colors hover:text-ink">← Back to account</Link>
         </div>

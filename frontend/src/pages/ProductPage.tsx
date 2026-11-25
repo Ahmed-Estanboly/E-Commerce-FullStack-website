@@ -440,62 +440,62 @@ function ProductDetail({
 
             <h1
               id="product-title"
-              className="mt-3 font-display text-[clamp(2.2rem,5.4vw,5.8rem)] leading-[0.88] tracking-[-0.055em] sm:mt-4"
+              className="mt-2 font-display text-[clamp(1.8rem,4.5vw,4.5rem)] leading-[0.9] tracking-[-0.055em] sm:mt-3 sm:text-[clamp(2.2rem,5.4vw,5.8rem)]"
             >
               {currentProduct.title}
             </h1>
 
-            <div className="mt-5 flex flex-wrap items-baseline justify-between gap-3 border-b border-line pb-5 sm:mt-6">
+            <div className="mt-4 flex flex-wrap items-baseline justify-between gap-3 border-b border-line pb-4 sm:mt-5 sm:pb-5">
               <div>
-                <p className="font-display text-[clamp(1.6rem,2.7vw,2.5rem)] leading-none tabular tracking-[-0.03em]">
+                <p className="font-display text-[clamp(1.4rem,2.2vw,2rem)] leading-none tabular tracking-[-0.03em] sm:text-[clamp(1.6rem,2.7vw,2.5rem)]">
                   {formatPrice(currentProduct.price)}
                 </p>
                 {currentProduct.ratingCount ? (
-                  <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-muted">
+                  <p className="mt-1.5 font-mono text-[8px] uppercase tracking-[0.14em] text-muted sm:mt-2 sm:text-[9px]">
                     <span className="text-accent">★</span> {currentProduct.ratingAverage?.toFixed(1)} ·{' '}
                     {currentProduct.ratingCount} {currentProduct.ratingCount === 1 ? 'review' : 'reviews'}
                   </p>
                 ) : null}
               </div>
-              <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-muted">
+              <p className="font-mono text-[7px] uppercase tracking-[0.14em] text-muted sm:text-[8px]">
                 Catalogue ref. NOVA-{String(currentProduct.id).padStart(4, '0')}
               </p>
             </div>
 
-            <p className="mt-4 text-[12px] leading-[1.8] text-ink-soft sm:mt-5 sm:text-[13px]">
+            <p className="mt-3 text-[11px] leading-[1.7] text-ink-soft sm:mt-4 sm:text-[12px] sm:leading-[1.8] sm:text-[13px]">
               {currentProduct.description}
             </p>
 
-            <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-y border-line py-5 sm:mt-7">
+            <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-y border-line py-4 sm:mt-6 sm:gap-x-6 sm:gap-y-5 sm:py-5">
               <div>
-                <dt className="font-mono text-[8px] uppercase tracking-[0.16em] text-muted">
+                <dt className="font-mono text-[7px] uppercase tracking-[0.16em] text-muted sm:text-[8px]">
                   House
                 </dt>
-                <dd className="mt-1.5 text-[11px] text-ink sm:text-[12px]">
+                <dd className="mt-1 text-[10px] text-ink sm:mt-1.5 sm:text-[11px] sm:text-[12px]">
                   {department ? department.name : 'The edit'}
                 </dd>
               </div>
               <div>
-                <dt className="font-mono text-[8px] uppercase tracking-[0.16em] text-muted">
+                <dt className="font-mono text-[7px] uppercase tracking-[0.16em] text-muted sm:text-[8px]">
                   Category
                 </dt>
-                <dd className="mt-1.5 text-[11px] text-ink sm:text-[12px]">
+                <dd className="mt-1 text-[10px] text-ink sm:mt-1.5 sm:text-[11px] sm:text-[12px]">
                   {currentProduct.category?.name ?? 'This edit'}
                 </dd>
               </div>
               <div>
-                <dt className="font-mono text-[8px] uppercase tracking-[0.16em] text-muted">
+                <dt className="font-mono text-[7px] uppercase tracking-[0.16em] text-muted sm:text-[8px]">
                   Reference
                 </dt>
-                <dd className="mt-1.5 text-[11px] tabular text-ink sm:text-[12px]">
+                <dd className="mt-1 text-[10px] tabular text-ink sm:mt-1.5 sm:text-[11px] sm:text-[12px]">
                   NOVA-{String(currentProduct.id).padStart(4, '0')}
                 </dd>
               </div>
               <div>
-                <dt className="font-mono text-[8px] uppercase tracking-[0.16em] text-muted">
+                <dt className="font-mono text-[7px] uppercase tracking-[0.16em] text-muted sm:text-[8px]">
                   The service
                 </dt>
-                <dd className="mt-1.5 text-[11px] text-ink sm:text-[12px]">
+                <dd className="mt-1 text-[10px] text-ink sm:mt-1.5 sm:text-[11px] sm:text-[12px]">
                   <Link
                     to="/#services"
                     className="link-underline transition-colors hover:text-ink-soft"
@@ -515,26 +515,26 @@ function ProductDetail({
               </div>
             ) : null}
 
-            <div className="mt-7">
-              <div className="flex items-end justify-between gap-4">
+            <div className="mt-5">
+              <div className="flex items-end justify-between gap-3">
                 <p className="eyebrow">Quantity</p>
-                <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-muted">
+                <p className="font-mono text-[7px] uppercase tracking-[0.12em] text-muted sm:text-[8px]">
                   {maxQuantity === 0 ? 'Unavailable' : `Maximum ${maxQuantity}`}
                 </p>
               </div>
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                <div className="flex h-[52px] items-stretch border border-line bg-surface">
+              <div className="mt-2.5 flex flex-wrap gap-2 sm:mt-3">
+                <div className="flex h-[48px] items-stretch border border-line bg-surface sm:h-[52px]">
                   <button
                     type="button"
                     onClick={() => setQuantity((current) => clampQuantity(current - 1, maxQuantity))}
                     disabled={quantity <= 1}
-                    className="focus-ring flex w-12 items-center justify-center text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink disabled:pointer-events-none disabled:opacity-35 sm:w-11"
+                    className="focus-ring flex w-10 items-center justify-center text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink disabled:pointer-events-none disabled:opacity-35 sm:w-11"
                     aria-label="Decrease quantity"
                   >
                     <span className="block h-px w-3.5 bg-current" aria-hidden="true" />
                   </button>
-                  <span className="flex w-12 items-center justify-center border-x border-line">
+                  <span className="flex w-10 items-center justify-center border-x border-line sm:w-11">
                     <input
                       type="text"
                       inputMode="numeric"
@@ -555,7 +555,7 @@ function ProductDetail({
                     type="button"
                     onClick={() => setQuantity((current) => clampQuantity(current + 1, maxQuantity))}
                     disabled={quantity >= maxQuantity || maxQuantity === 0}
-                    className="focus-ring flex w-12 items-center justify-center text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink disabled:pointer-events-none disabled:opacity-35 sm:w-11"
+                    className="focus-ring flex w-10 items-center justify-center text-ink-soft transition-colors hover:bg-canvas-alt hover:text-ink disabled:pointer-events-none disabled:opacity-35 sm:w-11"
                     aria-label="Increase quantity"
                   >
                     <Plus className="h-4 w-4" aria-hidden="true" />
@@ -567,7 +567,7 @@ function ProductDetail({
                   size="lg"
                   onClick={handleAddToCart}
                   disabled={maxQuantity === 0}
-                  className="min-w-[140px] flex-1 sm:min-w-[190px]"
+                  className="min-w-[120px] flex-1 sm:min-w-[190px]"
                   leftIcon={<ShoppingBag className="h-4 w-4" aria-hidden="true" />}
                 >
                   {maxQuantity === 0
@@ -595,12 +595,12 @@ function ProductDetail({
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3 border-t border-line pt-5 sm:grid-cols-2">
-              <p className="flex items-start gap-2 text-[11px] leading-relaxed text-muted">
+            <div className="mt-4 grid gap-3 border-t border-line pt-4 sm:mt-5 sm:grid-cols-2 sm:pt-5">
+              <p className="flex items-start gap-2 text-[10px] leading-relaxed text-muted sm:text-[11px]">
                 <Truck className="mt-0.5 h-4 w-4 shrink-0 text-ink-soft" strokeWidth={1.4} aria-hidden="true" />
                 Delivery in 2–4 working days, tracked from the studio.
               </p>
-              <p className="flex items-start gap-2 text-[11px] leading-relaxed text-muted">
+              <p className="flex items-start gap-2 text-[10px] leading-relaxed text-muted sm:text-[11px]">
                 <RotateCcw className="mt-0.5 h-4 w-4 shrink-0 text-ink-soft" strokeWidth={1.4} aria-hidden="true" />
                 Thirty-day returns on unworn pieces in original packaging.
               </p>

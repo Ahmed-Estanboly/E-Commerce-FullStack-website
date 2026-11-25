@@ -392,7 +392,7 @@ function ProductsPage() {
         <button
           type="button"
           onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-          className="md:hidden flex items-center justify-between gap-3 border border-line bg-surface px-4 py-3 text-sm text-ink transition-colors hover:border-ink"
+          className="md:hidden flex items-center justify-between gap-3 border border-line bg-surface px-3 py-2.5 text-sm text-ink transition-colors hover:border-ink"
           aria-expanded={mobileFiltersOpen}
         >
           <span className="flex items-center gap-2">
@@ -520,13 +520,13 @@ function ProductsPage() {
               placeholder="Search products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full border border-line bg-surface px-3 py-2 text-xs text-ink placeholder:text-muted outline-none transition-colors focus:border-ink sm:w-48"
+              className="w-full border border-line bg-surface px-2.5 py-2 text-xs text-ink placeholder:text-muted outline-none transition-colors focus:border-ink sm:w-48 sm:px-3"
             />
 
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="border border-line bg-surface px-3 py-2 text-[10px] uppercase tracking-wider text-ink outline-none transition-colors focus:border-ink"
+              className="border border-line bg-surface px-2.5 py-2 text-[10px] uppercase tracking-wider text-ink outline-none transition-colors focus:border-ink sm:px-3"
             >
               <option value="default">Newest first</option>
               <option value="price-low">Price: Low to High</option>
