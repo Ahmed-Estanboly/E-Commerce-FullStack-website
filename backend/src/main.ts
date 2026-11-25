@@ -6,15 +6,21 @@ import helmet from 'helmet';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(helmet());
-  const configuredOrigins = (process.env.FRONTEND_URL ?? 'http://localhost:5173')
+  const configuredEntries = (process.env.FRONTEND_URL ?? 'http://localhost:5173')
     .split(',')
-    .map((origin) => origin.trim().replace(/\/+$/, ''))
+    .map((entry) => entry.trim())
     .filter(Boolean);
-  const allowedOrigins = Array.from(new Set([
-    ...configuredOrigins,
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-  ]));
+  // Entries prefixed with "regex:" are treated as regular expressions; all others are exact origins.
+  const exactOrigins = new Set(
+    configuredEntries
+      .filter((entry) => !entry.startsWith('regex:'))
+      .map((origin) => origin.replace(/\/+$/, '')),
+  );
+  const originPatterns = configuredEntries
+    .filter((entry) => entry.startsWith('regex:'))
+    .map((entry) => new RegExp(entry.slice('regex:'.length)));
+  exactOrigins.add('http://localhost:5173');
+  exactOrigins.add('http://127.0.0.1:5173');
   app.enableCors({
     origin(origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) {
       if (!origin) {
@@ -23,7 +29,7 @@ async function bootstrap() {
       }
 
       const isLocalViteOrigin = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
-      const isConfiguredOrigin = allowedOrigins.includes(origin);
+      const isConfiguredOrigin = exactOrigins.has(origin) || originPatterns.some((pattern) => pattern.test(origin));
       const isNgrokOrigin = /^https:\/\/[a-z0-9-]+\.ngrok-free\.dev$/.test(origin);
       const allowed = isLocalViteOrigin || isConfiguredOrigin || isNgrokOrigin;
       callback(allowed ? null : new Error('Origin not allowed by CORS'), allowed);
