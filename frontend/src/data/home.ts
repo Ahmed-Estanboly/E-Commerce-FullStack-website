@@ -16,10 +16,10 @@ import type { Department, HomeService, PresentationType } from '../types/home'
  *   objects ............... photo-1581783898377-1c85bf937427
  *   editorial/world ...... photo-1539109136881-3be0616acf4b
  */
-const category = (name: string): string => `/images/departments/${name}.jpg`
+const category = (name: string): string => `../../images/departments/${name}.jpg`
 
 export const EDITORIAL_IMAGES = {
-  worldFashion: '/images/editorial/world-fashion.jpg',
+  worldFashion: '../../images/editorial/world-fashion.jpg',
 } as const
 
 /**
