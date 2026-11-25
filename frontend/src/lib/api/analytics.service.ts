@@ -5,6 +5,9 @@ export interface SalesAnalytics {
   revenue: number
   orders: number
   averageOrderValue: number
+  itemsSold: number
+  productsSold: number
+  previousPeriod: { revenue: number; orders: number }
   byStatus: { _id: string; count: number; revenue: number }[]
   daily: { date: string; revenue: number; orders: number }[]
   topProducts: { _id: number; title: string; quantity: number; revenue: number }[]

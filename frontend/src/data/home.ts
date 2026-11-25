@@ -1,35 +1,13 @@
 import { Mail, RotateCcw, Store, Truck } from '../components/ui/icons'
 import type { Department, HomeService, PresentationType } from '../types/home'
 
-/**
- * Editorial imagery.
- *
- * NOVA's approved photography, copied into `public/images/` so the storefront
- * does not depend on a third-party CDN at runtime.
- *
- * Sources (Unsplash, used under the Unsplash licence):
- *   fashion ............... photo-1490481651871-ab68de25d43d
- *   pantry ................ photo-1542838132-92c53300491e
- *   audio ................. photo-1505740420928-5e560c06d30e
- *   furniture ............. photo-1586023492125-27b2c045efd7
- *   beauty ................ photo-1556228720-195a672e8a03
- *   objects ............... photo-1581783898377-1c85bf937427
- *   editorial/world ...... photo-1539109136881-3be0616acf4b
- */
+
 const category = (name: string): string => `../../images/departments/${name}.jpg`
 
 export const EDITORIAL_IMAGES = {
   worldFashion: '../../images/editorial/world-fashion.jpg',
 } as const
 
-/**
- * Homepage departments.
- *
- * Presentation-only content: names, captions and photography. No branches,
- * inventory or NOVA catalogue identifiers travel with them. `slug` is the value
- * the storefront passes to `/shop?category=…` so the shop page can filter once
- * that view lands.
- */
 export const HOME_DEPARTMENTS: Department[] = [
   {
     id: 'fashion',

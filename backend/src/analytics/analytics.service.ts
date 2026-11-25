@@ -22,10 +22,23 @@ export class AnalyticsService {
     const since = new Date(Date.now() - days * DAY_MS);
     const validStatuses = ['confirmed', 'preparing', 'ready', 'shipped', 'delivered'] as OrderStatus[];
 
-    const [totals, byStatus, byDay, topProducts, byBranch, branches] = await Promise.all([
+    const periodStart = new Date(since.getTime() - days * DAY_MS);
+    const [totals, itemsTotals, byStatus, byDay, topProducts, byBranch, branches, previousTotals] = await Promise.all([
       this.orderModel.aggregate<{ revenue: number; orders: number }>([
         { $match: { createdAt: { $gte: since }, status: { $ne: 'cancelled' } } },
         { $group: { _id: null, revenue: { $sum: '$total' }, orders: { $sum: 1 } } },
+      ]),
+      this.orderModel.aggregate<{ itemsSold: number; productsSold: number }>([
+        { $match: { createdAt: { $gte: since }, status: { $in: validStatuses } } },
+        { $unwind: '$items' },
+        {
+          $group: {
+            _id: null,
+            itemsSold: { $sum: '$items.quantity' },
+            productsSold: { $addToSet: '$items.productId' },
+          },
+        },
+        { $project: { itemsSold: 1, productsSold: { $size: '$productsSold' } } },
       ]),
       this.orderModel.aggregate<{ _id: string; count: number; revenue: number }>([
         { $match: { createdAt: { $gte: since } } },
@@ -69,6 +82,10 @@ export class AnalyticsService {
         { $sort: { revenue: -1 } },
       ]),
       this.branchModel.find().select('name isActive').lean().exec(),
+      this.orderModel.aggregate<{ revenue: number; orders: number }>([
+        { $match: { createdAt: { $gte: periodStart, $lt: since }, status: { $ne: 'cancelled' } } },
+        { $group: { _id: null, revenue: { $sum: '$total' }, orders: { $sum: 1 } } },
+      ]),
     ]);
 
     const [lowStock, outOfStock] = await Promise.all([
@@ -91,6 +108,12 @@ export class AnalyticsService {
       revenue: totals[0]?.revenue ?? 0,
       orders: totals[0]?.orders ?? 0,
       averageOrderValue: totals[0]?.orders ? Math.round((totals[0].revenue / totals[0].orders) * 100) / 100 : 0,
+      itemsSold: itemsTotals[0]?.itemsSold ?? 0,
+      productsSold: itemsTotals[0]?.productsSold ?? 0,
+      previousPeriod: {
+        revenue: previousTotals[0]?.revenue ?? 0,
+        orders: previousTotals[0]?.orders ?? 0,
+      },
       byStatus,
       daily: byDay.map((row) => ({ date: row._id, revenue: row.revenue, orders: row.orders })),
       topProducts,

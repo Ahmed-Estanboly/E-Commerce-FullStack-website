@@ -1,9 +1,13 @@
+import { useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowUpRight } from '../components/ui/icons'
 import { AdminLayout } from '../components/layout/admin-layout'
 import { Skeleton } from '../components/ui/feedback'
 import { useStoreProducts } from '../hooks/use-products'
 import { useBranches } from '../hooks/use-branches'
+import { useFetch } from '../hooks/useFetch'
+import { analyticsService, type SalesAnalytics } from '../lib/api/analytics.service'
+import { SalesChart } from '../components/admin/SalesChart'
 import type { Product } from '../types/product'
 import { SmartImage } from '../components/ui/smart-image'
 
@@ -60,6 +64,8 @@ function AdminDashboardSkeleton() {
 const AdminDashboard = () => {
   const { products, isLoading, error, refetch } = useStoreProducts()
   const { branches, isLoading: branchesLoading, error: branchesError, refetch: refetchBranches } = useBranches()
+  const salesRequest = useCallback((signal: AbortSignal) => analyticsService.sales(30, signal), [])
+  const { data: sales, error: salesError, refetch: refetchSales } = useFetch<SalesAnalytics>(salesRequest)
   const categoryStats = getCategoryStats(products)
   const latestProducts = [...products].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)).slice(0, 5)
   const topProducts = [...products].sort((a, b) => b.price - a.price).slice(0, 5)
@@ -76,9 +82,42 @@ const AdminDashboard = () => {
             <div>
               <p className="eyebrow">Catalogue overview · live API data</p>
               <h1>The house,<br /><em>at a glance.</em></h1>
-              <p>Product, category and pricing performance from the connected catalogue API, with order and branch inventory data available through the backend.</p>
+              <p>Live sales, fulfilment and catalogue performance from the connected backend APIs.</p>
             </div>
           </div>
+
+          {salesError ? <div className="admin-api-error mb-4" role="alert"><span>Could not load sales data: {salesError}</span><button type="button" onClick={refetchSales}>Retry</button></div> : null}
+
+          {sales ? (
+            <>
+              <section className="admin-metrics" aria-label="Sales key performance indicators">
+                <article><span>Revenue · 30d</span><strong>{currency.format(sales.revenue)}</strong><small>{sales.orders} orders</small></article>
+                <article><span>Avg order value</span><strong>{currency.format(sales.averageOrderValue)}</strong><small>{sales.itemsSold} items sold</small></article>
+                <article><span>Products selling</span><strong>{sales.productsSold}<span className="text-muted"> / {isLoading ? '…' : products.length}</span></strong><small>Distinct products with sales</small></article>
+                <article><span>Branches selling</span><strong>{sales.byBranch.length}</strong><small>With revenue in period</small></article>
+              </section>
+
+              <div className="admin-primary-grid">
+                <section className="admin-panel admin-orders-panel">
+                  <PanelHeading action="30 days">Revenue &amp; orders</PanelHeading>
+                  <SalesChart days={sales.periodDays} data={sales.daily} currency={currency} />
+                </section>
+                <section className="admin-panel admin-orders-panel">
+                  <PanelHeading action="By revenue">Top sellers</PanelHeading>
+                  <div className="stock-list">
+                    {sales.topProducts.slice(0, 5).map((product, index) => (
+                      <div className="stock-row" key={product._id}>
+                        <span><b>#{String(index + 1).padStart(2, '0')}</b> {product.title}</span>
+                        <small>{product.quantity} sold · {currency.format(product.revenue)}</small>
+                      </div>
+                    ))}
+                    {!sales.topProducts.length ? <p className="p-4 text-xs text-muted">No sales recorded yet.</p> : null}
+                  </div>
+                  <p className="panel-footnote">Ranked by revenue<br />Last {sales.periodDays} days</p>
+                </section>
+              </div>
+            </>
+          ) : null}
 
           {isLoading && products.length === 0 ? <AdminDashboardSkeleton /> : <>
           <section className="admin-metrics" aria-label="Catalogue key performance indicators">
