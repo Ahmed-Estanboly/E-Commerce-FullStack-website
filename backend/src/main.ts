@@ -8,7 +8,7 @@ async function bootstrap() {
   app.use(helmet());
   const configuredOrigins = (process.env.FRONTEND_URL ?? 'http://localhost:5173')
     .split(',')
-    .map((origin) => origin.trim())
+    .map((origin) => origin.trim().replace(/\/+$/, ''))
     .filter(Boolean);
   const allowedOrigins = Array.from(new Set([
     ...configuredOrigins,
