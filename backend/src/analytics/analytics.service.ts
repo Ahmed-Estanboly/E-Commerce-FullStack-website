@@ -194,4 +194,60 @@ export class AnalyticsService {
       })),
     };
   }
+
+  /** Order-level CSV export for the same window/branch scope as sales(). */
+  async salesCsv(days = 30, branchId?: string) {
+    const since = new Date(Date.now() - days * DAY_MS);
+    const branchMatch = branchId ? { 'branch._id': branchId } : {};
+    const orders = await this.orderModel
+      .find({ createdAt: { $gte: since }, ...branchMatch })
+      .sort({ createdAt: 1 })
+      .lean()
+      .exec();
+
+    const escape = (value: unknown) => {
+      const normalized = value === null || value === undefined ? '' : String(value);
+      return `"${normalized.replaceAll('"', '""')}"`;
+    };
+    const header = [
+      'orderNumber',
+      'date',
+      'customerName',
+      'email',
+      'phone',
+      'branch',
+      'status',
+      'lineItems',
+      'units',
+      'subtotal',
+      'shipping',
+      'discount',
+      'total',
+      'paymentMethod',
+      'fulfilment',
+    ];
+    const rows = orders.map((order) => {
+      const createdAt = (order as { createdAt?: Date }).createdAt;
+      return [
+        order.orderNumber,
+        createdAt ? createdAt.toISOString() : '',
+        order.customerName,
+        order.email,
+        order.phone,
+        order.branch?.name ?? '',
+        order.status,
+        order.items?.length ?? 0,
+        (order.items ?? []).reduce((sum, item) => sum + (item.quantity ?? 0), 0),
+        order.subtotal,
+        order.shippingFee,
+        order.discount ?? 0,
+        order.total,
+        order.paymentMethod,
+        order.fulfilment,
+      ]
+        .map(escape)
+        .join(',');
+    });
+    return [header.join(','), ...rows].join('\n');
+  }
 }

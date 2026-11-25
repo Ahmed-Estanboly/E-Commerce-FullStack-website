@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ArrowUpRight } from '../components/ui/icons'
+import { ArrowUpRight, Download } from '../components/ui/icons'
 import { AdminLayout } from '../components/layout/admin-layout'
 import { useStoreProducts } from '../hooks/use-products'
 import { useBranches } from '../hooks/use-branches'
@@ -43,6 +42,7 @@ function Delta({ value, suffix = '' }: { value: number | null; suffix?: string }
 const AdminAnalytics = () => {
   const [days, setDays] = useState<number>(30)
   const [branchId, setBranchId] = useState<string>('')
+  const [exporting, setExporting] = useState(false)
   const { products, isLoading } = useStoreProducts()
   const { branches } = useBranches()
   const salesRequest = useCallback((signal: AbortSignal) => analyticsService.sales(days, branchId || undefined, signal), [days, branchId])
@@ -92,6 +92,21 @@ const AdminAnalytics = () => {
       { cls: 'share-cancelled', label: 'Cancelled', value: groups.cancelled / total },
     ].filter((s) => s.value > 0)
   }, [statusRows])
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const blob = await analyticsService.exportCsv(days, branchId || undefined)
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `sales-${days}d${branchId ? '-branch' : ''}.csv`
+      link.click()
+      URL.revokeObjectURL(url)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const revenueGrowth = useMemo(() => {
     if (!sales || sales.previousPeriod.revenue <= 0) return null
@@ -173,12 +188,14 @@ const AdminAnalytics = () => {
                 value={branchId}
                 onChange={(event) => setBranchId(event.target.value)}
                 aria-label="Filter by branch"
-                className="h-10 border border-line bg-canvas/40 px-3 font-mono text-[10px] uppercase text-ink outline-none focus:border-line-strong"
+                className="h-[30px] border border-line bg-canvas/40 px-3 font-mono text-[10px] uppercase text-ink outline-none focus:border-line-strong"
               >
                 <option value="">All branches</option>
                 {branches.map((branch) => <option key={branch._id} value={branch._id}>{branch.name}</option>)}
               </select>
-              <Link className="admin-outline-button" to="/admin/dashboard">Back to dashboard <ArrowUpRight aria-hidden="true" /></Link>
+              <button className="admin-outline-button" type="button" onClick={() => void handleExport()} disabled={exporting}>
+                {exporting ? 'Exporting…' : 'Export CSV'} <Download aria-hidden="true" />
+              </button>
               <button className="admin-accent-button" type="button" onClick={() => salesResult.refetch()}>Refresh data <ArrowUpRight aria-hidden="true" /></button>
             </div>
           </div>
@@ -301,7 +318,7 @@ const AdminAnalytics = () => {
           {salesResult.isLoading ? <p className="p-4 text-xs text-muted">Loading sales analytics…</p> : null}
           {salesResult.error ? <div className="admin-api-error mt-4" role="alert"><span>Could not load sales analytics: {salesResult.error}</span><button type="button" onClick={salesResult.refetch}>Retry</button></div> : null}
 
-          <div className="admin-secondary-grid analytics-grid mt-4">
+          <div className="admin-secondary-grid analytics-grid">
             <section className="admin-panel">
               <div className="admin-panel-heading"><span>Price distribution</span><span>{products.length} products</span></div>
               <div className="analytics-bars">

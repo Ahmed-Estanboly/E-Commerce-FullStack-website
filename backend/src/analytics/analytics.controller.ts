@@ -1,4 +1,5 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import { AnalyticsService } from './analytics.service.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
@@ -28,5 +29,14 @@ export class AnalyticsController {
   @Get('sales')
   sales(@Query() query: SalesQueryDto) {
     return this.analyticsService.sales(query.days ?? 30, query.branchId);
+  }
+
+  @Get('sales/export')
+  async exportSales(@Query() query: SalesQueryDto, @Res() res: Response) {
+    const csv = await this.analyticsService.salesCsv(query.days ?? 30, query.branchId);
+    const stamp = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="sales-${query.days ?? 30}d-${stamp}.csv"`);
+    res.send(csv);
   }
 }

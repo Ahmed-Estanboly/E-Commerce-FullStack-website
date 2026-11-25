@@ -71,7 +71,7 @@ export function SalesChart({ days, data, currency }: SalesChartProps) {
           </g>
         ))}
         {series.map((d, i) => {
-          const h = (d.orders / maxOrders) * CHART_H * 0.35
+          const h = (d.orders / maxOrders) * CHART_H * 0.45
           return <rect key={d.date} x={xAt(i) - barW / 2} y={PAD_TOP + CHART_H - h} width={barW} height={h} rx="1" className="sales-orders-bar" />
         })}
         <path d={areaPath} fill="url(#sales-fill)" />

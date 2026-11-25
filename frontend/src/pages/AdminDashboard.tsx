@@ -198,7 +198,7 @@ const AdminDashboard = () => {
             </>
           ) : salesLoading ? <SalesSkeleton /> : null}
 
-          <section className="admin-panel admin-orders-panel mt-4" aria-labelledby="branch-network-heading">
+          <section className="admin-panel admin-orders-panel" aria-labelledby="branch-network-heading">
             <div className="admin-panel-heading">
               <span id="branch-network-heading">Branch network</span>
               <Link to="/admin/branches" className="admin-row-action">Manage branches</Link>

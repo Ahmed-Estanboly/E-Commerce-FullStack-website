@@ -26,4 +26,12 @@ export const analyticsService = {
     })
     return unwrap(response.data)
   },
+
+  async exportCsv(days = 30, branchId?: string): Promise<Blob> {
+    const response = await backendClient.get('/analytics/sales/export', {
+      params: { days, ...(branchId ? { branchId } : {}) },
+      responseType: 'blob',
+    })
+    return response.data as Blob
+  },
 }
