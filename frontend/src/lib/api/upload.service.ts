@@ -2,9 +2,11 @@ import { backendClient } from './client'
 
 /** Turns the API-relative `/uploads/...` path into a URL the browser can load. */
 function resolveUploadUrl(path: string): string {
-  const base = (backendClient.defaults.baseURL ?? '').replace(/\/+$/, '')
-  // baseURL already ends with /api/v1, where uploads are now served
-  return base ? `${base}${path}` : `/api/v1${path}`
+  const base = backendClient.defaults.baseURL ?? ''
+  if (base.startsWith('http')) {
+    return `${base.replace(/\/api\/v\d+\/?$/, '')}${path}`
+  }
+  return path
 }
 
 export const uploadService = {

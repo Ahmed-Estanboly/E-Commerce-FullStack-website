@@ -60,6 +60,12 @@ import { join } from 'node:path';
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/api/v1/uploads',
     }),
+    // Root path kept so clients requesting /uploads directly also work
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+      exclude: ['/api/(.*)'],
+    }),
   ],
   controllers: [AppController],
   providers: [
